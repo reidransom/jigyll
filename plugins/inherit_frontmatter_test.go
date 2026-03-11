@@ -25,11 +25,13 @@ func (s *mockSite) Posts() []Page                                               
 func (s *mockSite) HasLayout(string) bool                                         { return false }
 
 type mockPage struct {
-	fm   pages.FrontMatter
-	date time.Time
+	fm         pages.FrontMatter
+	date       time.Time
+	urlVal     string
+	contentVal string
 }
 
-func (p *mockPage) URL() string                         { return "" }
+func (p *mockPage) URL() string                         { return p.urlVal }
 func (p *mockPage) Source() string                      { return "" }
 func (p *mockPage) OutputExt() string                   { return "" }
 func (p *mockPage) Published() bool                     { return true }
@@ -37,7 +39,7 @@ func (p *mockPage) IsStatic() bool                      { return false }
 func (p *mockPage) Write(w io.Writer) error             { return nil }
 func (p *mockPage) Reload() error                       { return nil }
 func (p *mockPage) Render() error                       { return nil }
-func (p *mockPage) SetContent(string)                   {}
+func (p *mockPage) SetContent(s string)                 { p.contentVal = s }
 func (p *mockPage) FrontMatter() pages.FrontMatter      { return p.fm }
 func (p *mockPage) PostDate() time.Time                 { return p.date }
 func (p *mockPage) IsPost() bool                        { return true }
