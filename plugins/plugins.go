@@ -31,6 +31,7 @@ type Plugin interface {
 // Site is the site interface that is available to plugins.
 type Site interface {
 	AddHTMLPage(url string, tpl string, fm pages.FrontMatter)
+	RemoveRoute(url string)
 	Config() *config.Config
 	TemplateEngine() *liquid.Engine
 	Pages() []Page

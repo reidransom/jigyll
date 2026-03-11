@@ -16,6 +16,7 @@ type siteFake struct {
 }
 
 func (s siteFake) AddHTMLPage(string, string, pages.FrontMatter) {}
+func (s siteFake) RemoveRoute(string)                              {}
 func (s siteFake) Config() *config.Config                        { return &s.c }
 func (s siteFake) HasLayout(string) bool                         { return true }
 func (s siteFake) Pages() []Page                                 { return nil }

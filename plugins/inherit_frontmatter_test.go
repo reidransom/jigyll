@@ -17,6 +17,7 @@ type mockSite struct {
 }
 
 func (s *mockSite) AddHTMLPage(url string, tpl string, fm pages.FrontMatter)     {}
+func (s *mockSite) RemoveRoute(url string)                                        {}
 func (s *mockSite) Config() *config.Config                                        { return s.cfg }
 func (s *mockSite) TemplateEngine() *liquid.Engine                                { return nil }
 func (s *mockSite) Pages() []Page                                                 { return nil }

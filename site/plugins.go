@@ -12,6 +12,11 @@ import (
 	"github.com/tdewolff/minify/html"
 )
 
+// RemoveRoute is in the plugins.Site interface.
+func (s *Site) RemoveRoute(url string) {
+	delete(s.Routes, url)
+}
+
 // AddHTMLPage is in the plugins.Site interface.
 func (s *Site) AddHTMLPage(url string, src string, fm pages.FrontMatter) {
 	tpl, err := s.TemplateEngine().ParseTemplate([]byte(src))
