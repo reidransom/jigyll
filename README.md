@@ -38,6 +38,7 @@ live reload.
   - [Binary Downloads](#binary-downloads)
   - [From Source](#from-source)
 - [[Optional] Install command-line autocompletion](#optional-install-command-line-autocompletion)
+- [Development](#development)
 - [Status](#status)
   - [Current Limitations](#current-limitations)
   - [Other Differences](#other-differences)
@@ -110,6 +111,20 @@ Add this to your `.bashrc` or `.zshrc`:
 eval "$(gojekyll --completion-script-bash)"
 # Zsh:
 eval "$(gojekyll --completion-script-zsh)"
+```
+
+## Development
+
+This project uses [just](https://github.com/casey/just) as a command runner. Run `just` to see available recipes:
+
+```bash
+just build      # compile the binary
+just buildlinux # cross-compile for linux (amd64 + arm64)
+just clean      # remove build artifacts
+just install    # install the binary
+just lint       # run linter
+just release    # bump patch version, tag, and push
+just test       # run tests
 ```
 
 ## Status
