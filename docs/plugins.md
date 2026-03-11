@@ -7,6 +7,7 @@ The functionality of some plugins is built into the core program:
 | Plugin                                                       | Motivation    | Implementation Status | Missing Features                                                                                                                      |
 |--------------------------------------------------------------|---------------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | [jekyll-avatar][jekyll-avatar]                               | GitHub Pages² | ✓                     |                                                                                                                                       |
+| [jekyll-coming-soon][jekyll-coming-soon]                     | custom⁵       | ✓                     | See [documentation](jekyll-coming-soon.md)                                                                                            |
 | [jekyll-coffeescript][jekyll-coffeescript]                   | GitHub Pages  |                       |                                                                                                                                       |
 | [jekyll-default-layout][jekyll-default-layout]               | GitHub Pages  | ✓                     |                                                                                                                                       |
 | [jekyll-feed][jekyll-feed]                                   | GitHub Pages  | ✓                     |                                                                                                                                       |
@@ -40,6 +41,7 @@ The [Official Plugins](https://jekyllrb.com/docs/plugins/#available-plugins) sec
 ⁵ Custom plugins implemented specifically for gojekyll.
 
 [jekyll-avatar]: https://github.com/benbalter/jekyll-avatar
+[jekyll-coming-soon]: jekyll-coming-soon.md
 [jekyll-coffeescript]: https://github.com/jekyll/jekyll-coffeescript
 [jekyll-default-layout]: https://github.com/benbalter/jekyll-default-layout
 [jekyll-feed]: https://github.com/jekyll/jekyll-feed
