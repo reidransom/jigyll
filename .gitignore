@@ -6,6 +6,7 @@ _site
 coverage.out
 
 dist/
+.dart-sass/
 
 .env
 _issues/

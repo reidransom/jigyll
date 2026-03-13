@@ -78,10 +78,10 @@ docker run --user $UID:$GID -v $PWD:/app --pull always --network host --rm -it d
 
 ### Binary Downloads
 
-1. Linux, Mac OS and Windows binaries for x86, amd64, armv6/v7, armv8, riscv64 are available from the [releases
+1. Linux, Mac OS and Windows binaries for amd64, armv6/v7, armv8, riscv64 are available from the [releases
    page](https://github.com/osteele/gojekyll/releases).
-2. Download the latest version of [dart-sass](https://github.com/sass/dart-sass/releases) and [add it to your PATH](https://katiek2.github.io/path-doc/), or see the [Sass website](https://katiek2.github.io/path-doc/) for full installation instructions.
-3. [Optional] **Themes**. To use a theme, you need to install Ruby and
+   Each archive includes a bundled `dart-sass/` directory — no separate Sass installation required.
+2. [Optional] **Themes**. To use a theme, you need to install Ruby and
    [bundler](http://bundler.io/). Create a `Gemfile` that lists the theme., and
    run `bundle install`. The [Jekyll theme
    instructions](https://jekyllrb.com/docs/themes/) provide more detail, and
@@ -93,7 +93,10 @@ Pre-requisites:
 
 1. **Install go** (1) via [Homebrew](https://brew.sh): `brew install go`; or (2)
    [download](https://golang.org/doc/install#tarball).
-2. See items (2-3) under [Binary Downloads](#binary-downloads), above.
+2. Install the Dart Sass executable:
+   - On macOS: `brew install sass/sass/sass`
+   - On Linux: see item (2) under [Binary Downloads](#binary-downloads) or install via your package manager.
+3. See item (2) under [Binary Downloads](#binary-downloads) for theme support.
 
 Then run:
 

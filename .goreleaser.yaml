@@ -2,6 +2,7 @@ before:
   hooks:
     - go mod tidy
     - go test ./...
+    - bash scripts/download-dart-sass.sh
 builds:
   - env:
       - CGO_ENABLED=0
@@ -19,10 +20,18 @@ builds:
       - "v3"
     goarch:
       - "amd64"
-      - "386"
       - "arm64"
       - "arm"
       - "riscv64"
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: darwin
+        goarch: riscv64
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: riscv64
     ldflags: -s -w -X gojekyll/cmd.Version={{.Version}} -X gojekyll/cmd.BuildDate={{.Date}}
 
 archives:
@@ -32,10 +41,13 @@ archives:
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
       {{- if .Amd64 }}{{ .Amd64 }}{{ end }}
+    files:
+      - src: ".dart-sass/{{ .Os }}-{{ .Arch }}/**"
+        dst: dart-sass
+        strip_parent: true
     # use zip for windows archives
     format_overrides:
     - goos: windows
