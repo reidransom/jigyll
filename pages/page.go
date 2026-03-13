@@ -213,10 +213,12 @@ func (p *page) Render() error {
 }
 
 func (p *page) SetContent(content string) {
+	p.contentOnce.Do(func() {}) // prevent Render from overwriting
 	p.m.Lock()
 	defer p.m.Unlock()
 	p.content = content
 	p.contentError = nil
+	p.rendered = true
 }
 
 func (p *page) computeContent() (cn string, ex string, err error) {

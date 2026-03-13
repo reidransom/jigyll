@@ -5,11 +5,14 @@ import (
 	"io"
 	"regexp"
 
+	chromahtml "github.com/alecthomas/chroma/formatters/html"
 	"github.com/osteele/gojekyll/utils"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	gmhtml "github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/util"
+	highlighting "github.com/yuin/goldmark-highlighting"
 	"golang.org/x/net/html"
 )
 
@@ -20,6 +23,24 @@ var goldmarkEngine = goldmark.New(
 		extension.GFM,            // tables, strikethrough, autolinks, task lists
 		extension.DefinitionList, // definition lists
 		extension.Footnote,       // footnotes
+		highlighting.NewHighlighting(
+			highlighting.WithFormatOptions(
+				chromahtml.WithClasses(true),
+				chromahtml.WithLineNumbers(false),
+			),
+			highlighting.WithWrapperRenderer(func(w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {
+				lang, ok := c.Language()
+				if entering {
+					if ok {
+						w.WriteString(`<div class="language-` + string(lang) + ` highlighter-rouge"><div class="highlight">`)
+					}
+				} else {
+					if ok {
+						w.WriteString("</div></div>")
+					}
+				}
+			}),
+		),
 	),
 	goldmark.WithParserOptions(
 		parser.WithAutoHeadingID(), // auto-generate heading IDs
