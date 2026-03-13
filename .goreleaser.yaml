@@ -67,7 +67,6 @@ archives:
     files:
       - src: ".dart-sass/{{ .Os }}-{{ .Arch }}/**"
         dst: dart-sass
-        strip_parent: true
     # use zip for windows archives
     format_overrides:
     - goos: windows
@@ -88,7 +87,6 @@ archives:
     files:
       - src: ".dart-sass/{{ .Os }}-{{ .Arch }}-musl/**"
         dst: dart-sass
-        strip_parent: true
 checksum:
   name_template: 'checksums.txt'
 snapshot:
