@@ -24,6 +24,7 @@ func (s *comingSoonMockSite) TemplateEngine() *liquid.Engine                { re
 func (s *comingSoonMockSite) Pages() []Page                                 { return s.pagesVal }
 func (s *comingSoonMockSite) Posts() []Page                                 { return nil }
 func (s *comingSoonMockSite) HasLayout(name string) bool                    { return s.hasLayout[name] }
+func (s *comingSoonMockSite) HasRoute(string) bool                           { return false }
 
 func newComingSoonSite(enabled bool, hasComingSoonLayout bool, pgs []Page) *comingSoonMockSite {
 	cfg := &config.Config{}

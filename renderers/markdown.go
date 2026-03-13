@@ -32,11 +32,11 @@ var goldmarkEngine = goldmark.New(
 				lang, ok := c.Language()
 				if entering {
 					if ok {
-						w.WriteString(`<div class="language-` + string(lang) + ` highlighter-rouge"><div class="highlight">`)
+						_, _ = w.WriteString(`<div class="language-` + string(lang) + ` highlighter-rouge"><div class="highlight">`)
 					}
 				} else {
 					if ok {
-						w.WriteString("</div></div>")
+						_, _ = w.WriteString("</div></div>")
 					}
 				}
 			}),

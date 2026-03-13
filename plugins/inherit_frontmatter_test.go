@@ -23,6 +23,7 @@ func (s *mockSite) TemplateEngine() *liquid.Engine                              
 func (s *mockSite) Pages() []Page                                                 { return nil }
 func (s *mockSite) Posts() []Page                                                 { return s.posts }
 func (s *mockSite) HasLayout(string) bool                                         { return false }
+func (s *mockSite) HasRoute(string) bool                                           { return false }
 
 type mockPage struct {
 	fm         pages.FrontMatter

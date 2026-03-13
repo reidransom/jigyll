@@ -37,6 +37,7 @@ type Site interface {
 	Pages() []Page
 	Posts() []Page
 	HasLayout(string) bool
+	HasRoute(string) bool
 }
 
 // Page is in package pages.

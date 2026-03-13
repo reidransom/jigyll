@@ -17,6 +17,12 @@ func (s *Site) RemoveRoute(url string) {
 	delete(s.Routes, url)
 }
 
+// HasRoute is in the plugins.Site interface.
+func (s *Site) HasRoute(url string) bool {
+	_, found := s.Routes[url]
+	return found
+}
+
 // AddHTMLPage is in the plugins.Site interface.
 func (s *Site) AddHTMLPage(url string, src string, fm pages.FrontMatter) {
 	tpl, err := s.TemplateEngine().ParseTemplate([]byte(src))
