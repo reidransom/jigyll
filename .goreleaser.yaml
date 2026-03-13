@@ -1,10 +1,12 @@
+version: 2
 before:
   hooks:
     - go mod tidy
     - go test ./...
     - bash scripts/download-dart-sass.sh
 builds:
-  - env:
+  - id: gojekyll
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -34,8 +36,26 @@ builds:
         goarch: riscv64
     ldflags: -s -w -X gojekyll/cmd.Version={{.Version}} -X gojekyll/cmd.BuildDate={{.Date}}
 
+  - id: gojekyll-musl
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - "amd64"
+      - "arm64"
+    goamd64:
+      - "v1"
+      - "v2"
+      - "v3"
+    ldflags: -s -w -X gojekyll/cmd.Version={{.Version}} -X gojekyll/cmd.BuildDate={{.Date}}
+
 archives:
-  - format: tar.gz
+  - id: default
+    ids:
+      - gojekyll
+    formats:
+      - tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
     name_template: >-
       {{ .ProjectName }}_
@@ -51,11 +71,29 @@ archives:
     # use zip for windows archives
     format_overrides:
     - goos: windows
-      format: zip
+      formats:
+        - zip
+
+  - id: musl
+    ids:
+      - gojekyll-musl
+    formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Amd64 }}{{ .Amd64 }}{{ end }}
+      -musl
+    files:
+      - src: ".dart-sass/{{ .Os }}-{{ .Arch }}-musl/**"
+        dst: dart-sass
+        strip_parent: true
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 changelog:
   sort: asc
   filters:

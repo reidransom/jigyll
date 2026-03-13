@@ -39,11 +39,15 @@ download_sass() {
     echo "  -> ${dest}/"
 }
 
-# Linux
+# Linux (glibc)
 download_sass linux  amd64   linux-x64
 download_sass linux  arm64   linux-arm64
 download_sass linux  arm     linux-arm
 download_sass linux  riscv64 linux-riscv64
+
+# Linux (musl / Alpine)
+download_sass linux  amd64-musl  linux-x64-musl
+download_sass linux  arm64-musl  linux-arm64-musl
 
 # macOS
 download_sass darwin amd64   macos-x64
