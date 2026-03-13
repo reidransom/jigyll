@@ -25,6 +25,9 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Install SASS
+        run: "wget -qO- https://github.com/sass/dart-sass/releases/download/1.98.0/dart-sass-1.98.0-linux-x64.tar.gz | tar -xz && sudo mv dart-sass/* /usr/bin/ && rmdir dart-sass"
+
       - name: Make release
         uses: goreleaser/goreleaser-action@v5
         with:
