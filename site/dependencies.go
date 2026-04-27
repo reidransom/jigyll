@@ -90,6 +90,7 @@ loop:
 // Cf. Site.Exclude.
 func (s *Site) fileAffectsBuild(rel string) bool {
 	for rel != "" {
+		base := filepath.Base(rel)
 		switch {
 		case rel == ".":
 			return true
@@ -97,7 +98,7 @@ func (s *Site) fileAffectsBuild(rel string) bool {
 			return true
 		case utils.MatchList(s.cfg.Exclude, rel):
 			return false
-		case strings.HasPrefix(rel, "."):
+		case excludeFileRE.MatchString(base):
 			return false
 		}
 		rel = filepath.Dir(rel)

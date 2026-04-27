@@ -49,7 +49,7 @@ func (s *Server) reload(change site.FilesEvent) {
 	defer s.m.Unlock()
 
 	// similar code to site.WatchRebuild
-	fmt.Printf("Re-reading: %v...", change)
+	fmt.Printf("Re-reading: %v %v...\n", change, change.Paths)
 	start := time.Now()
 	site, err := s.Site.Reloaded(change.Paths)
 	if err != nil {

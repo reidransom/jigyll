@@ -36,6 +36,22 @@ func TestSite_RequiresFullReload(t *testing.T) {
 	require.True(t, s.RequiresFullReload([]string{"_config.yml"}))
 }
 
-//func TestSite_affectsBuildFilter(t *testing.T) {
-//func TestSite_fileAffectsBuild(t *testing.T) {
-//func TestSite_invalidatesDoc(t *testing.T) {
+func TestSite_fileAffectsBuild(t *testing.T) {
+	s := New(config.Flags{})
+
+	// Regular files affect the build
+	require.True(t, s.fileAffectsBuild("index.html"))
+	require.True(t, s.fileAffectsBuild("assets/style.css"))
+
+	// Dot-files at root are excluded
+	require.False(t, s.fileAffectsBuild(".DS_Store"))
+	require.False(t, s.fileAffectsBuild(".git"))
+
+	// Dot-files in subdirectories are excluded
+	require.False(t, s.fileAffectsBuild("assets/.DS_Store"))
+	require.False(t, s.fileAffectsBuild("assets/imgs/.DS_Store"))
+
+	// Temp/backup files are excluded
+	require.False(t, s.fileAffectsBuild("assets/file.txt~"))
+	require.False(t, s.fileAffectsBuild("#draft.md"))
+}

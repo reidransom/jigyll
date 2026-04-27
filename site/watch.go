@@ -73,9 +73,12 @@ func (s *Site) makeEventWatcher() (<-chan string, error) {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
+	if info.IsDir() {
 			rel := utils.MustRel(sourceDir, path)
-			if rel != "." && s.Exclude(rel) {
+			switch {
+			case rel != "." && s.Exclude(rel):
+				return filepath.SkipDir
+			case path == s.DestDir():
 				return filepath.SkipDir
 			}
 			return w.Add(path)
@@ -89,6 +92,14 @@ func (s *Site) makeEventWatcher() (<-chan string, error) {
 		for {
 			select {
 			case event := <-w.Events:
+				// Ignore attribute-only changes (Chmod). On macOS, reading a
+				// file can update extended attributes (e.g.
+				// com.apple.lastuseddate#PS), which fires a Chmod event and
+				// causes an infinite rebuild loop.
+				if !event.Has(fsnotify.Write) && !event.Has(fsnotify.Create) &&
+					!event.Has(fsnotify.Remove) && !event.Has(fsnotify.Rename) {
+					continue
+				}
 				// If a new directory is created, start watching it too
 				if event.Has(fsnotify.Create) {
 					if info, err := os.Stat(event.Name); err == nil && info.IsDir() {
