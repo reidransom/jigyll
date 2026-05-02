@@ -78,7 +78,7 @@ type Config struct {
 
 // FromDirectory updates the config from the config file in
 // the directory, if such a file exists.
-func (c *Config) FromDirectory(dir string, environment string, adminFile string, configFiles string) error {
+func (c *Config) FromDirectory(dir string, configFiles string) error {
 	// Check JEKYLL_CONFIG environment variable if --config flag not provided
 	if configFiles == "" {
 		if jekyllConfig := os.Getenv("JEKYLL_CONFIG"); jekyllConfig != "" {
@@ -86,138 +86,12 @@ func (c *Config) FromDirectory(dir string, environment string, adminFile string,
 		}
 	}
 	
-	// If explicit config files are specified, use those and skip admin file logic
+	// If explicit config files are specified, use those
 	if configFiles != "" {
 		return c.loadConfigFiles(dir, configFiles)
 	}
-	// Determine admin file path
-	var adminPath string
-	explicitAdminFile := adminFile != ""
-	
-	if explicitAdminFile {
-		// Use explicit admin file path (can be absolute or relative to dir)
-		if filepath.IsAbs(adminFile) {
-			adminPath = adminFile
-		} else {
-			adminPath = filepath.Join(dir, adminFile)
-		}
-	} else {
-		// Default to _admin.yml in the directory
-		adminPath = filepath.Join(dir, "_admin.yml")
-	}
-	
-	// Try to read admin file
-	if bytes, err := os.ReadFile(adminPath); err == nil {
-			// Parse _admin.yml structure
-			var adminConfig struct {
-				Site map[string]interface{} `yaml:"site"`
-			}
-			if err := yaml.Unmarshal(bytes, &adminConfig); err != nil {
-				return utils.WrapPathError(err, adminPath)
-			}
 
-			// Get base and environment-specific config
-			baseConfig, hasBase := adminConfig.Site["base"].(map[interface{}]interface{})
-
-			if !hasBase {
-				// If admin file was explicitly specified, require site.base
-				if explicitAdminFile {
-					return utils.WrapPathError(
-						os.ErrInvalid,
-						adminPath+": must have a site.base section",
-					)
-				}
-				// Otherwise, fall back to _config.yml if site.base is missing
-				// Continue to the _config.yml section below
-			} else {
-				// Merge base with environment overrides if environment specified
-				mergedConfig := baseConfig
-				if environment != "" {
-					envConfig, hasEnv := adminConfig.Site[environment].(map[interface{}]interface{})
-					if hasEnv {
-						mergedConfig = mergeYAMLMaps(baseConfig, envConfig)
-					}
-				}
-
-				// Convert merged config to YAML bytes and unmarshal into Config
-				mergedBytes, err := yaml.Marshal(mergedConfig)
-				if err != nil {
-					return err
-				}
-
-				// Save the existing c.ms (from Default()) so we can preserve default values
-				existingMS := c.ms
-				existingM := c.m
-
-				if err = Unmarshal(mergedBytes, c); err != nil {
-					return utils.WrapPathError(err, adminPath)
-				}
-				
-				// Merge the admin config into existing maps instead of replacing them
-				// First update c.m with values from existing that aren't in the new config
-				for k, v := range existingM {
-					if _, exists := c.m[k]; !exists {
-						c.m[k] = v
-					}
-				}
-				
-				// Then update c.ms - keep existing items that aren't overridden, append new ones
-				adminKeys := make(map[interface{}]bool)
-				for _, item := range c.ms {
-					adminKeys[item.Key] = true
-				}
-				
-				// Build new c.ms: existing items updated with admin values, plus new admin items
-				newMS := yaml.MapSlice{}
-				for _, item := range existingMS {
-					if adminKeys[item.Key] {
-						// This key is in admin config, use the admin value
-						for _, adminItem := range c.ms {
-							if adminItem.Key == item.Key {
-								newMS = append(newMS, adminItem)
-								break
-							}
-						}
-					} else {
-						// This key is not in admin config, keep the default
-						newMS = append(newMS, item)
-					}
-				}
-				// Add any new keys from admin that weren't in defaults
-				for _, adminItem := range c.ms {
-					found := false
-					for _, item := range existingMS {
-						if item.Key == adminItem.Key {
-							found = true
-							break
-						}
-					}
-					if !found {
-						newMS = append(newMS, adminItem)
-					}
-				}
-				c.ms = newMS
-				if environment != "" {
-					c.ConfigFile = adminPath + " (env: " + environment + ")"
-				} else {
-					c.ConfigFile = adminPath + " (base)"
-				}
-				c.Source = dir
-				
-				// Override URL from JEKYLL_URL environment variable if set
-				if jekyllURL := os.Getenv("JEKYLL_URL"); jekyllURL != "" {
-					c.AbsoluteURL = jekyllURL
-					c.Set("url", jekyllURL)
-				}
-				
-				return nil
-			}
-	} else if explicitAdminFile {
-		// If admin file was explicitly specified but not found, return error
-		return utils.WrapPathError(err, adminPath)
-	}
-
-	// Fall back to _config.yml (only if admin file was not explicitly specified)
+	// Default: read _config.yml
 	path := filepath.Join(dir, "_config.yml")
 	bytes, err := os.ReadFile(path)
 	switch {
@@ -463,28 +337,3 @@ func (c *Config) String(key string) (string, bool) {
 	return "", false
 }
 
-// mergeYAMLMaps performs a deep merge of two YAML maps.
-// Values from override will overwrite values in base.
-func mergeYAMLMaps(base, override map[interface{}]interface{}) map[interface{}]interface{} {
-	result := make(map[interface{}]interface{})
-
-	// Copy all values from base
-	for k, v := range base {
-		result[k] = v
-	}
-
-	// Merge/override with values from override
-	for k, v := range override {
-		if vMap, ok := v.(map[interface{}]interface{}); ok {
-			// If both base and override have a map at this key, merge them recursively
-			if baseMap, ok := result[k].(map[interface{}]interface{}); ok {
-				result[k] = mergeYAMLMaps(baseMap, vMap)
-				continue
-			}
-		}
-		// Otherwise, just overwrite
-		result[k] = v
-	}
-
-	return result
-}

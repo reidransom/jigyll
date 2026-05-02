@@ -16,8 +16,6 @@ type Flags struct {
 
 	// these aren't in the config file, so make them actual values
 	DryRun, ForcePolling, Watch bool
-	Environment                 string
-	AdminFile                   string
 	ConfigFiles                 string
 }
 

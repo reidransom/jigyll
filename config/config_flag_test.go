@@ -24,7 +24,7 @@ url: https://single.example.com
 
 	// Load config with explicit config file
 	c := Default()
-	err = c.FromDirectory(tmpDir, "", "", "my_config.yml")
+	err = c.FromDirectory(tmpDir, "my_config.yml")
 	require.NoError(t, err)
 
 	// Should use specified config file
@@ -64,7 +64,7 @@ custom_key: custom_value
 
 	// Load config with multiple files (comma-separated)
 	c := Default()
-	err = c.FromDirectory(tmpDir, "", "", "_config.yml,_config.local.yml")
+	err = c.FromDirectory(tmpDir, "_config.yml,_config.local.yml")
 	require.NoError(t, err)
 
 	// Later file should override earlier file
@@ -123,7 +123,7 @@ key3: value3
 
 	// Load config with three files
 	c := Default()
-	err = c.FromDirectory(tmpDir, "", "", "config1.yml,config2.yml,config3.yml")
+	err = c.FromDirectory(tmpDir, "config1.yml,config2.yml,config3.yml")
 	require.NoError(t, err)
 
 	// Title from file2 (overrides file1)
@@ -169,7 +169,7 @@ func TestFromDirectory_ConfigFlag_WithSpaces(t *testing.T) {
 
 	// Load config with spaces around commas
 	c := Default()
-	err = c.FromDirectory(tmpDir, "", "", "config1.yml , config2.yml")
+	err = c.FromDirectory(tmpDir, "config1.yml , config2.yml")
 	require.NoError(t, err)
 
 	// Should work despite spaces
@@ -190,7 +190,7 @@ func TestFromDirectory_ConfigFlag_FileNotFound(t *testing.T) {
 
 	// Try to load with non-existent config file
 	c := Default()
-	err = c.FromDirectory(tmpDir, "", "", "nonexistent.yml")
+	err = c.FromDirectory(tmpDir, "nonexistent.yml")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "nonexistent.yml")
 }
@@ -209,41 +209,9 @@ func TestFromDirectory_ConfigFlag_SecondFileNotFound(t *testing.T) {
 
 	// Try to load with second file that doesn't exist
 	c := Default()
-	err = c.FromDirectory(tmpDir, "", "", "config1.yml,nonexistent.yml")
+	err = c.FromDirectory(tmpDir, "config1.yml,nonexistent.yml")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "nonexistent.yml")
-}
-
-func TestFromDirectory_ConfigFlag_OverridesAdminFile(t *testing.T) {
-	// When --config is specified, it should take precedence over _admin.yml
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
-	require.NoError(t, err)
-	defer func() { _ = os.RemoveAll(tmpDir) }()
-
-	// Create _admin.yml that should NOT be used
-	adminYML := `site:
-  base:
-    title: Admin Title
-`
-	adminPath := filepath.Join(tmpDir, "_admin.yml")
-	err = os.WriteFile(adminPath, []byte(adminYML), 0644)
-	require.NoError(t, err)
-
-	// Create config file that SHOULD be used
-	configYML := `title: Config Title`
-	configPath := filepath.Join(tmpDir, "my_config.yml")
-	err = os.WriteFile(configPath, []byte(configYML), 0644)
-	require.NoError(t, err)
-
-	// Load with --config flag
-	c := Default()
-	err = c.FromDirectory(tmpDir, "", "", "my_config.yml")
-	require.NoError(t, err)
-
-	// Should use config file, not admin file
-	title, ok := c.String("title")
-	require.True(t, ok)
-	require.Equal(t, "Config Title", title)
 }
 
 func TestFromDirectory_ConfigFlag_AbsolutePath(t *testing.T) {
@@ -260,7 +228,7 @@ func TestFromDirectory_ConfigFlag_AbsolutePath(t *testing.T) {
 
 	// Load with absolute path
 	c := Default()
-	err = c.FromDirectory(tmpDir, "", "", configPath)
+	err = c.FromDirectory(tmpDir, configPath)
 	require.NoError(t, err)
 
 	title, ok := c.String("title")
@@ -297,7 +265,7 @@ custom: value
 
 	// Load config without --config flag (should use JEKYLL_CONFIG)
 	c := Default()
-	err = c.FromDirectory(tmpDir, "", "", "")
+	err = c.FromDirectory(tmpDir, "")
 	require.NoError(t, err)
 
 	// Should merge both files
@@ -338,7 +306,7 @@ func TestFromDirectory_ConfigFlag_OverridesJEKYLL_CONFIG(t *testing.T) {
 
 	// Load with --config flag (should override JEKYLL_CONFIG)
 	c := Default()
-	err = c.FromDirectory(tmpDir, "", "", "flag_config.yml")
+	err = c.FromDirectory(tmpDir, "flag_config.yml")
 	require.NoError(t, err)
 
 	// Should use flag, not env var

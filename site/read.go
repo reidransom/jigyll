@@ -16,7 +16,7 @@ import (
 // FromDirectory reads the configuration file, if it exists.
 func FromDirectory(dir string, flags config.Flags) (*Site, error) {
 	s := New(flags)
-	if err := s.cfg.FromDirectory(dir, flags.Environment, flags.AdminFile, flags.ConfigFiles); err != nil {
+	if err := s.cfg.FromDirectory(dir, flags.ConfigFiles); err != nil {
 		return nil, utils.WrapError(err, "reading site")
 	}
 	s.cfg.ApplyFlags(s.flags)
@@ -84,10 +84,17 @@ func (s *Site) readFiles(dir, base string) error {
 		switch {
 		case info.IsDir() && s.Exclude(rel):
 			return filepath.SkipDir
-	  case info.IsDir():
-	  	return nil
-	  case s.Exclude(rel):
-	  	return nil
+		case info.IsDir() && strings.HasPrefix(rel, "_") && !s.isIncludedPath(rel):
+			// Top-level underscore directories (_layouts, _includes, _sass,
+			// _data, collections) are handled by other code paths. Skip them
+			// here unless they are explicitly listed in `include:`.
+			return filepath.SkipDir
+		case info.IsDir():
+			return nil
+		case s.Exclude(rel):
+			return nil
+		case strings.HasPrefix(rel, "_") && !s.isIncludedPath(rel):
+			return nil
 		}
 		defaultFrontmatter := s.cfg.GetFrontMatterDefaults("", rel)
 		d, err := pages.NewFile(s, filename, filepath.ToSlash(rel), defaultFrontmatter)
