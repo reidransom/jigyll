@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
     - name: Install Go
       uses: actions/setup-go@v6
       with:
@@ -18,9 +21,6 @@ jobs:
 
     - name: Install SASS
       run: "wget -qO- https://github.com/sass/dart-sass/releases/download/1.98.0/dart-sass-1.98.0-linux-x64.tar.gz | tar -xz && sudo mv dart-sass/* /usr/bin/ && rmdir dart-sass"
-
-    - name: Checkout
-      uses: actions/checkout@v6
 
     - name: Build
       run: make build
