@@ -55,8 +55,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/radovskyb/watcher v1.0.7 h1:AYePLih6dpmS32vlHfhCeli8127LzkIgwJGcwwe8tUE=
 github.com/radovskyb/watcher v1.0.7/go.mod h1:78okwvY5wPdzcb1UYnip1pvrZNIVEIh/Cm+ZuvsUYIg=
-github.com/reidransom/liquid v1.8.2-0.20260603191128-592248e07148 h1:RUCYY+cnFZC9rDuBOU91zdg7P9uJXRYYZbhw8PP/LGs=
-github.com/reidransom/liquid v1.8.2-0.20260603191128-592248e07148/go.mod h1:SFqQ9ddbCoKceuG6RckCLJ0hcxUbGhLpvcXJGmHlCWA=
+github.com/reidransom/liquid v1.8.2-0.20260603234040-48835505573b h1:ljRdAb5klcIJlpEQhcBDNlYgjq23VmZbPxWgFe/Uh0c=
+github.com/reidransom/liquid v1.8.2-0.20260603234040-48835505573b/go.mod h1:SFqQ9ddbCoKceuG6RckCLJ0hcxUbGhLpvcXJGmHlCWA=
 github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/smarty/assertions v1.15.0 h1:cR//PqUBUiQRakZWqBiFFQ9wb8emQGDb0HeGdqGByCY=

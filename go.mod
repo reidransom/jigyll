@@ -46,4 +46,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/osteele/liquid => github.com/reidransom/liquid v1.8.2-0.20260603191128-592248e07148
+replace github.com/osteele/liquid => github.com/reidransom/liquid v1.8.2-0.20260603234040-48835505573b
