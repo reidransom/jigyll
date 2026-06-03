@@ -2,7 +2,6 @@ package filters
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
 	"testing"
 	"time"
@@ -22,7 +21,7 @@ var filterTests = []struct{ in, expected string }{
 
 	// arrays
 	{`{{ array | array_to_sentence_string }}`, "first, second, and third"},
-	{`{{ array | sample }}`, "third"},
+	// `sample` is random; see TestSampleFilter.
 
 	{`{{ site.members | group_by: "graduation_year" | map: "name" | sort | join }}`, "2013 2014 2015"},
 	{`{{ site.members | group_by_exp: "item", "item.graduation_year" | size }}`, "4"},
@@ -119,12 +118,25 @@ var filterTestBindings = liquid.Bindings{
 }
 
 func TestFilters(t *testing.T) {
-	//nolint:staticcheck // Ignore this for now
-	rand.Seed(1)
 	for i, test := range filterTests {
 		t.Run(fmt.Sprintf("%02d", i+1), func(t *testing.T) {
 			requireTemplateRender(t, test.in, filterTestBindings, test.expected)
 		})
+	}
+}
+
+// sample returns a random element, so assert membership rather than a fixed
+// value (the result depends on global math/rand state, which isn't reproducible).
+func TestSampleFilter(t *testing.T) {
+	engine := liquid.NewEngine()
+	cfg := config.Default()
+	AddJekyllFilters(engine, &cfg)
+	members := map[string]bool{"first": true, "second": true, "third": true}
+	for i := 0; i < 50; i++ {
+		data, err := engine.ParseAndRender([]byte(`{{ array | sample }}`), filterTestBindings)
+		require.NoError(t, err)
+		got := strings.TrimSpace(string(data))
+		require.Truef(t, members[got], "sample returned %q, not a member of array", got)
 	}
 }
 
