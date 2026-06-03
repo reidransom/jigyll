@@ -2,6 +2,7 @@ package site
 
 import (
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/osteele/gojekyll/collection"
@@ -213,6 +214,11 @@ func (s *Site) URLPage(urlpath string) (p Document, found bool) {
 	if !found {
 		// Serve extensionless URL `/some-url` from file `/some-url.html`
 		p, found = s.Routes[filepath.Join(urlpath+".html")]
+	}
+	if !found && strings.HasSuffix(urlpath, "/index.html") {
+		// HTML index pages are routed under their collapsed directory URL
+		// (`/`, `/sub/`); resolve a literal `…/index.html` request to it.
+		p, found = s.Routes[strings.TrimSuffix(urlpath, "index.html")]
 	}
 	return
 }

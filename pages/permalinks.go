@@ -74,6 +74,7 @@ func (p *page) permalinkVariables() map[string]string {
 }
 
 func (p *page) computePermalink(vars map[string]string) (src string, err error) {
+	explicit := p.fm.String("permalink", "") != ""
 	pattern := p.fm.String("permalink", DefaultPermalinkPattern)
 	if pat, found := PermalinkStyles[pattern]; found {
 		pattern = pat
@@ -90,7 +91,17 @@ func (p *page) computePermalink(vars map[string]string) (src string, err error) 
 	if err != nil {
 		return "", err
 	}
-	return utils.URLPathClean("/" + s), nil
+	permalink := utils.URLPathClean("/" + s)
+
+	// Ruby Jekyll treats an HTML index.html as a directory index: its URL is the
+	// containing directory with a trailing slash (/, /sub/), not …/index.html.
+	// Collapse it here, but only for the default pattern (an explicit permalink:
+	// in front matter is honored verbatim) and only for HTML output. The output
+	// file is still written as index.html (see site.WriteDoc).
+	if !explicit && p.OutputExt() == ".html" && strings.HasSuffix(permalink, "/index.html") {
+		permalink = strings.TrimSuffix(permalink, "index.html") // keep trailing slash
+	}
+	return permalink, nil
 }
 
 func (p *page) setPermalink() (err error) {

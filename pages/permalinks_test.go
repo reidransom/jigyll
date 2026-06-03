@@ -103,3 +103,38 @@ func TestExpandPermalinkPattern(t *testing.T) {
 		require.Zero(t, p)
 	})
 }
+
+// TestIndexPagePermalink covers the default-pattern (no explicit permalink)
+// collapse of HTML index pages to their directory URL, matching Ruby Jekyll.
+func TestIndexPagePermalink(t *testing.T) {
+	s := siteFake{t, config.Default()}
+
+	// permalink reports the computed URL for a page at relPath with the given
+	// output extension and no explicit permalink in front matter.
+	permalink := func(relPath, outputExt string, fm FrontMatter) string {
+		f := file{site: s, relPath: relPath, fm: fm, outputExt: outputExt}
+		p := page{file: f}
+		out, err := p.computePermalink(nil)
+		require.NoError(t, err)
+		return out
+	}
+
+	tests := []struct {
+		name, relPath, outputExt string
+		fm                       FrontMatter
+		out                      string
+	}{
+		{"root html index", "index.html", ".html", FrontMatter{}, "/"},
+		{"sub html index", "sub/index.html", ".html", FrontMatter{}, "/sub/"},
+		{"markdown index", "index.md", ".html", FrontMatter{}, "/"},
+		{"non-index html unchanged", "about.html", ".html", FrontMatter{}, "/about.html"},
+		{"index-suffixed name not collapsed", "myindex.html", ".html", FrontMatter{}, "/myindex.html"},
+		{"non-html index not collapsed", "index.xml", ".xml", FrontMatter{}, "/index.xml"},
+		{"explicit permalink honored verbatim", "index.html", ".html", FrontMatter{"permalink": "/index.html"}, "/index.html"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, test.out, permalink(test.relPath, test.outputExt, test.fm))
+		})
+	}
+}
