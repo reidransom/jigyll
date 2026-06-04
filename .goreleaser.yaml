@@ -88,3 +88,24 @@ brews:
       bin.install "jigyll"
     test: |
       system "#{bin}/jigyll", "version"
+scoops:
+  - name: jigyll
+    ids:
+      - default
+    repository:
+      owner: reidransom
+      name: scoop-bucket
+      branch: main
+      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"
+    directory: bucket
+    homepage: "https://github.com/reidransom/jigyll"
+    description: "Go clone of the Jekyll static site generator"
+    license: MIT
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    # Scoop's `sass` package (main bucket) is Dart Sass; it puts `sass` on PATH,
+    # which jigyll resolves at runtime for SCSS. (There is no `dart-sass` package
+    # in Scoop — that name only appears as a binary alias of `sass`.)
+    depends:
+      - main/sass
