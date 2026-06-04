@@ -8,7 +8,7 @@ import (
 
 	"github.com/reidransom/gojekyll/frontmatter"
 	"github.com/reidransom/gojekyll/utils"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/liquid"
 )
 
 // ApplyLayout applies the named layout to the content.

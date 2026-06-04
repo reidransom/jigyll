@@ -13,7 +13,7 @@ import (
 
 	"github.com/jaschaephraim/lrserver"
 	"github.com/reidransom/gojekyll/site"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/liquid"
 	"github.com/pkg/browser"
 )
 

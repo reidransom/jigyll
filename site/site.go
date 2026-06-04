@@ -11,7 +11,7 @@ import (
 	"github.com/reidransom/gojekyll/plugins"
 	"github.com/reidransom/gojekyll/renderers"
 	"github.com/reidransom/gojekyll/utils"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/liquid"
 )
 
 // Site is a Jekyll site.

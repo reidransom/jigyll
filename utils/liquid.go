@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/osteele/liquid"
+	"github.com/reidransom/liquid"
 )
 
 // FollowDots applied to a property list ["a", "b", "c"] is equivalent to

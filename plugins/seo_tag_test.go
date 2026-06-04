@@ -5,8 +5,8 @@ import (
 
 	"github.com/reidransom/gojekyll/config"
 	"github.com/reidransom/gojekyll/filters"
-	"github.com/osteele/liquid"
-	"github.com/osteele/liquid/tags"
+	"github.com/reidransom/liquid"
+	"github.com/reidransom/liquid/tags"
 	"github.com/stretchr/testify/require"
 )
 

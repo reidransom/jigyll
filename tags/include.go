@@ -5,7 +5,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/osteele/liquid/render"
+	"github.com/reidransom/liquid/render"
 )
 
 func (tc tagContext) includeTag(rc render.Context) (s string, err error) {

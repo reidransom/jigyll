@@ -5,8 +5,8 @@ import (
 	"path"
 
 	"github.com/reidransom/gojekyll/config"
-	"github.com/osteele/liquid"
-	"github.com/osteele/liquid/render"
+	"github.com/reidransom/liquid"
+	"github.com/reidransom/liquid/render"
 )
 
 // A LinkTagHandler given an include tag file name returns a URL.

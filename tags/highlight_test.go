@@ -7,7 +7,7 @@ import (
 
 	"github.com/reidransom/gojekyll/cache"
 	"github.com/reidransom/gojekyll/config"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/liquid"
 	"github.com/stretchr/testify/require"
 )
 

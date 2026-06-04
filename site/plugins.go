@@ -7,7 +7,7 @@ import (
 	"github.com/reidransom/gojekyll/pages"
 	"github.com/reidransom/gojekyll/plugins"
 	"github.com/reidransom/gojekyll/utils"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/liquid"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/html"
 )

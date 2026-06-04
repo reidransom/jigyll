@@ -9,7 +9,7 @@ import (
 	"github.com/alecthomas/chroma/formatters/html"
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
-	"github.com/osteele/liquid/render"
+	"github.com/reidransom/liquid/render"
 )
 
 var highlightArgsRE = regexp.MustCompile(`^\s*(\S+)(\s+linenos)?\s*$`)

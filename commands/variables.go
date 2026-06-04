@@ -6,7 +6,7 @@ import (
 	"github.com/k0kubun/pp"
 	"github.com/reidransom/gojekyll/site"
 	"github.com/reidransom/gojekyll/utils"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/liquid"
 )
 
 var variables = app.Command(

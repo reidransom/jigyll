@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/osteele/liquid/render"
+	"github.com/reidransom/liquid/render"
 )
 
 // TODO string escapes

@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/osteele/liquid/evaluator"
+	"github.com/reidransom/liquid/evaluator"
 )
 
 // FrontMatter wraps a map to provide interface functions

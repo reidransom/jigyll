@@ -9,7 +9,7 @@ import (
 	"github.com/reidransom/gojekyll/pages"
 	"github.com/reidransom/gojekyll/renderers"
 	"github.com/reidransom/gojekyll/utils"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/liquid"
 )
 
 // Collection is a Jekyll collection https://jekyllrb.com/docs/collections/.

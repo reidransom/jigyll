@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/reidransom/gojekyll/tags"
-	"github.com/osteele/liquid"
-	"github.com/osteele/liquid/render"
+	"github.com/reidransom/liquid"
+	"github.com/reidransom/liquid/render"
 )
 
 func init() {

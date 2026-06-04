@@ -8,7 +8,7 @@ import (
 	"github.com/reidransom/gojekyll/filters"
 	"github.com/reidransom/gojekyll/tags"
 	"github.com/reidransom/gojekyll/utils"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/liquid"
 )
 
 // Renderers applies transformations to a document.
