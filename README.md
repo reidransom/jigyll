@@ -105,10 +105,18 @@ You can use `jigyll` with the official `reidransom/jigyll` image, for example to
 docker run --user $UID:$GID -v $PWD:/app --pull always --rm -it reidransom/jigyll build -s /app
 ```
 
-Another example, serve the website in the current directory on `http://localhost:4040`, automatically reloading on changes:
+Another example, serve the website in the current directory on `http://localhost:4000`, automatically reloading on changes:
 
 ```bash
+# Linux (host networking):
 docker run --user $UID:$GID -v $PWD:/app --pull always --network host --rm -it reidransom/jigyll serve -s /app
+```
+
+On Docker Desktop (macOS / Windows), `--network host` does not reach the host, so
+publish the port and bind the server to all interfaces inside the container:
+
+```bash
+docker run --user $UID:$GID -v $PWD:/app --pull always -p 4000:4000 --rm -it reidransom/jigyll serve -s /app -H 0.0.0.0
 ```
 
 ### Binary Downloads
