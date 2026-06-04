@@ -34,7 +34,7 @@ builds:
         goarch: arm
       - goos: windows
         goarch: riscv64
-    ldflags: -s -w -X github.com/osteele/gojekyll/version.Version={{.Version}} -X github.com/osteele/gojekyll/version.BuildDate={{ time "2006-01-02T15:04:05-0700" }}
+    ldflags: -s -w -X github.com/reidransom/gojekyll/version.Version={{.Version}} -X github.com/reidransom/gojekyll/version.BuildDate={{ time "2006-01-02T15:04:05-0700" }}
 
   - id: gojekyll-musl
     env:
@@ -48,7 +48,7 @@ builds:
       - "v1"
       - "v2"
       - "v3"
-    ldflags: -s -w -X github.com/osteele/gojekyll/version.Version={{.Version}} -X github.com/osteele/gojekyll/version.BuildDate={{ time "2006-01-02T15:04:05-0700" }}
+    ldflags: -s -w -X github.com/reidransom/gojekyll/version.Version={{.Version}} -X github.com/reidransom/gojekyll/version.BuildDate={{ time "2006-01-02T15:04:05-0700" }}
 
 archives:
   - id: default

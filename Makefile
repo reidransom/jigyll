@@ -1,5 +1,5 @@
 BINARY = gojekyll
-PACKAGE = github.com/osteele/gojekyll
+PACKAGE = github.com/reidransom/gojekyll
 
 SOURCEDIR = .
 SOURCES := $(shell find $(SOURCEDIR) -name '*.go')
