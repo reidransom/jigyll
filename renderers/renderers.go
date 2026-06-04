@@ -4,10 +4,10 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/filters"
-	"github.com/osteele/gojekyll/tags"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/filters"
+	"github.com/reidransom/gojekyll/tags"
+	"github.com/reidransom/gojekyll/utils"
 	"github.com/osteele/liquid"
 )
 

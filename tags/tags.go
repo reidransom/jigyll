@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/osteele/gojekyll/config"
+	"github.com/reidransom/gojekyll/config"
 	"github.com/osteele/liquid"
 	"github.com/osteele/liquid/render"
 )

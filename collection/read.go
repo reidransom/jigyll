@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/osteele/gojekyll/pages"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/pages"
+	"github.com/reidransom/gojekyll/utils"
 )
 
 // ReadPages scans the file system for collection pages, and adds them to c.Pages.

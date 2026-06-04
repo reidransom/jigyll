@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/osteele/gojekyll/site"
+	"github.com/reidransom/gojekyll/site"
 )
 
 var routes = app.Command("routes", "Display site permalinks and associated files")

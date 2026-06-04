@@ -3,8 +3,8 @@ package plugins
 import (
 	"testing"
 
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/filters"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/filters"
 	"github.com/osteele/liquid"
 	"github.com/osteele/liquid/tags"
 	"github.com/stretchr/testify/require"

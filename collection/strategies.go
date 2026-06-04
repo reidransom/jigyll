@@ -3,8 +3,8 @@ package collection
 import (
 	"time"
 
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/utils"
 )
 
 // A collectionStrategy encapsulates behavior differences between the `_post`

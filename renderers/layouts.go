@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/osteele/gojekyll/frontmatter"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/frontmatter"
+	"github.com/reidransom/gojekyll/utils"
 	"github.com/osteele/liquid"
 )
 

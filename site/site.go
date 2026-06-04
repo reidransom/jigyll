@@ -5,12 +5,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/osteele/gojekyll/collection"
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/pages"
-	"github.com/osteele/gojekyll/plugins"
-	"github.com/osteele/gojekyll/renderers"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/collection"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/pages"
+	"github.com/reidransom/gojekyll/plugins"
+	"github.com/reidransom/gojekyll/renderers"
+	"github.com/reidransom/gojekyll/utils"
 	"github.com/osteele/liquid"
 )
 

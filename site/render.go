@@ -3,7 +3,7 @@ package site
 import (
 	"sort"
 
-	"github.com/osteele/gojekyll/collection"
+	"github.com/reidransom/gojekyll/collection"
 )
 
 // render renders the site's pages.

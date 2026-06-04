@@ -3,7 +3,7 @@ package plugins
 import (
 	"fmt"
 
-	"github.com/osteele/gojekyll/tags"
+	"github.com/reidransom/gojekyll/tags"
 	"github.com/osteele/liquid"
 	"github.com/osteele/liquid/render"
 )

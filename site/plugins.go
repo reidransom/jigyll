@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/osteele/gojekyll/pages"
-	"github.com/osteele/gojekyll/plugins"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/pages"
+	"github.com/reidransom/gojekyll/plugins"
+	"github.com/reidransom/gojekyll/utils"
 	"github.com/osteele/liquid"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/html"

@@ -11,8 +11,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/osteele/gojekyll/cache"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/cache"
+	"github.com/reidransom/gojekyll/utils"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
 

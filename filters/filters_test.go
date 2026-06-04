@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/osteele/gojekyll/config"
+	"github.com/reidransom/gojekyll/config"
 	"github.com/osteele/liquid"
 	"github.com/stretchr/testify/require"
 )

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/site"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/site"
 	"github.com/stretchr/testify/require"
 )
 

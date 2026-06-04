@@ -13,8 +13,8 @@ import (
 	"time"
 
 	sass "github.com/bep/godartsass/v2"
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/utils"
 	"github.com/osteele/liquid"
 	"github.com/osteele/liquid/evaluator"
 	"github.com/osteele/liquid/expressions"
