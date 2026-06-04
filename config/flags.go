@@ -27,7 +27,7 @@ func (c *Config) ApplyFlags(f Flags) {
 	for i, n := 0, rs.NumField(); i < n; i++ {
 		field := rt.Field(i)
 		val := rs.Field(i)
-		if val.Kind() == reflect.Ptr {
+		if val.Kind() == reflect.Pointer {
 			if val.IsNil() {
 				continue
 			}
