@@ -35,3 +35,7 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PAT with contents:write on reidransom/homebrew-tap, used to push the
+          # generated Homebrew formula. The default GITHUB_TOKEN cannot write to
+          # another repo, so this secret must be set for the brew step to publish.
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}

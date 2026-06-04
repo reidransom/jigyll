@@ -34,6 +34,7 @@ live reload.
 
 - [Usage](#usage)
 - [Installation](#installation)
+  - [Homebrew (macOS / Linux)](#homebrew-macos--linux)
   - [Quick Install (macOS / Linux)](#quick-install-macos--linux)
   - [Docker](#docker)
   - [Binary Downloads](#binary-downloads)
@@ -62,6 +63,16 @@ gojekyll help build
 ```
 
 ## Installation
+
+### Homebrew (macOS / Linux)
+
+```bash
+brew tap reidransom/tap
+brew install gojekyll
+```
+
+This pulls in [`dart-sass`](https://formulae.brew.sh/formula/dart-sass)
+automatically, so SCSS/Sass works out of the box.
 
 ### Quick Install (macOS / Linux)
 

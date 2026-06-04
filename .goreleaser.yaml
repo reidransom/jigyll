@@ -63,3 +63,26 @@ changelog:
   filters:
     exclude:
       - '^docs:'
+brews:
+  - name: gojekyll
+    ids:
+      - default
+    repository:
+      owner: reidransom
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/reidransom/gojekyll"
+    description: "Go clone of the Jekyll static site generator"
+    license: "MIT"
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    # dart-sass provides the `sass` binary that gojekyll resolves from PATH for SCSS.
+    dependencies:
+      - name: dart-sass
+    install: |
+      bin.install "gojekyll"
+    test: |
+      system "#{bin}/gojekyll", "version"
