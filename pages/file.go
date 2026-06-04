@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/reidransom/gojekyll/frontmatter"
+	"github.com/reidransom/jigyll/frontmatter"
 )
 
 // file is embedded in StaticFile and page

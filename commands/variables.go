@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/k0kubun/pp"
-	"github.com/reidransom/gojekyll/site"
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/site"
+	"github.com/reidransom/jigyll/utils"
 	"github.com/reidransom/liquid"
 )
 

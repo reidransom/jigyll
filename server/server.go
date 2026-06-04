@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"github.com/jaschaephraim/lrserver"
-	"github.com/reidransom/gojekyll/site"
+	"github.com/reidransom/jigyll/site"
 	"github.com/reidransom/liquid"
 	"github.com/pkg/browser"
 )

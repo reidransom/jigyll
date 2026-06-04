@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/utils"
 )
 
 // IsMarkdown returns a boolean indicating whether the file is a Markdown file, according to the current project.

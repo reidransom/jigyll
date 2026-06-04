@@ -3,8 +3,8 @@ package collection
 import (
 	"testing"
 
-	"github.com/reidransom/gojekyll/config"
-	"github.com/reidransom/gojekyll/renderers"
+	"github.com/reidransom/jigyll/config"
+	"github.com/reidransom/jigyll/renderers"
 	"github.com/stretchr/testify/require"
 )
 

@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/jigyll/config"
 	"github.com/stretchr/testify/require"
 )
 
 func TestFindTheme(t *testing.T) {
 	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "gojekyll-theme-test")
+	tempDir, err := os.MkdirTemp("", "jigyll-theme-test")
 	require.NoError(t, err)
 defer func() { require.NoError(t, os.RemoveAll(tempDir)) }()
 
@@ -42,7 +42,7 @@ defer func() { require.NoError(t, os.RemoveAll(tempDir)) }()
 
 	t.Run("theme not found anywhere", func(t *testing.T) {
 		// Use a clean temp directory without the theme
-		cleanTempDir, err := os.MkdirTemp("", "gojekyll-theme-test-clean")
+		cleanTempDir, err := os.MkdirTemp("", "jigyll-theme-test-clean")
 		require.NoError(t, err)
 defer func() { require.NoError(t, os.RemoveAll(cleanTempDir)) }()
 
@@ -109,7 +109,7 @@ defer func() { require.NoError(t, os.RemoveAll(cleanTempDir)) }()
 
 func TestReadThemeAssets(t *testing.T) {
 	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "gojekyll-theme-assets-test")
+	tempDir, err := os.MkdirTemp("", "jigyll-theme-assets-test")
 	require.NoError(t, err)
 defer func() { require.NoError(t, os.RemoveAll(tempDir)) }()
 

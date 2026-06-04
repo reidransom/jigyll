@@ -1,6 +1,6 @@
 package commands
 
-import "github.com/reidransom/gojekyll/site"
+import "github.com/reidransom/jigyll/site"
 
 var clean = app.Command("clean", "Clean the site (removes site output) without building.")
 

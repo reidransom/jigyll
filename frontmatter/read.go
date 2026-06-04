@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/utils"
 
 	yaml "gopkg.in/yaml.v2"
 )

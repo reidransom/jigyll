@@ -1,4 +1,4 @@
-module github.com/reidransom/gojekyll
+module github.com/reidransom/jigyll
 
 go 1.25.0
 

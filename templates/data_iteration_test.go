@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/reidransom/gojekyll/config"
-	"github.com/reidransom/gojekyll/site"
+	"github.com/reidransom/jigyll/config"
+	"github.com/reidransom/jigyll/site"
 	"github.com/stretchr/testify/require"
 )
 

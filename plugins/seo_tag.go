@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/utils"
 	"github.com/reidransom/liquid"
 	"github.com/reidransom/liquid/render"
 	"github.com/reidransom/liquid/tags"

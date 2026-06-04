@@ -13,7 +13,7 @@ The `jekyll-inherit-frontmatter` plugin automatically copies front matter fields
 
 ## Installation
 
-The plugin is built into gojekyll. Simply add it to your `_config.yml`:
+The plugin is built into jigyll. Simply add it to your `_config.yml`:
 
 ```yaml
 plugins:
@@ -226,7 +226,7 @@ All three translations (Spanish, French, German) will inherit from the English b
 Enable verbose mode when building:
 
 ```bash
-gojekyll build --verbose
+jigyll build --verbose
 ```
 
 This will show which plugins are loaded and any errors during the build process.

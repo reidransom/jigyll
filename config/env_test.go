@@ -10,7 +10,7 @@ import (
 
 func TestFromDirectory_JEKYLL_URL_Override_ConfigYML(t *testing.T) {
 	// Create a temporary directory with _config.yml
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -45,7 +45,7 @@ title: Test Site
 
 func TestFromDirectory_JEKYLL_URL_NotSet(t *testing.T) {
 	// Create a temporary directory with _config.yml
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 

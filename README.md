@@ -1,4 +1,4 @@
-# Gojekyll
+# Jigyll
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 
@@ -12,14 +12,14 @@
 [![Go Report Card badge][go-report-card-svg]][go-report-card-url]
 [![MIT License][license-svg]][license-url]
 
-This project was created by Oliver Steele ([@osteele](https://github.com/osteele)), and is currently maintained by Daniil Gentili ([@danog](https://github.com/danog)).  
+**Jigyll** is a fork of [**gojekyll**](https://github.com/osteele/gojekyll), which was created by Oliver Steele ([@osteele](https://github.com/osteele)) and is maintained by Daniil Gentili ([@danog](https://github.com/danog)). Jigyll is not affiliated with or endorsed by the original authors. All original work remains under their copyright; see [LICENSE](./LICENSE).  
 
-Gojekyll is a partially-compatible clone of the [Jekyll](https://jekyllrb.com)
+Jigyll is a partially-compatible clone of the [Jekyll](https://jekyllrb.com)
 static site generator, written in the [Go](https://golang.org) programming
 language. It provides `build` and `serve` commands, with directory watch and
 live reload.
 
-| &nbsp;                  | Gojekyll                                  | Jekyll | Hugo                         |
+| &nbsp;                  | Jigyll                                  | Jekyll | Hugo                         |
 | ----------------------- | ----------------------------------------- | ------ | ---------------------------- |
 | Stable                  |                                           | ✓      | ✓                            |
 | Fast                    | ✓<br>([~20×Jekyll](./docs/benchmarks.md)) |        | ✓                            |
@@ -56,10 +56,10 @@ live reload.
 ## Usage
 
 ```bash
-gojekyll build       # builds the site in the current directory into _site
-gojekyll serve       # serve the app at http://localhost:4000; reload on changes
-gojekyll help
-gojekyll help build
+jigyll build       # builds the site in the current directory into _site
+jigyll serve       # serve the app at http://localhost:4000; reload on changes
+jigyll help
+jigyll help build
 ```
 
 ## Installation
@@ -68,7 +68,7 @@ gojekyll help build
 
 ```bash
 brew tap reidransom/tap
-brew install gojekyll
+brew install jigyll
 ```
 
 This pulls in [`dart-sass`](https://formulae.brew.sh/formula/dart-sass)
@@ -76,45 +76,45 @@ automatically, so SCSS/Sass works out of the box.
 
 ### Quick Install (macOS / Linux)
 
-The installer downloads the `gojekyll` binary and, unless `sass` is already on your
+The installer downloads the `jigyll` binary and, unless `sass` is already on your
 PATH, a matching [Dart Sass](https://github.com/sass/dart-sass):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/reidransom/gojekyll/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/reidransom/jigyll/main/install.sh | sh
 ```
 
 Pin a specific release with `VERSION`, or change the install location with
 `INSTALL_DIR`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/reidransom/gojekyll/main/install.sh | VERSION=v1.0.1 sh
+curl -fsSL https://raw.githubusercontent.com/reidransom/jigyll/main/install.sh | VERSION=v1.0.1 sh
 ```
 
 Prefer to read before running? Download and inspect it first:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/reidransom/gojekyll/main/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/reidransom/jigyll/main/install.sh -o install.sh
 less install.sh && sh install.sh
 ```
 
 ### Docker
 
-You can use `gojekyll` with the official `danog/gojekyll` image, for example to build the site in the current directory into `_site`:
+You can use `jigyll` with the official `reidransom/jigyll` image, for example to build the site in the current directory into `_site`:
 
 ```bash
-docker run --user $UID:$GID -v $PWD:/app --pull always --rm -it danog/gojekyll build -s /app
+docker run --user $UID:$GID -v $PWD:/app --pull always --rm -it reidransom/jigyll build -s /app
 ```
 
 Another example, serve the website in the current directory on `http://localhost:4040`, automatically reloading on changes:
 
 ```bash
-docker run --user $UID:$GID -v $PWD:/app --pull always --network host --rm -it danog/gojekyll serve -s /app
+docker run --user $UID:$GID -v $PWD:/app --pull always --network host --rm -it reidransom/jigyll serve -s /app
 ```
 
 ### Binary Downloads
 
 1. Linux, Mac OS and Windows binaries for amd64, armv6/v7, armv8, riscv64 are available from the [releases
-   page](https://github.com/reidransom/gojekyll/releases).
+   page](https://github.com/reidransom/jigyll/releases).
    SCSS/Sass support requires the [Dart Sass](https://github.com/sass/dart-sass)
    `sass` executable on your PATH (the [Quick Install](#quick-install-macos--linux)
    script sets this up for you; otherwise see [From Source](#from-source) for how to
@@ -123,7 +123,7 @@ docker run --user $UID:$GID -v $PWD:/app --pull always --network host --rm -it d
    [bundler](http://bundler.io/). Create a `Gemfile` that lists the theme., and
    run `bundle install`. The [Jekyll theme
    instructions](https://jekyllrb.com/docs/themes/) provide more detail, and
-   should work for Gojekyll too.
+   should work for Jigyll too.
 
 ### From Source
 
@@ -139,7 +139,7 @@ Pre-requisites:
 Then run:
 
 ```bash
-go install github.com/reidransom/gojekyll@latest
+go install github.com/reidransom/jigyll@latest
 ```
 
 
@@ -149,9 +149,9 @@ Add this to your `.bashrc` or `.zshrc`:
 
 ```bash
 # Bash:
-eval "$(gojekyll --completion-script-bash)"
+eval "$(jigyll --completion-script-bash)"
 # Zsh:
-eval "$(gojekyll --completion-script-zsh)"
+eval "$(jigyll --completion-script-zsh)"
 ```
 
 ## Development
@@ -201,7 +201,7 @@ By design:
 - Server live reload is always on.
 - `serve --watch` (the default) reloads the `_config.yml` and data files too.
 - `serve` generates pages on the fly; it doesn't write to the file system.
-- Files are cached in `/tmp/gojekyll-${USER}`, not `./.sass-cache`
+- Files are cached in `/tmp/jigyll-${USER}`, not `./.sass-cache`
 
 Upstream:
 
@@ -303,7 +303,7 @@ specification. [Contributions of any kind welcome](./CONTRIBUTING.md)!
 
 ## Attribution
 
-Gojekyll uses these libraries:
+Jigyll uses these libraries:
 
 | Package                                                                        | Author(s)                                        | Usage                                                      | License                                 |
 | ------------------------------------------------------------------------------ | ------------------------------------------------ | ---------------------------------------------------------- | --------------------------------------- |
@@ -326,7 +326,7 @@ They are used under the terms of the MIT License.
 | Source                                                                          | Use                  | Description            |
 | ------------------------------------------------------------------------------- | -------------------- | ---------------------- |
 | [Jekyll template documentation](https://jekyllrb.com/docs/templates/)           | test cases           | filter examples        |
-| `jekyll help` command                                                           | `gojekyll help` text | help text              |
+| `jekyll help` command                                                           | `jigyll help` text | help text              |
 | [`jekyll-feed` plugin](https://github.com/jekyll/jekyll-feed)                   | plugin emulation     | `feed.xml` template    |
 | [`jekyll-redirect-from` plugin](https://github.com/jekyll/jekyll-redirect-from) | plugin emulation     | redirect page template |
 | [`jekyll-sitemap` plugin](https://github.com/jekyll/jekyll-redirect-from)       | plugin emulation     | sitemap template       |
@@ -360,13 +360,13 @@ Liquid templates. I created it in order to use in this project.
 
 MIT
 
-[coveralls-url]: https://coveralls.io/r/osteele/gojekyll
-[coveralls-svg]: https://img.shields.io/coveralls/osteele/gojekyll.svg?branch=master
-[license-url]: https://github.com/osteele/gojekyll/blob/master/LICENSE
+[coveralls-url]: https://coveralls.io/r/reidransom/jigyll
+[coveralls-svg]: https://img.shields.io/coveralls/reidransom/jigyll.svg?branch=main
+[license-url]: https://github.com/reidransom/jigyll/blob/main/LICENSE
 [license-svg]: https://img.shields.io/badge/license-MIT-blue.svg
-[go-url]: https://github.com/osteele/gojekyll/actions?query=workflow%3A%22Build+Status%22
-[go-svg]: https://github.com/osteele/gojekyll/actions/workflows/go.yml/badge.svg
-[golangci-lint-url]: https://github.com/osteele/gojekyll/actions?query=workflow%3Agolangci-lint
-[golangci-lint-svg]: https://github.com/osteele/gojekyll/actions/workflows/golangci-lint.yml/badge.svg
-[go-report-card-url]: https://goreportcard.com/report/github.com/osteele/gojekyll
-[go-report-card-svg]: https://goreportcard.com/badge/github.com/osteele/gojekyll
+[go-url]: https://github.com/reidransom/jigyll/actions?query=workflow%3A%22Build+Status%22
+[go-svg]: https://github.com/reidransom/jigyll/actions/workflows/go.yml/badge.svg
+[golangci-lint-url]: https://github.com/reidransom/jigyll/actions?query=workflow%3Agolangci-lint
+[golangci-lint-svg]: https://github.com/reidransom/jigyll/actions/workflows/golangci-lint.yml/badge.svg
+[go-report-card-url]: https://goreportcard.com/report/github.com/reidransom/jigyll
+[go-report-card-svg]: https://goreportcard.com/badge/github.com/reidransom/jigyll

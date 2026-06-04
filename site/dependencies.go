@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/utils"
 )
 
 var excludeFileRE = regexp.MustCompile(`^[#~]|^\..|~$`)

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/utils"
 )
 
 // DefaultPermalinkPattern is the default permalink pattern for pages that aren't in a collection

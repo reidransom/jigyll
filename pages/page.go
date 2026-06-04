@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/reidransom/gojekyll/frontmatter"
-	"github.com/reidransom/gojekyll/utils"
-	"github.com/reidransom/gojekyll/version"
+	"github.com/reidransom/jigyll/frontmatter"
+	"github.com/reidransom/jigyll/utils"
+	"github.com/reidransom/jigyll/version"
 	"github.com/reidransom/liquid/evaluator"
 )
 
@@ -157,7 +157,7 @@ func (p *page) TemplateContext() map[string]interface{} {
 		"site": p.site,
 		"jekyll": map[string]string{
 			"environment": env,
-			"version":     fmt.Sprintf("%s (gojekyll)", version.Version)},
+			"version":     fmt.Sprintf("%s (jigyll)", version.Version)},
 	}
 }
 

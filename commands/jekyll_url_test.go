@@ -10,7 +10,7 @@ import (
 
 func TestJEKYLL_URL_OverrideInRenderedOutput(t *testing.T) {
 	// Create a temporary test site with _config.yml
-	tmpDir, err := os.MkdirTemp("", "gojekyll-integration-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-integration-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -56,7 +56,7 @@ site.url is: {{ site.url }}
 
 func TestJEKYLL_URL_NotSet_UsesConfigValue(t *testing.T) {
 	// Create a temporary test site with _config.yml
-	tmpDir, err := os.MkdirTemp("", "gojekyll-integration-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-integration-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 

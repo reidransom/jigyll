@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/reidransom/gojekyll/plugins"
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/plugins"
+	"github.com/reidransom/jigyll/utils"
 )
 
 // Write cleans the destination and writes files into it.
@@ -54,7 +54,7 @@ func (s *Site) WriteFiles() (count int, err error) {
 	}
 	err = combineErrors(errList)
 	if err != nil && hasNotExistErr {
-		return count, fmt.Errorf("%v\n\nHint: Try running 'gojekyll clean' to remove stale files from the destination directory", err)
+		return count, fmt.Errorf("%v\n\nHint: Try running 'jigyll clean' to remove stale files from the destination directory", err)
 	}
 	return count, err
 }

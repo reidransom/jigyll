@@ -2,9 +2,9 @@
 layout: default
 ---
 
-Gojekyll is a Go clone of the [Jekyll](https://jekyllrb.com) static site generator.
+Jigyll is a Go clone of the [Jekyll](https://jekyllrb.com) static site generator.
 
-Refer to the [README](https://github.com/osteele/gojekyll/settings) for more information.
+Refer to the [README](https://github.com/reidransom/jigyll) for more information.
 
 This page exists mostly to dogfood site generation and themes, although it also hosts:
 

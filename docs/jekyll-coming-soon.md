@@ -1,6 +1,6 @@
 # jekyll-coming-soon
 
-A gojekyll plugin that replaces your entire site with a single "coming soon" landing page.
+A jigyll plugin that replaces your entire site with a single "coming soon" landing page.
 
 ## Usage
 

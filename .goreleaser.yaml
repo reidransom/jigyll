@@ -4,7 +4,7 @@ before:
     - go mod tidy
     - go test ./...
 builds:
-  - id: gojekyll
+  - id: jigyll
     env:
       - CGO_ENABLED=0
     goos:
@@ -33,12 +33,12 @@ builds:
         goarch: arm
       - goos: windows
         goarch: riscv64
-    ldflags: -s -w -X github.com/reidransom/gojekyll/version.Version={{.Version}} -X github.com/reidransom/gojekyll/version.BuildDate={{ time "2006-01-02T15:04:05-0700" }}
+    ldflags: -s -w -X github.com/reidransom/jigyll/version.Version={{.Version}} -X github.com/reidransom/jigyll/version.BuildDate={{ time "2006-01-02T15:04:05-0700" }}
 
 archives:
   - id: default
     ids:
-      - gojekyll
+      - jigyll
     formats:
       - tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
@@ -64,7 +64,7 @@ changelog:
     exclude:
       - '^docs:'
 brews:
-  - name: gojekyll
+  - name: jigyll
     ids:
       - default
     repository:
@@ -73,16 +73,16 @@ brews:
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
-    homepage: "https://github.com/reidransom/gojekyll"
+    homepage: "https://github.com/reidransom/jigyll"
     description: "Go clone of the Jekyll static site generator"
     license: "MIT"
     commit_author:
       name: goreleaserbot
       email: bot@goreleaser.com
-    # dart-sass provides the `sass` binary that gojekyll resolves from PATH for SCSS.
+    # dart-sass provides the `sass` binary that jigyll resolves from PATH for SCSS.
     dependencies:
       - name: dart-sass
     install: |
-      bin.install "gojekyll"
+      bin.install "jigyll"
     test: |
-      system "#{bin}/gojekyll", "version"
+      system "#{bin}/jigyll", "version"

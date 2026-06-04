@@ -3,9 +3,9 @@ package commands
 import (
 	"strings"
 
-	"github.com/reidransom/gojekyll/pages"
-	"github.com/reidransom/gojekyll/site"
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/pages"
+	"github.com/reidransom/jigyll/site"
+	"github.com/reidransom/jigyll/utils"
 )
 
 // If path starts with /, it's a URL path. Else it's a file path relative

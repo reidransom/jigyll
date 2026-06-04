@@ -11,14 +11,14 @@ RUN git clone https://github.com/sass/dart-sass.git /dart-sass && \
 
 
 FROM golangci/golangci-lint:latest AS golangci-lint
-FROM golang:latest AS gojekyll
+FROM golang:latest AS jigyll
 
-ADD . /gojekyll
+ADD . /jigyll
 
 COPY --from=golangci-lint /usr/bin/golangci-lint /usr/bin/golangci-lint
 COPY --from=sass /dart-sass/bin/sass.exe /usr/bin/sass
 
-WORKDIR /gojekyll
+WORKDIR /jigyll
 
 RUN go test ./...
 RUN golangci-lint run
@@ -26,11 +26,11 @@ RUN go build main.go
 
 FROM debian:stable-slim
 
-COPY --from=gojekyll /gojekyll/main /usr/bin/gojekyll
+COPY --from=jigyll /jigyll/main /usr/bin/jigyll
 COPY --from=sass /dart-sass/bin/sass.exe /usr/bin/sass
 
 WORKDIR /app
 
-ENTRYPOINT [ "/usr/bin/gojekyll" ]
+ENTRYPOINT [ "/usr/bin/jigyll" ]
 
 CMD [ "--help" ]

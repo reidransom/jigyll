@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/jigyll/config"
 	"github.com/reidransom/liquid"
 	"github.com/stretchr/testify/require"
 )

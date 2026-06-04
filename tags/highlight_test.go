@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/reidransom/gojekyll/cache"
-	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/jigyll/cache"
+	"github.com/reidransom/jigyll/config"
 	"github.com/reidransom/liquid"
 	"github.com/stretchr/testify/require"
 )

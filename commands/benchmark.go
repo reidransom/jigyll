@@ -11,7 +11,7 @@ var benchmark = app.Command("benchmark", "Repeat build for ten seconds. Implies 
 
 // benchmarkCommand builds the site repeatedly until at least 10 seconds has elapsed,
 // and reports the trial times. Empirically, it the same mean but low variance as using
-// a separate benchmark runner that invokes a new gojekyll process each time.
+// a separate benchmark runner that invokes a new jigyll process each time.
 func benchmarkCommand() (err error) {
 	startTime := time.Now()
 	var samples []float64

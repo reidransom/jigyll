@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/reidransom/gojekyll/site"
+	"github.com/reidransom/jigyll/site"
 )
 
 var render = app.Command("render", "Render a file or URL path to standard output")

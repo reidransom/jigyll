@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/reidransom/gojekyll/version"
+	"github.com/reidransom/jigyll/version"
 )
 
 var versionCmd = app.Command("version", "Print the name and version")
@@ -13,6 +13,6 @@ func versionCommand() error {
 	if !version.BuildTime.IsZero() {
 		d = version.BuildTime.Format(" (Build time: 2006-01-02T15:04)")
 	}
-	fmt.Printf("gojekyll version %s%s\n", version.Version, d)
+	fmt.Printf("jigyll version %s%s\n", version.Version, d)
 	return nil
 }

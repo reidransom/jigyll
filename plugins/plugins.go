@@ -1,7 +1,7 @@
 // Package plugins holds emulated Jekyll plugins.
 //
 // Unlike Jekyll, these are baked into the executable -- both because package "plugin'
-// works only on Linux (as of 2017.07); and because the gojekyll implementation is immature and any possible interfaces
+// works only on Linux (as of 2017.07); and because the jigyll implementation is immature and any possible interfaces
 // are far from baked.
 package plugins
 
@@ -11,9 +11,9 @@ import (
 	"sort"
 
 	"github.com/kyokomi/emoji"
-	"github.com/reidransom/gojekyll/config"
-	"github.com/reidransom/gojekyll/pages"
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/config"
+	"github.com/reidransom/jigyll/pages"
+	"github.com/reidransom/jigyll/utils"
 	"github.com/reidransom/liquid"
 )
 
@@ -57,7 +57,7 @@ func Install(names []string, site Site) error {
 				return err
 			}
 		} else {
-			fmt.Printf("warning: gojekyll does not emulate the %s plugin.\n", name)
+			fmt.Printf("warning: jigyll does not emulate the %s plugin.\n", name)
 		}
 	}
 	return nil
@@ -102,7 +102,7 @@ func init() {
 	register("jekyll-mentions", jekyllMentionsPlugin{})
 	register("jekyll-optional-front-matter", jekyllOptionalFrontMatterPlugin{})
 
-	// Gojekyll behaves as though the following plugins are always loaded.
+	// Jigyll behaves as though the following plugins are always loaded.
 	// Define them here so we don't see warnings that they aren't defined.
 	register("jekyll-live-reload", plugin{})
 	register("jekyll-sass-converter", plugin{})
@@ -157,7 +157,7 @@ func (p jekyllOptionalFrontMatterPlugin) AfterInitSite(s Site) error {
 // helpers
 
 // func (p plugin) stubbed(name string) {
-// 	fmt.Printf("warning: gojekyll does not emulate the %s plugin. Some tags have been stubbed to prevent errors.\n", name)
+// 	fmt.Printf("warning: jigyll does not emulate the %s plugin. Some tags have been stubbed to prevent errors.\n", name)
 // }
 
 // func (p plugin) makeUnimplementedTag(pluginName string) liquid.Renderer {

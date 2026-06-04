@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/reidransom/gojekyll/commands"
+	"github.com/reidransom/jigyll/commands"
 )
 
 func main() {

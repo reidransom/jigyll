@@ -1,19 +1,19 @@
 #!/bin/sh
-# gojekyll installer for macOS and Linux.
+# jigyll installer for macOS and Linux.
 #
-#   curl -fsSL https://raw.githubusercontent.com/reidransom/gojekyll/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/reidransom/jigyll/main/install.sh | sh
 #
-# Installs the gojekyll binary from GitHub Releases and, unless `sass` is already
-# on PATH, a matching dart-sass (gojekyll resolves dart-sass from PATH).
+# Installs the jigyll binary from GitHub Releases and, unless `sass` is already
+# on PATH, a matching dart-sass (jigyll resolves dart-sass from PATH).
 #
 # Env overrides:
-#   VERSION=v1.0.1      pin a gojekyll release (default: latest)
+#   VERSION=v1.0.1      pin a jigyll release (default: latest)
 #   INSTALL_DIR=/path   install location (default: ~/.local/bin, else /usr/local/bin)
 #   DART_SASS_VERSION   dart-sass version to fetch (default: pinned below)
 set -eu
 
-REPO="reidransom/gojekyll"
-BINARY="gojekyll"
+REPO="reidransom/jigyll"
+BINARY="jigyll"
 DART_SASS_VERSION="${DART_SASS_VERSION:-1.98.0}"
 
 say() { printf '%s: %s\n' "$BINARY-install" "$1" >&2; }
@@ -39,7 +39,7 @@ case "$os_uname" in
 esac
 
 # --- detect arch -------------------------------------------------------------
-# GJ_ARCH feeds the gojekyll asset name; DART_ARCH feeds the dart-sass asset.
+# GJ_ARCH feeds the jigyll asset name; DART_ARCH feeds the dart-sass asset.
 arch_uname=$(uname -m)
 case "$arch_uname" in
   x86_64|amd64)  GJ_ARCH=x86_64v1; DART_ARCH=x64 ;;
@@ -60,7 +60,7 @@ if [ "$OS" = "Linux" ]; then
   fi
 fi
 
-# --- resolve gojekyll version ------------------------------------------------
+# --- resolve jigyll version ------------------------------------------------
 VERSION="${VERSION:-}"
 if [ -z "$VERSION" ]; then
   say "resolving latest release"
@@ -91,7 +91,7 @@ fi
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-# --- install gojekyll --------------------------------------------------------
+# --- install jigyll --------------------------------------------------------
 GJ_ASSET="${BINARY}_${OS}_${GJ_ARCH}.tar.gz"
 GJ_URL="https://github.com/$REPO/releases/download/$VERSION/$GJ_ASSET"
 say "downloading $GJ_ASSET ($VERSION)"

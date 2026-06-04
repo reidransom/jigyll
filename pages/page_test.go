@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/reidransom/gojekyll/config"
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/config"
+	"github.com/reidransom/jigyll/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,7 +20,7 @@ func TestPage_TemplateContext(t *testing.T) {
 	tc := p.TemplateContext()
 	j := tc["jekyll"].(map[string]string)
 	require.Equal(t, "development", j["environment"])
-	require.Contains(t, j["version"], "gojekyll")
+	require.Contains(t, j["version"], "jigyll")
 
 	os.Setenv("JEKYLL_ENV", "production") // nolint: errcheck
 	tc = p.TemplateContext()

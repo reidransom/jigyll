@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/reidransom/gojekyll/cache"
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/cache"
+	"github.com/reidransom/jigyll/utils"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
 

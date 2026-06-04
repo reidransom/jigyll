@@ -2,7 +2,7 @@ package commands
 
 import (
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/jigyll/config"
 )
 
 // Command-line options
@@ -14,7 +14,7 @@ var (
 )
 
 var (
-	app         = kingpin.New("gojekyll", "a (somewhat) Jekyll-compatible blog generator")
+	app         = kingpin.New("jigyll", "a (somewhat) Jekyll-compatible blog generator")
 	source      = app.Flag("source", "Source directory").Short('s').Default(".").ExistingDir()
 	_           = app.Flag("destination", "Destination directory").Short('d').Action(stringVar("destination", &options.Destination)).String()
 	_           = app.Flag("drafts", "Render posts in the _drafts folder").Short('D').Action(boolVar("drafts", &options.Drafts)).Bool()

@@ -1,6 +1,6 @@
 # Benchmarks
 
-This document lists the times to run `jekyll build` and `gojekyll build` on a
+This document lists the times to run `jekyll build` and `jigyll build` on a
 few different sites.
 
 See the Benchmarks section of CONTRIBUTING.md for instructions on how to
@@ -23,15 +23,15 @@ many SASS files, sitemap, search index generation.
 | Executable | Options         | Time             |
 | ---------- | --------------- | ---------------- |
 | jekyll     |                 | Timeout @ 1 hour |
-| gojekyll   | single-threaded | 750.61s          |
-| gojekyll   | multi-threaded  | 142.16s          |
+| jigyll   | single-threaded | 750.61s          |
+| jigyll   | multi-threaded  | 142.16s          |
 
 ## Software Design web site
 
 Site source: <https://github.com/sd17spring/sd17spring.github.io>
 
 MacBook Pro (13", M1, 2020), macOS Monterey (12.2)
-gojekyll v0.2.5
+jigyll v0.2.5
 go1.17.6 darwin/arm64
 
 Notes:
@@ -45,7 +45,7 @@ Notes:
 
 | Executable | Options                         | Time               |
 | ---------- | ------------------------------- | ------------------ |
-| gojekyll   | single-threaded; cache disabled | 1.568 s ±  0.145 s |
-| gojekyll   | single-threaded; warm cache     | 1.427 s ±  0.191 s |
-| gojekyll   | multi-threaded; cache disabled  | 1.291 s ±  0.104 s |
-| gojekyll   | multi-threaded; warm cache      | 1.118 s ±  0.110 s |
+| jigyll   | single-threaded; cache disabled | 1.568 s ±  0.145 s |
+| jigyll   | single-threaded; warm cache     | 1.427 s ±  0.191 s |
+| jigyll   | multi-threaded; cache disabled  | 1.291 s ±  0.104 s |
+| jigyll   | multi-threaded; warm cache      | 1.118 s ±  0.110 s |

@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/utils"
 )
 
 type bannerLogger struct{ labelWidth int }

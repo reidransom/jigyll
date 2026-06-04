@@ -13,14 +13,14 @@ var enabled = true
 var cacheMx sync.Mutex
 
 func init() {
-	s := os.Getenv("GOJEKYLL_DISABLE_CACHE")
+	s := os.Getenv("JIGYLL_DISABLE_CACHE")
 	if s != "" && s != "0" && s != "false" {
 		enabled = false
 	}
 }
 
 func cacheDir() string {
-	return filepath.Join(os.TempDir(), os.ExpandEnv("gojekyll-$USER"))
+	return filepath.Join(os.TempDir(), os.ExpandEnv("jigyll-$USER"))
 }
 
 // Clear clears the cache. It's used for testing.

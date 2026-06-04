@@ -1,6 +1,6 @@
-# Gojekyll Plugin Status
+# Jigyll Plugin Status
 
-Gojekyll doesn't include an extensible plugin system¹.
+Jigyll doesn't include an extensible plugin system¹.
 
 The functionality of some plugins is built into the core program:
 
@@ -38,7 +38,7 @@ The [Official Plugins](https://jekyllrb.com/docs/plugins/#available-plugins) sec
 
 ⁴ These don't seem that useful with source control and CI. (Post dates are included.)
 
-⁵ Custom plugins implemented specifically for gojekyll.
+⁵ Custom plugins implemented specifically for jigyll.
 
 [jekyll-avatar]: https://github.com/benbalter/jekyll-avatar
 [jekyll-coming-soon]: jekyll-coming-soon.md

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/reidransom/gojekyll/tags"
+	"github.com/reidransom/jigyll/tags"
 	"github.com/reidransom/liquid"
 	"github.com/reidransom/liquid/render"
 )

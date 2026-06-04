@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/reidransom/gojekyll/config"
-	"github.com/reidransom/gojekyll/frontmatter"
+	"github.com/reidransom/jigyll/config"
+	"github.com/reidransom/jigyll/frontmatter"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,7 +29,7 @@ var staticTests = []pathTest{
 
 // Date-dependent tests will be generated dynamically based on the test date
 // This approach allows tests to pass in any time zone while we investigate the proper
-// time zone handling in permalinks. See: https://github.com/reidransom/gojekyll/issues/63
+// time zone handling in permalinks. See: https://github.com/reidransom/jigyll/issues/63
 
 var collectionTests = []pathTest{
 	{"/a/b/c.d", "/prefix/:collection/post", "/prefix/c/post"},
@@ -74,7 +74,7 @@ func TestExpandPermalinkPattern(t *testing.T) {
 
 	// Convert to local time to match the behavior in permalinks.go
 	// This is a workaround for the time zone dependency in the code.
-	// See https://github.com/reidransom/gojekyll/issues/63 for the ongoing investigation
+	// See https://github.com/reidransom/jigyll/issues/63 for the ongoing investigation
 	// about how Jekyll handles time zones and what approach we should standardize on.
 	localDate := testDate.In(time.Local)
 

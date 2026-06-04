@@ -1,6 +1,6 @@
 package plugins
 
-import "github.com/reidransom/gojekyll/utils"
+import "github.com/reidransom/jigyll/utils"
 
 func init() {
 	register("github-pages", githubPagesPlugin{})

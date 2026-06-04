@@ -10,7 +10,7 @@ import (
 
 func TestFromDirectory_ConfigFlag_SingleFile(t *testing.T) {
 	// Create a temporary directory with custom config file
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -39,7 +39,7 @@ url: https://single.example.com
 
 func TestFromDirectory_ConfigFlag_MultipleFiles(t *testing.T) {
 	// Create a temporary directory with multiple config files
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -92,7 +92,7 @@ custom_key: custom_value
 
 func TestFromDirectory_ConfigFlag_TripleFiles(t *testing.T) {
 	// Create a temporary directory with three config files
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -152,7 +152,7 @@ key3: value3
 
 func TestFromDirectory_ConfigFlag_WithSpaces(t *testing.T) {
 	// Test that spaces around commas are handled correctly
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -184,7 +184,7 @@ func TestFromDirectory_ConfigFlag_WithSpaces(t *testing.T) {
 
 func TestFromDirectory_ConfigFlag_FileNotFound(t *testing.T) {
 	// Create a temporary directory
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -197,7 +197,7 @@ func TestFromDirectory_ConfigFlag_FileNotFound(t *testing.T) {
 
 func TestFromDirectory_ConfigFlag_SecondFileNotFound(t *testing.T) {
 	// Create a temporary directory
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -216,7 +216,7 @@ func TestFromDirectory_ConfigFlag_SecondFileNotFound(t *testing.T) {
 
 func TestFromDirectory_ConfigFlag_AbsolutePath(t *testing.T) {
 	// Test that absolute paths work
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -238,7 +238,7 @@ func TestFromDirectory_ConfigFlag_AbsolutePath(t *testing.T) {
 
 func TestFromDirectory_JEKYLL_CONFIG_EnvVar(t *testing.T) {
 	// Test JEKYLL_CONFIG environment variable
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -283,7 +283,7 @@ custom: value
 
 func TestFromDirectory_ConfigFlag_OverridesJEKYLL_CONFIG(t *testing.T) {
 	// Test that --config flag takes precedence over JEKYLL_CONFIG
-	tmpDir, err := os.MkdirTemp("", "gojekyll-test-*")
+	tmpDir, err := os.MkdirTemp("", "jigyll-test-*")
 	require.NoError(t, err)
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 

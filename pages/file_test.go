@@ -6,8 +6,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/reidransom/gojekyll/config"
-	"github.com/reidransom/gojekyll/renderers"
+	"github.com/reidransom/jigyll/config"
+	"github.com/reidransom/jigyll/renderers"
 	"github.com/reidransom/liquid"
 	"github.com/stretchr/testify/require"
 )

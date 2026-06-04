@@ -6,11 +6,11 @@ import (
 	"sync"
 
 	sass "github.com/bep/godartsass/v2"
-	"github.com/reidransom/gojekyll/config"
-	"github.com/reidransom/gojekyll/filters"
-	"github.com/reidransom/gojekyll/internal/sasserrors"
-	"github.com/reidransom/gojekyll/tags"
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/config"
+	"github.com/reidransom/jigyll/filters"
+	"github.com/reidransom/jigyll/internal/sasserrors"
+	"github.com/reidransom/jigyll/tags"
+	"github.com/reidransom/jigyll/utils"
 	"github.com/reidransom/liquid"
 )
 

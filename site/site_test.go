@@ -3,7 +3,7 @@ package site
 import (
 	"testing"
 
-	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/jigyll/config"
 	"github.com/stretchr/testify/require"
 )
 

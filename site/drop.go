@@ -4,9 +4,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/reidransom/gojekyll/pages"
-	"github.com/reidransom/gojekyll/plugins"
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/pages"
+	"github.com/reidransom/jigyll/plugins"
+	"github.com/reidransom/jigyll/utils"
 	"github.com/reidransom/liquid"
 )
 

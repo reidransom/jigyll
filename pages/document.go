@@ -3,8 +3,8 @@ package pages
 import (
 	"io"
 
-	"github.com/reidransom/gojekyll/config"
-	"github.com/reidransom/gojekyll/renderers"
+	"github.com/reidransom/jigyll/config"
+	"github.com/reidransom/jigyll/renderers"
 )
 
 // A Document is a Jekyll post, page, or file.

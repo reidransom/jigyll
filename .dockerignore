@@ -4,8 +4,8 @@ _site
 .vscode
 *.prof
 /dist
-gojekyll
-gojekyll-race
+jigyll
+jigyll-race
 coverage.out
 /Dockerfile
 .env

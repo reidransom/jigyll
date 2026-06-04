@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/github"
-	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/jigyll/config"
 	"github.com/reidransom/liquid"
 	"golang.org/x/oauth2"
 )

@@ -7,9 +7,9 @@ import (
 	"runtime/pprof"
 
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/reidransom/gojekyll/config"
-	"github.com/reidransom/gojekyll/site"
-	"github.com/reidransom/gojekyll/version"
+	"github.com/reidransom/jigyll/config"
+	"github.com/reidransom/jigyll/site"
+	"github.com/reidransom/jigyll/version"
 )
 
 // ParseAndRun parses and executes the command-line arguments.
@@ -95,7 +95,7 @@ func loadSite(source string, flags config.Flags) (*site.Site, error) {
 }
 
 func setupProfiling() func() {
-	profilePath := "gojekyll.prof"
+	profilePath := "jigyll.prof"
 	logger.label("Profiling...", "")
 	f, err := os.Create(profilePath)
 	app.FatalIfError(err, "")

@@ -2,7 +2,7 @@
 
 docker buildx build --platform linux/arm64,linux/amd64 . \
 	-f Dockerfile \
-	-t danog/gojekyll:latest \
+	-t reidransom/jigyll:latest \
 	--push
 
 goreleaser release

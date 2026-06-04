@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/jigyll/utils"
 )
 
 // WatchRebuild watches the site directory. Each time a file changes, it

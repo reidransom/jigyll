@@ -17,13 +17,13 @@ func Enhance(err error) error {
 	if strings.Contains(errStr, "unexpected EOF") || strings.Contains(errStr, "connection is shut down") {
 		return fmt.Errorf("%w\n\n"+
 			"This error typically occurs when the wrong Sass package is installed.\n"+
-			"gojekyll requires the Dart Sass Embedded binary, not the pure JavaScript version.\n\n"+
+			"jigyll requires the Dart Sass Embedded binary, not the pure JavaScript version.\n\n"+
 			"Solution:\n"+
 			"  - If using npm: install 'sass-embedded' instead of 'sass'\n"+
 			"    Run: npm install -g sass-embedded\n"+
 			"  - Or download Dart Sass from: https://github.com/sass/dart-sass/releases\n\n"+
 			"The 'sass' package from npm is a pure JavaScript implementation that does not\n"+
-			"support the embedded protocol required by gojekyll", err)
+			"support the embedded protocol required by jigyll", err)
 	}
 
 	return err
