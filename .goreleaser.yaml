@@ -3,7 +3,6 @@ before:
   hooks:
     - go mod tidy
     - go test ./...
-    - bash scripts/download-dart-sass.sh
 builds:
   - id: gojekyll
     env:
@@ -36,20 +35,6 @@ builds:
         goarch: riscv64
     ldflags: -s -w -X github.com/reidransom/gojekyll/version.Version={{.Version}} -X github.com/reidransom/gojekyll/version.BuildDate={{ time "2006-01-02T15:04:05-0700" }}
 
-  - id: gojekyll-musl
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-    goarch:
-      - "amd64"
-      - "arm64"
-    goamd64:
-      - "v1"
-      - "v2"
-      - "v3"
-    ldflags: -s -w -X github.com/reidransom/gojekyll/version.Version={{.Version}} -X github.com/reidransom/gojekyll/version.BuildDate={{ time "2006-01-02T15:04:05-0700" }}
-
 archives:
   - id: default
     ids:
@@ -64,29 +49,11 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
       {{- if .Amd64 }}{{ .Amd64 }}{{ end }}
-    files:
-      - src: ".dart-sass/{{ .Os }}-{{ .Arch }}/**"
-        dst: dart-sass
     # use zip for windows archives
     format_overrides:
     - goos: windows
       formats:
         - zip
-
-  - id: musl
-    ids:
-      - gojekyll-musl
-    formats:
-      - tar.gz
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Amd64 }}{{ .Amd64 }}{{ end }}-musl
-    files:
-      - src: ".dart-sass/{{ .Os }}-{{ .Arch }}-musl/**"
-        dst: dart-sass
 checksum:
   name_template: 'checksums.txt'
 snapshot:

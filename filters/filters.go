@@ -10,10 +10,12 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	sass "github.com/bep/godartsass/v2"
 	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/internal/sasserrors"
 	"github.com/reidransom/gojekyll/utils"
 	"github.com/reidransom/liquid"
 	"github.com/reidransom/liquid/evaluator"
@@ -350,12 +352,26 @@ func markdownify(md []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// string filters
-var comp, compErr = sass.Start(sass.Options{})
+// SASS transpiler singleton for the scssify filter. dart-sass is resolved from
+// PATH (sass.Options{}); see renderers.getSassTranspiler for the build-side copy.
+var (
+	scssifyTranspiler     *sass.Transpiler
+	scssifyTranspilerErr  error
+	scssifyTranspilerOnce sync.Once
+)
+
+func getScssifyTranspiler() (*sass.Transpiler, error) {
+	scssifyTranspilerOnce.Do(func() {
+		scssifyTranspiler, scssifyTranspilerErr = sass.Start(sass.Options{})
+		scssifyTranspilerErr = sasserrors.Enhance(scssifyTranspilerErr)
+	})
+	return scssifyTranspiler, scssifyTranspilerErr
+}
 
 func scssifyFilter(s string) (string, error) {
-	if compErr != nil {
-		return "", compErr
+	comp, err := getScssifyTranspiler()
+	if err != nil {
+		return "", err
 	}
 	res, err := comp.Execute(sass.Args{
 		Source: s,

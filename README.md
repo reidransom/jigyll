@@ -34,6 +34,7 @@ live reload.
 
 - [Usage](#usage)
 - [Installation](#installation)
+  - [Quick Install (macOS / Linux)](#quick-install-macos--linux)
   - [Docker](#docker)
   - [Binary Downloads](#binary-downloads)
   - [From Source](#from-source)
@@ -62,6 +63,29 @@ gojekyll help build
 
 ## Installation
 
+### Quick Install (macOS / Linux)
+
+The installer downloads the `gojekyll` binary and, unless `sass` is already on your
+PATH, a matching [Dart Sass](https://github.com/sass/dart-sass):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/reidransom/gojekyll/main/install.sh | sh
+```
+
+Pin a specific release with `VERSION`, or change the install location with
+`INSTALL_DIR`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/reidransom/gojekyll/main/install.sh | VERSION=v1.0.1 sh
+```
+
+Prefer to read before running? Download and inspect it first:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/reidransom/gojekyll/main/install.sh -o install.sh
+less install.sh && sh install.sh
+```
+
 ### Docker
 
 You can use `gojekyll` with the official `danog/gojekyll` image, for example to build the site in the current directory into `_site`:
@@ -79,8 +103,11 @@ docker run --user $UID:$GID -v $PWD:/app --pull always --network host --rm -it d
 ### Binary Downloads
 
 1. Linux, Mac OS and Windows binaries for amd64, armv6/v7, armv8, riscv64 are available from the [releases
-   page](https://github.com/osteele/gojekyll/releases).
-   Each archive includes a bundled `dart-sass/` directory — no separate Sass installation required.
+   page](https://github.com/reidransom/gojekyll/releases).
+   SCSS/Sass support requires the [Dart Sass](https://github.com/sass/dart-sass)
+   `sass` executable on your PATH (the [Quick Install](#quick-install-macos--linux)
+   script sets this up for you; otherwise see [From Source](#from-source) for how to
+   install it).
 2. [Optional] **Themes**. To use a theme, you need to install Ruby and
    [bundler](http://bundler.io/). Create a `Gemfile` that lists the theme., and
    run `bundle install`. The [Jekyll theme

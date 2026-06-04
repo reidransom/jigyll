@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/reidransom/gojekyll/cache"
@@ -27,7 +25,13 @@ const sassDirName = "_sass"
 func (p *Manager) copySASSFileIncludes() error {
 	// TODO delete the temp directory when done?
 	// TODO use libsass.ImportsOption instead?
-	// FIXME this doesn't delete stale css files
+	// Clean up any existing temp directory to remove stale files
+	if p.sassTempDir != "" {
+		if err := os.RemoveAll(p.sassTempDir); err != nil {
+			return err
+		}
+		p.sassTempDir = ""
+	}
 	if err := p.makeSASSTempDir(); err != nil {
 		return err
 	}
@@ -95,36 +99,12 @@ func (p *Manager) SassIncludePaths() []string {
 	return []string{p.sassTempDir}
 }
 
-// sassExecutable returns the path to the dart-sass binary to use.
-// It prefers sass on PATH; if not found, falls back to a dart-sass/ directory
-// bundled alongside the gojekyll executable (as shipped in release archives).
-func sassExecutable() string {
-	name := "sass"
-	if runtime.GOOS == "windows" {
-		name = "sass.bat"
-	}
-	if _, err := exec.LookPath(name); err == nil {
-		return "" // let godartsass use default PATH lookup
-	}
-	execPath, err := os.Executable()
-	if err != nil {
-		return ""
-	}
-	bundled := filepath.Join(filepath.Dir(execPath), "dart-sass", name)
-	if _, err := os.Stat(bundled); err == nil {
-		return bundled
-	}
-	return ""
-}
-
-// string filters
-var comp, compErr = sass.Start(sass.Options{DartSassEmbeddedFilename: sassExecutable()})
-
 // WriteSass converts a SASS file and writes it to w.
 func (p *Manager) WriteSass(w io.Writer, b []byte) error {
 	s, err := cache.WithFile(fmt.Sprintf("sass: %s", p.sassHash), string(b), func() (s string, err error) {
-		if compErr != nil {
-			return "", compErr
+		comp, err := p.getSassTranspiler()
+		if err != nil {
+			return "", err
 		}
 		res, err := comp.Execute(sass.Args{
 			Source:       string(b),

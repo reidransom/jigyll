@@ -3,12 +3,27 @@ package renderers
 import (
 	"io"
 	"path/filepath"
+	"sync"
 
+	sass "github.com/bep/godartsass/v2"
 	"github.com/reidransom/gojekyll/config"
 	"github.com/reidransom/gojekyll/filters"
+	"github.com/reidransom/gojekyll/internal/sasserrors"
 	"github.com/reidransom/gojekyll/tags"
 	"github.com/reidransom/gojekyll/utils"
 	"github.com/reidransom/liquid"
+)
+
+// Global Sass transpiler singleton, shared across all Manager instances.
+// This avoids race conditions and resource leaks when Sites are reloaded during watch mode.
+// The transpiler is thread-safe and stateless (include paths are passed to Execute()),
+// so a single instance can safely serve all Managers throughout the process lifetime.
+// dart-sass is resolved from PATH (sass.Options{}); install it via the curl
+// installer or Homebrew, or have `sass` on PATH for `go install` builds.
+var (
+	globalSassTranspiler     *sass.Transpiler
+	globalSassTranspilerOnce sync.Once
+	globalSassTranspilerErr  error
 )
 
 // Renderers applies transformations to a document.
@@ -95,4 +110,15 @@ func (p *Manager) makeLiquidEngine() *liquid.Engine {
 	filters.AddJekyllFilters(engine, &p.cfg)
 	tags.AddJekyllTags(engine, &p.cfg, dirs, p.RelativeFilenameToURL)
 	return engine
+}
+
+// getSassTranspiler returns the global SASS transpiler singleton, initializing it if necessary.
+// Using a global singleton avoids race conditions when Sites are reloaded during watch mode,
+// and matches the godartsass recommendation to "create one and use that for all SCSS processing."
+func (p *Manager) getSassTranspiler() (*sass.Transpiler, error) {
+	globalSassTranspilerOnce.Do(func() {
+		globalSassTranspiler, globalSassTranspilerErr = sass.Start(sass.Options{})
+		globalSassTranspilerErr = sasserrors.Enhance(globalSassTranspilerErr)
+	})
+	return globalSassTranspiler, globalSassTranspilerErr
 }
