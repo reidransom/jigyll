@@ -1,14 +1,21 @@
 # Plan: verify the Homebrew install
 
-How to confirm `brew install gojekyll` works end-to-end after the `brews:` block
+> **✅ Verified 2026-06-04 at v1.0.4.** `brew install jigyll` works end-to-end on
+> macOS and Linux; SCSS compiles through the brew-provided `dart-sass`. The first
+> attempt (v1.0.3) failed the brew step with `401 Bad credentials` because
+> `HOMEBREW_TAP_GITHUB_TOKEN` was added *after* that release — re-tagging as v1.0.4
+> with the token in place fixed it. The orphaned `Formula/gojekyll.rb` was removed
+> from the tap.
+
+How to confirm `brew install jigyll` works end-to-end after the `brews:` block
 was added to `.goreleaser.yaml`. Work top to bottom; the local dry-run (step 2)
 catches most problems before you ever cut a tag.
 
 Context:
-- Source repo: `reidransom/gojekyll`
-- Tap repo: `reidransom/homebrew-tap` (formula pushed to `Formula/gojekyll.rb`)
+- Source repo: `reidransom/jigyll`
+- Tap repo: `reidransom/homebrew-tap` (formula pushed to `Formula/jigyll.rb`)
 - Formula declares `depends_on "dart-sass"` (homebrew-core) → provides `sass` on PATH
-- gojekyll resolves dart-sass from PATH only (PATH-only Sass change)
+- jigyll resolves dart-sass from PATH only (PATH-only Sass change)
 
 ## 0. Prerequisite (one-time): the tap token
 
@@ -19,12 +26,12 @@ won't publish.
    **Contents: read/write**.
 2. Add it as a secret on the source repo:
    ```bash
-   gh secret set HOMEBREW_TAP_GITHUB_TOKEN --repo reidransom/gojekyll
+   gh secret set HOMEBREW_TAP_GITHUB_TOKEN --repo reidransom/jigyll
    # paste the PAT
    ```
 3. Confirm it's there:
    ```bash
-   gh secret list --repo reidransom/gojekyll | grep HOMEBREW_TAP_GITHUB_TOKEN
+   gh secret list --repo reidransom/jigyll | grep HOMEBREW_TAP_GITHUB_TOKEN
    ```
 
 ## 1. Static config sanity
@@ -50,13 +57,13 @@ Then inspect the generated formula:
 find dist -name '*.rb' -exec cat {} +
 ```
 
-Check the rendered `gojekyll.rb` for:
+Check the rendered `jigyll.rb` for:
 - [ ] `depends_on "dart-sass"` present
-- [ ] `url`s point at `github.com/reidransom/gojekyll/releases/download/...`
+- [ ] `url`s point at `github.com/reidransom/jigyll/releases/download/...`
 - [ ] separate `on_macos`/`on_linux` + `on_arm`/`on_intel` blocks with the right
-      archive names (`gojekyll_Darwin_arm64.tar.gz`, `gojekyll_Linux_x86_64v1.tar.gz`, …)
+      archive names (`jigyll_Darwin_arm64.tar.gz`, `jigyll_Linux_x86_64v1.tar.gz`, …)
 - [ ] `sha256` values populated (not blank)
-- [ ] `bin.install "gojekyll"` and the `test do … "version" … end` block
+- [ ] `bin.install "jigyll"` and the `test do … "version" … end` block
 - [ ] amd64 resolves to the **v1** archive (Homebrew default), not v2/v3
 
 If anything looks off, fix `.goreleaser.yaml` and re-run step 2 before tagging.
@@ -64,8 +71,8 @@ If anything looks off, fix `.goreleaser.yaml` and re-run step 2 before tagging.
 ### Optional: install straight from the dry-run formula
 
 ```bash
-brew install --build-from-source --formula dist/gojekyll.rb   # or:
-brew install --formula ./dist/.../gojekyll.rb
+brew install --build-from-source --formula dist/jigyll.rb   # or:
+brew install --formula ./dist/.../jigyll.rb
 ```
 Then run the post-install checks in step 4. (Local-file installs skip the tap/URL
 plumbing, so still do a real tagged release before trusting it.)
@@ -76,14 +83,14 @@ Tag and push; the `goreleaser` workflow runs on `v*` tags.
 
 ```bash
 git checkout main && git pull          # ensure curl-installer work is merged first
-git tag v1.0.2 && git push origin v1.0.2
-gh run watch --repo reidransom/gojekyll   # follow the release job
+git tag v1.0.4 && git push origin v1.0.4
+gh run watch --repo reidransom/jigyll   # follow the release job
 ```
 
 After it goes green, confirm the formula landed in the tap:
 
 ```bash
-gh api repos/reidransom/homebrew-tap/contents/Formula/gojekyll.rb \
+gh api repos/reidransom/homebrew-tap/contents/Formula/jigyll.rb \
   --jq '.name + " @ " + .sha'
 # or just open https://github.com/reidransom/homebrew-tap/tree/main/Formula
 ```
@@ -93,23 +100,23 @@ gh api repos/reidransom/homebrew-tap/contents/Formula/gojekyll.rb \
 ```bash
 brew untap reidransom/tap 2>/dev/null || true   # clean slate
 brew tap reidransom/tap
-brew install gojekyll
+brew install jigyll
 ```
 
 Checks:
-- [ ] `brew deps gojekyll` lists `dart-sass`
-- [ ] `which gojekyll` → under the Homebrew prefix (`/opt/homebrew/bin` or `/usr/local/bin`)
+- [ ] `brew deps jigyll` lists `dart-sass`
+- [ ] `which jigyll` → under the Homebrew prefix (`/opt/homebrew/bin` or `/usr/local/bin`)
 - [ ] `which sass` resolves (pulled in by the dependency)
-- [ ] `gojekyll version` runs
+- [ ] `jigyll version` runs
 - [ ] **SCSS render** through the brew-installed toolchain:
   ```bash
   mkdir -p /tmp/brewscss/css
   printf 'title: t\n' > /tmp/brewscss/_config.yml
   printf -- '---\n---\n$c:#f00; body{color:$c; .x{margin:1px + 2px}}\n' > /tmp/brewscss/css/style.scss
-  gojekyll build -s /tmp/brewscss -d /tmp/brewscss/_site
+  jigyll build -s /tmp/brewscss -d /tmp/brewscss/_site
   cat /tmp/brewscss/_site/css/style.css   # expect: body{color:red}body .x{margin:3px}
   ```
-- [ ] `brew audit --strict --online gojekyll` (style/URL/dep issues; warnings are
+- [ ] `brew audit --strict --online jigyll` (style/URL/dep issues; warnings are
       tolerable for a personal tap, but read them)
 
 ## 5. Verify on Linux (optional but recommended)
@@ -120,28 +127,28 @@ Easiest via the Homebrew/brew container:
 ```bash
 docker run --rm -it homebrew/brew bash -lc '
   brew tap reidransom/tap &&
-  brew install gojekyll &&
-  gojekyll version &&
+  brew install jigyll &&
+  jigyll version &&
   which sass'
 ```
-Expect gojekyll + dart-sass to install and `gojekyll version` to run.
+Expect jigyll + dart-sass to install and `jigyll version` to run.
 
 ## 6. Re-test cleanly (between attempts)
 
 ```bash
-brew uninstall gojekyll
+brew uninstall jigyll
 brew untap reidransom/tap
 rm -rf /tmp/brewscss
 ```
 
-To test a new formula version, bump the tag (`v1.0.3`, …) — Homebrew caches by
+To test a new formula version, bump the tag (`v1.0.5`, …) — Homebrew caches by
 version, so reusing a tag won't pick up changes.
 
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
-| Workflow green but tap has no/old `gojekyll.rb` | `HOMEBREW_TAP_GITHUB_TOKEN` missing or lacks Contents:write on the tap (step 0) |
+| Workflow green but tap has no/old `jigyll.rb` | `HOMEBREW_TAP_GITHUB_TOKEN` missing or lacks Contents:write on the tap (step 0) |
 | `goreleaser` errors "multiple archives match" for amd64 | brew can't pick an amd64 variant — set `goamd64: v1` under the `brews:` entry |
 | `brew install` fails: dependency `dart-sass` not found | depending on the tap `sass/sass/sass` instead of core `dart-sass`; keep core |
 | Installs but SCSS fails: `exec: "sass": not found` | `dart-sass` dep didn't link `sass` onto PATH; check `brew link dart-sass` / `which sass` |
@@ -150,7 +157,7 @@ version, so reusing a tag won't pick up changes.
 
 ## Done = all true
 
-- Tagged release is green; `Formula/gojekyll.rb` present in the tap at the new version.
-- `brew install gojekyll` on macOS pulls in `dart-sass`, `gojekyll version` runs,
+- Tagged release is green; `Formula/jigyll.rb` present in the tap at the new version.
+- `brew install jigyll` on macOS pulls in `dart-sass`, `jigyll version` runs,
   and the SCSS sample compiles to `body{color:red}body .x{margin:3px}`.
 - (Optional) Same succeeds in the `homebrew/brew` Linux container.
