@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/osteele/gojekyll/version"
+	"github.com/reidransom/gojekyll/version"
 )
 
 var versionCmd = app.Command("version", "Print the name and version")

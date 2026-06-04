@@ -6,9 +6,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/renderers"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/renderers"
+	"github.com/reidransom/liquid"
 	"github.com/stretchr/testify/require"
 )
 

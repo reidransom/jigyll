@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/utils"
 )
 
 // Clean the destination. Remove files that aren't in keep_files, and resulting empty directories.

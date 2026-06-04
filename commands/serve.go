@@ -1,8 +1,8 @@
 package commands
 
 import (
-	"github.com/osteele/gojekyll/server"
-	"github.com/osteele/gojekyll/site"
+	"github.com/reidransom/gojekyll/server"
+	"github.com/reidransom/gojekyll/site"
 )
 
 var (

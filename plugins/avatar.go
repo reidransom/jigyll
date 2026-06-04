@@ -7,9 +7,9 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/osteele/gojekyll/tags"
-	"github.com/osteele/liquid"
-	"github.com/osteele/liquid/render"
+	"github.com/reidransom/gojekyll/tags"
+	"github.com/reidransom/liquid"
+	"github.com/reidransom/liquid/render"
 )
 
 func init() {

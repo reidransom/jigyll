@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/osteele/gojekyll/cache"
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/gojekyll/cache"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/liquid"
 	"github.com/stretchr/testify/require"
 )
 

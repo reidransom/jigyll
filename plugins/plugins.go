@@ -11,10 +11,10 @@ import (
 	"sort"
 
 	"github.com/kyokomi/emoji"
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/pages"
-	"github.com/osteele/gojekyll/utils"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/pages"
+	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/liquid"
 )
 
 // Plugin describes the hooks that a plugin can override.

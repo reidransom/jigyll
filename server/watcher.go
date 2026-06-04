@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/osteele/gojekyll/site"
+	"github.com/reidransom/gojekyll/site"
 )
 
 // Create a goroutine that rebuilds the site when files change.

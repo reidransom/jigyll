@@ -101,7 +101,7 @@ Pre-requisites:
 Then run:
 
 ```bash
-go install github.com/osteele/gojekyll@latest
+go install github.com/reidransom/gojekyll@latest
 ```
 
 

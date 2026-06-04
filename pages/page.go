@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/osteele/gojekyll/frontmatter"
-	"github.com/osteele/gojekyll/utils"
-	"github.com/osteele/gojekyll/version"
-	"github.com/osteele/liquid/evaluator"
+	"github.com/reidransom/gojekyll/frontmatter"
+	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/gojekyll/version"
+	"github.com/reidransom/liquid/evaluator"
 )
 
 // Page is a document with frontmatter.

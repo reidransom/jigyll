@@ -7,9 +7,9 @@ import (
 	"runtime/pprof"
 
 	kingpin "github.com/alecthomas/kingpin/v2"
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/site"
-	"github.com/osteele/gojekyll/version"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/site"
+	"github.com/reidransom/gojekyll/version"
 )
 
 // ParseAndRun parses and executes the command-line arguments.

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"html"
 
-	"github.com/osteele/liquid"
-	"github.com/osteele/liquid/render"
+	"github.com/reidransom/liquid"
+	"github.com/reidransom/liquid/render"
 )
 
 type jekyllFeedPlugin struct {

@@ -4,9 +4,9 @@ import (
 	"strings"
 
 	"github.com/k0kubun/pp"
-	"github.com/osteele/gojekyll/site"
-	"github.com/osteele/gojekyll/utils"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/gojekyll/site"
+	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/liquid"
 )
 
 var variables = app.Command(

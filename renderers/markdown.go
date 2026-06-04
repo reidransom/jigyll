@@ -6,7 +6,7 @@ import (
 	"regexp"
 
 	chromahtml "github.com/alecthomas/chroma/formatters/html"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/utils"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"

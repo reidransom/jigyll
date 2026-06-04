@@ -4,8 +4,8 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/osteele/gojekyll/utils"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/liquid"
 )
 
 // ToLiquid is part of the liquid.Drop interface.

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/pages"
-	"github.com/osteele/liquid/tags"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/pages"
+	"github.com/reidransom/liquid/tags"
 	"github.com/stretchr/testify/require"
 )
 

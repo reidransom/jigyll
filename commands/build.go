@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/osteele/gojekyll/site"
+	"github.com/reidransom/gojekyll/site"
 )
 
 // main sets this

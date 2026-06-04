@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/osteele/gojekyll/plugins"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/plugins"
+	"github.com/reidransom/gojekyll/utils"
 )
 
 // Write cleans the destination and writes files into it.

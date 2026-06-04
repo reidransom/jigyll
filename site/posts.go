@@ -1,7 +1,7 @@
 package site
 
 import (
-	"github.com/osteele/gojekyll/collection"
+	"github.com/reidransom/gojekyll/collection"
 )
 
 func (s *Site) findPostCollection() *collection.Collection {

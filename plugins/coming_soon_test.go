@@ -3,9 +3,9 @@ package plugins
 import (
 	"testing"
 
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/pages"
-	"github.com/osteele/liquid"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/pages"
+	"github.com/reidransom/liquid"
 	"github.com/stretchr/testify/require"
 )
 

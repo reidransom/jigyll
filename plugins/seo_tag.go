@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/osteele/gojekyll/utils"
-	"github.com/osteele/liquid"
-	"github.com/osteele/liquid/render"
-	"github.com/osteele/liquid/tags"
+	"github.com/reidransom/gojekyll/utils"
+	"github.com/reidransom/liquid"
+	"github.com/reidransom/liquid/render"
+	"github.com/reidransom/liquid/tags"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/html"
 )

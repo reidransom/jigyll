@@ -6,11 +6,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/osteele/gojekyll/collection"
-	"github.com/osteele/gojekyll/config"
-	"github.com/osteele/gojekyll/pages"
-	"github.com/osteele/gojekyll/plugins"
-	"github.com/osteele/gojekyll/utils"
+	"github.com/reidransom/gojekyll/collection"
+	"github.com/reidransom/gojekyll/config"
+	"github.com/reidransom/gojekyll/pages"
+	"github.com/reidransom/gojekyll/plugins"
+	"github.com/reidransom/gojekyll/utils"
 )
 
 // FromDirectory reads the configuration file, if it exists.

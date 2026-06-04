@@ -1,4 +1,4 @@
-module github.com/osteele/gojekyll
+module github.com/reidransom/gojekyll
 
 go 1.25.0
 
@@ -12,7 +12,6 @@ require (
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/kyokomi/emoji v2.2.4+incompatible
 	github.com/montanaflynn/stats v0.7.1
-	github.com/osteele/liquid v1.8.1
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/radovskyb/watcher v1.0.7
 	github.com/stretchr/testify v1.11.1
@@ -35,6 +34,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/osteele/tuesday v1.0.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/reidransom/liquid v1.8.5
 	github.com/tdewolff/parse v2.3.4+incompatible // indirect
 	github.com/tdewolff/test v1.0.11 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
@@ -45,5 +45,3 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/osteele/liquid => github.com/reidransom/liquid v1.8.2-0.20260603191128-592248e07148
