@@ -1,5 +1,15 @@
 # Plan: verify the Scoop install (Windows)
 
+> **✅ Verified 2026-06-06 at v1.0.5.** `scoop install jigyll` works end-to-end on
+> Windows; it pulls in `main/sass` (Dart Sass) and `sass` resolves on PATH. Two
+> gotchas hit along the way: (1) the goreleaser workflow didn't forward
+> `SCOOP_BUCKET_GITHUB_TOKEN` (only the brew token), so the first v1.0.5 release
+> failed with "map has no entry for key" — fixed by adding it to the step `env:`.
+> (2) `scoop bucket add` failing with "Repository not found" on a *public* repo
+> was a typo in the bucket URL, not auth. Canonical install:
+> `scoop bucket add reidransom https://github.com/reidransom/scoop-bucket` then
+> `scoop install jigyll`.
+
 How to confirm `scoop install jigyll` works end-to-end after the `scoops:` block
 was added to `.goreleaser.yaml`. This mirrors the Homebrew verification
 (`completed/verify-brew-install.md`) — same shape, Windows package manager.

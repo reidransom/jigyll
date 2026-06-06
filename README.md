@@ -35,6 +35,7 @@ live reload.
 - [Usage](#usage)
 - [Installation](#installation)
   - [Homebrew (macOS / Linux)](#homebrew-macos--linux)
+  - [Scoop (Windows)](#scoop-windows)
   - [Quick Install (macOS / Linux)](#quick-install-macos--linux)
   - [Docker](#docker)
   - [Binary Downloads](#binary-downloads)
@@ -72,6 +73,16 @@ brew install jigyll
 ```
 
 This pulls in [`dart-sass`](https://formulae.brew.sh/formula/dart-sass)
+automatically, so SCSS/Sass works out of the box.
+
+### Scoop (Windows)
+
+```powershell
+scoop bucket add reidransom https://github.com/reidransom/scoop-bucket
+scoop install jigyll
+```
+
+This pulls in the [`sass`](https://scoop.sh/#/apps?q=sass) package (Dart Sass)
 automatically, so SCSS/Sass works out of the box.
 
 ### Quick Install (macOS / Linux)
