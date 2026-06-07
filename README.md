@@ -12,7 +12,7 @@
 [![Go Report Card badge][go-report-card-svg]][go-report-card-url]
 [![MIT License][license-svg]][license-url]
 
-**Jigyll** is a fork of [**gojekyll**](https://github.com/osteele/gojekyll), which was created by Oliver Steele ([@osteele](https://github.com/osteele)) and is maintained by Daniil Gentili ([@danog](https://github.com/danog)). Jigyll is not affiliated with or endorsed by the original authors. All original work remains under their copyright; see [LICENSE](./LICENSE).  
+**Jigyll** is a fork of [**gojekyll**](https://github.com/osteele/gojekyll), which was created by Oliver Steele ([@osteele](https://github.com/osteele)) and is maintained by Daniil Gentili ([@danog](https://github.com/danog)). Jigyll is not affiliated with or endorsed by the original authors. All original work remains under their copyright; see [LICENSE](./LICENSE).
 
 Jigyll is a partially-compatible clone of the [Jekyll](https://jekyllrb.com)
 static site generator, written in the [Go](https://golang.org) programming
@@ -67,6 +67,9 @@ jigyll help build
 
 ### Homebrew (macOS / Linux)
 
+Don't have Homebrew yet? Follow the [Homebrew installation
+instructions](https://brew.sh) first.
+
 ```bash
 brew tap reidransom/tap
 brew install jigyll
@@ -76,6 +79,9 @@ This pulls in [`dart-sass`](https://formulae.brew.sh/formula/dart-sass)
 automatically, so SCSS/Sass works out of the box.
 
 ### Scoop (Windows)
+
+Don't have Scoop yet? Follow the [Scoop installation
+instructions](https://scoop.sh) first.
 
 ```powershell
 scoop bucket add reidransom https://github.com/reidransom/scoop-bucket
