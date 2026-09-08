@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DART_SASS_VERSION="${DART_SASS_VERSION:-1.98.0}"
+DART_SASS_VERSION="${DART_SASS_VERSION:-1.102.0}"
 BASE_URL="https://github.com/sass/dart-sass/releases/download/${DART_SASS_VERSION}"
 DEST_DIR=".dart-sass"
 

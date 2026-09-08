@@ -27,7 +27,7 @@ Development and tests require the standalone Dart Sass `sass` executable on your
 Install the pinned version globally with [mise](https://mise.jdx.dev):
 
 ```bash
-mise use --global github:sass/dart-sass@1.98.0
+mise use --global github:sass/dart-sass@1.102.0
 ```
 
 Then confirm the installation with `sass --version`. For other installation methods,

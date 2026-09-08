@@ -14,7 +14,7 @@ set -eu
 
 REPO="reidransom/jigyll"
 BINARY="jigyll"
-DART_SASS_VERSION="${DART_SASS_VERSION:-1.98.0}"
+DART_SASS_VERSION="${DART_SASS_VERSION:-1.102.0}"
 
 say() { printf '%s: %s\n' "$BINARY-install" "$1" >&2; }
 die() { say "error: $1"; exit 1; }
