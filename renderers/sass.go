@@ -16,7 +16,7 @@ import (
 
 // Bump this namespace whenever compiled CSS output changes so persistent cache
 // entries from older Jigyll versions cannot survive the change.
-const sassCacheNamespace = "sass:v2"
+const sassCacheNamespace = "sass:v3"
 const sassDirName = "_sass"
 
 // copySASSFileIncludes copies sass partials into a temporary directory,
