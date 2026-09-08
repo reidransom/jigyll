@@ -94,12 +94,13 @@ func runLocalizedWatchReloads(
 			if result.success {
 				deliver(result.change)
 			}
-			if pending != nil {
+			switch {
+			case pending != nil:
 				done = startLocalizedReload(*pending, reload)
 				pending = nil
-			} else if changes == nil {
+			case changes == nil:
 				return
-			} else {
+			default:
 				done = nil
 			}
 		}

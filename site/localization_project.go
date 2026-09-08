@@ -42,7 +42,7 @@ type LocalizedProject struct {
 
 // LocalizedServedDocument is one immutable response from a completed
 // development generation. Its document and site retain response metadata while
-// WriteTo supplies the materialized bytes without reading mutable source files.
+// RenderTo supplies the materialized bytes without reading mutable source files.
 type LocalizedServedDocument struct {
 	site     *Site
 	document Document
@@ -59,8 +59,8 @@ func (d LocalizedServedDocument) Document() Document {
 	return d.document
 }
 
-// WriteTo writes the immutable materialized response.
-func (d LocalizedServedDocument) WriteTo(w io.Writer) error {
+// RenderTo writes the immutable materialized response.
+func (d LocalizedServedDocument) RenderTo(w io.Writer) error {
 	_, err := io.WriteString(w, d.content)
 	return err
 }

@@ -164,7 +164,7 @@ type responseSource interface {
 type responseDocument interface {
 	Site() *site.Site
 	Document() site.Document
-	WriteTo(io.Writer) error
+	RenderTo(io.Writer) error
 }
 
 type renderedDocument struct {
@@ -180,7 +180,7 @@ func (d renderedDocument) Document() site.Document {
 	return d.document
 }
 
-func (d renderedDocument) WriteTo(w io.Writer) error {
+func (d renderedDocument) RenderTo(w io.Writer) error {
 	return d.site.WriteDocument(w, d.document)
 }
 
@@ -240,7 +240,7 @@ func (s *Server) finalizeResponse(rw http.ResponseWriter, r *http.Request, sourc
 	if requestSite.Config().Watch && strings.HasPrefix(mimeType, "text/html;") {
 		documentWriter = NewLiveReloadInjector(documentWriter)
 	}
-	if err := document.WriteTo(documentWriter); err != nil {
+	if err := document.RenderTo(documentWriter); err != nil {
 		if w.err != nil {
 			s.logResponseWriteError(r, w.err)
 			return

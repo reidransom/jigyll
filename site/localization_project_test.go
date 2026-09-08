@@ -278,7 +278,7 @@ func localizedServedContent(t *testing.T, project *LocalizedProject, route strin
 	document, found := project.ServedDocument(route)
 	require.True(t, found)
 	var content bytes.Buffer
-	require.NoError(t, document.WriteTo(&content))
+	require.NoError(t, document.RenderTo(&content))
 	return content.String()
 }
 
