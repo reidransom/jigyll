@@ -51,6 +51,7 @@ these files, Jigyll makes a variety of data available via
 | `page.content` | The content of the page. |
 | `page.title` | The title of the page, from its front matter. |
 | `page.excerpt` | The un-rendered excerpt of a page. Can be overridden with an `excerpt` key in the front matter. |
+| `page.headings` | Rendered article headings in document order. Each entry has `level`, `id`, and `text`. Available in layouts and layout includes; see below. Cannot be overridden by front matter. |
 | `page.url` | The URL of the page without the domain, but with a leading slash, e.g. `/2026/12/14/my-post.html` |
 | `page.date` | The date assigned to a post. Can be overridden in a post's front matter with a `date` key. |
 | `page.id` | An identifier unique to a document in a collection or a post (useful in RSS feeds). |
@@ -67,8 +68,65 @@ these files, Jigyll makes a variety of data available via
 
 > **Differs from Jekyll.** `page.dir` does not exist — derive the directory
 > from `page.url` or `page.path` if you need it. Categories always come from
-> front matter, [never from the directory path](/docs/posts/). And any
-> custom front matter is available under `page`, exactly as in Jekyll.
+> front matter, [never from the directory path](/docs/posts/). Custom front
+> matter is available under `page`, except for engine-owned fields such as
+> `headings`.
+
+### Article headings
+
+`page.headings` contains the headings from the rendered article, before any
+layout or post-render plugin runs. Liquid includes and supported nested Markdown
+contribute headings. Layout chrome, code samples, and HTML templates do not.
+No `{:toc}` marker is required.
+
+| Field | Meaning |
+| --- | --- |
+| `heading.level` | Numeric HTML heading level, 1–6. The list is flat and follows article order. |
+| `heading.id` | The emitted heading ID, unchanged. Raw HTML headings without IDs have an empty string. |
+| `heading.text` | Decoded descendant text with inline markup removed and surrounding whitespace trimmed. Internal whitespace is retained. |
+
+Render h2/h3 navigation in a layout or layout include:
+
+{% raw %}
+```liquid
+<nav aria-label="On this page">
+  {% for heading in page.headings %}
+    {% if heading.id != '' %}
+      {% if heading.level == 2 or heading.level == 3 %}
+        <a href="#{{ heading.id | escape }}">{{ heading.text | escape }}</a>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+</nav>
+```
+{% endraw %}
+
+Skip ID-less headings when creating links, and escape both the ID and label.
+Jigyll does not generate new IDs while collecting metadata. Existing duplicate
+IDs remain duplicated, including collisions between an outer heading and a
+heading inside `markdown="1"`. Such links cannot distinguish the duplicate
+targets.
+
+The list includes `.no_toc` headings and all heading levels, independently of
+`kramdown.toc_levels`. Those settings continue to control only the content-level
+`{:toc}` list. Front matter and front-matter defaults cannot replace
+`page.headings`.
+
+The current page exposes an empty list during its content Liquid rendering.
+Its completed list is available in layouts, including parent layouts and their
+includes. Reading the field never triggers another render. Empty articles and
+non-HTML output pages also expose an empty list; Jigyll treats `.html`, `.htm`,
+and `.xhtml` output as HTML.
+
+Accessing another page's `headings`, for example through `site.pages`, returns
+its last completed render's list, or an empty list if it has not rendered or
+has been invalidated. Full builds render page content before applying layouts.
+Do not rely on fresh cross-page metadata during content rendering or incremental
+builds, where pages can be rebuilt individually.
+
+Reloading a page clears its headings. Replacing content through `SetContent`
+recomputes them, and cloned pages compute their own lists. Post-render plugins
+run after layouts, so their later changes are not reflected in these labels.
 
 ## Jekyll Variables
 

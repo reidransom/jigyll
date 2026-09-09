@@ -1,6 +1,14 @@
 # Release Notes
 <!-- markdownlint-disable MD024 -->
 
+## Unreleased
+
+### New
+* Added `page.headings` for layout-visible article heading levels, emitted IDs,
+  and plain-text labels. Metadata follows rendered content, includes nested
+  Markdown, and refreshes on page reloads and content replacement without
+  changing existing anchors or `{:toc}` output.
+
 ## 0.5.2 (Nov 30, 2024)
 
 ### Improved

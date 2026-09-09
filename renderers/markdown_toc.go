@@ -190,38 +190,17 @@ func extractHeadings(n *html.Node) []*TOCEntry {
 
 	var extract func(*html.Node)
 	extract = func(n *html.Node) {
-		// Check if this is a heading element
-		if n.Type == html.ElementNode && strings.HasPrefix(n.Data, "h") && len(n.Data) == 2 {
-			// Parse the heading level (h1-h6)
-			level := int(n.Data[1] - '0')
-			if level >= 1 && level <= 6 {
-				// Extract the heading ID
-				id := ""
-				for _, attr := range n.Attr {
-					if attr.Key == "id" {
-						id = attr.Val
-						break
-					}
-				}
-
-				// A parsed IAL sets no_toc directly on the heading. Keep the
-				// sibling-marker fallback for HTML from older renderers.
-				if hasHTMLClass(n, "no_toc") || hasNoTocSibling(n) {
-					return
-				}
-
-				// Extract the heading text
-				// Note: We keep literal {:.no_toc} text if it's inside the heading
-				text := extractTextContent(n)
-				text = strings.TrimSpace(text)
-
-				// Create a TOC entry
-				headings = append(headings, &TOCEntry{
-					ID:    id,
-					Level: level,
-					Text:  text,
-				})
+		if heading, ok := headingFromNode(n); ok {
+			// Keep TOC filtering and legacy marker removal separate from
+			// the read-only heading metadata exposed to layouts.
+			if hasHTMLClass(n, "no_toc") || hasNoTocSibling(n) {
+				return
 			}
+			headings = append(headings, &TOCEntry{
+				ID:    heading.ID,
+				Level: heading.Level,
+				Text:  heading.Text,
+			})
 		}
 
 		// Recursively process child nodes

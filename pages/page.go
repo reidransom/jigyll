@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/reidransom/jigyll/frontmatter"
+	"github.com/reidransom/jigyll/renderers"
 	"github.com/reidransom/jigyll/utils"
 	"github.com/reidransom/jigyll/version"
 	"github.com/reidransom/liquid/evaluator"
@@ -76,6 +77,7 @@ type page struct {
 	contentError error
 	contentOnce  sync.Once
 	excerpt      interface{} // []byte or string, depending on rendering stage
+	headings     []renderers.Heading
 	rendered     bool
 }
 
@@ -114,8 +116,11 @@ func (p *page) Reload() error {
 }
 
 func (p *page) reset() {
+	p.m.Lock()
+	defer p.m.Unlock()
 	p.contentOnce = sync.Once{}
 	p.rendered = false
+	p.headings = nil
 }
 
 func readFrontMatter(f *file) (b []byte, lineNo int, err error) {
@@ -216,8 +221,8 @@ func (p *page) Write(w io.Writer) error {
 		return err
 	}
 	p.m.RLock()
-	defer p.m.RUnlock()
 	cn := p.content
+	p.m.RUnlock()
 	lo, ok := p.fm["layout"].(string)
 	// Jekyll compatibility: "none" and "null" are special values that disable layout
 	if ok && lo != "" && lo != "none" && lo != "null" {
@@ -237,11 +242,16 @@ func (p *page) Write(w io.Writer) error {
 func (p *page) Render() error {
 	p.contentOnce.Do(func() {
 		cn, ex, err := p.computeContent()
+		var headings []renderers.Heading
+		if err == nil {
+			headings, err = p.extractHeadings(cn)
+		}
 		p.m.Lock()
 		defer p.m.Unlock()
 		p.content = cn
 		p.contentError = utils.WrapPathError(err, p.filename)
 		p.excerpt = ex
+		p.headings = headings
 		p.rendered = true
 	})
 	return p.contentError
@@ -249,11 +259,20 @@ func (p *page) Render() error {
 
 func (p *page) SetContent(content string) {
 	p.contentOnce.Do(func() {}) // prevent Render from overwriting
+	headings, err := p.extractHeadings(content)
 	p.m.Lock()
 	defer p.m.Unlock()
 	p.content = content
-	p.contentError = nil
+	p.contentError = utils.WrapPathError(err, p.filename)
+	p.headings = headings
 	p.rendered = true
+}
+
+func (p *page) extractHeadings(content string) ([]renderers.Heading, error) {
+	if !isHTMLPageOutput(p.OutputExt()) {
+		return nil, nil
+	}
+	return renderers.ExtractHeadings(content)
 }
 
 func (p *page) computeContent() (cn string, ex string, err error) {

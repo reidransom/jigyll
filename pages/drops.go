@@ -4,6 +4,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/reidransom/jigyll/renderers"
 	"github.com/reidransom/jigyll/utils"
 	"github.com/reidransom/liquid"
 )
@@ -50,6 +51,7 @@ func (p *page) ToLiquid() interface{} {
 		"categories":    p.Categories(),
 		"content":       p.maybeContent(),
 		"excerpt":       p.Excerpt(),
+		"headings":      p.maybeHeadings(),
 		"id":            utils.TrimExt(p.URL()),
 		"name":          filepath.Base(siteRelPath),
 		"path":          siteRelPath,
@@ -81,8 +83,8 @@ func (p *page) ToLiquid() interface{} {
 		switch k {
 		// doc implies these aren't present, but they appear to be present in a collection page:
 		// case "layout", "published":
-		case "permalink":
-		// omit this, in order to use the value above
+		case "permalink", "headings":
+			// Engine-owned values cannot be overridden by front matter.
 		default:
 			data[k] = v
 		}
@@ -97,4 +99,13 @@ func (p *page) maybeContent() interface{} {
 		return p.content
 	}
 	return p.raw
+}
+
+func (p *page) maybeHeadings() []renderers.Heading {
+	p.m.RLock()
+	defer p.m.RUnlock()
+	if !p.rendered || p.headings == nil {
+		return []renderers.Heading{}
+	}
+	return p.headings
 }

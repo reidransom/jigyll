@@ -8,6 +8,54 @@ import (
 	"golang.org/x/net/html"
 )
 
+// Heading describes an article heading without changing its emitted anchor.
+type Heading struct {
+	Level int    `liquid:"level" json:"level"`
+	ID    string `liquid:"id" json:"id"`
+	Text  string `liquid:"text" json:"text"`
+}
+
+// ExtractHeadings reads headings in document order from rendered article HTML.
+// It does not apply TOC exclusions, invent IDs, or modify the content.
+func ExtractHeadings(content string) ([]Heading, error) {
+	doc, err := html.Parse(strings.NewReader(content))
+	if err != nil {
+		return nil, err
+	}
+	headings := make([]Heading, 0)
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			switch n.Data {
+			case "pre", "code", "script", "style", "template":
+				return
+			}
+		}
+		if heading, ok := headingFromNode(n); ok {
+			headings = append(headings, heading)
+		}
+		for child := n.FirstChild; child != nil; child = child.NextSibling {
+			walk(child)
+		}
+	}
+	walk(doc)
+	return headings, nil
+}
+
+func headingFromNode(n *html.Node) (Heading, bool) {
+	if n.Type != html.ElementNode || len(n.Data) != 2 || n.Data[0] != 'h' || n.Data[1] < '1' || n.Data[1] > '6' {
+		return Heading{}, false
+	}
+	heading := Heading{Level: int(n.Data[1] - '0'), Text: extractTextContent(n)}
+	for _, attr := range n.Attr {
+		if attr.Key == "id" {
+			heading.ID = attr.Val
+			break
+		}
+	}
+	return heading, true
+}
+
 // parseHTMLFragment parses an HTML fragment string into DOM nodes
 func parseHTMLFragment(htmlStr string) ([]*html.Node, error) {
 	// Wrap in a container to parse as a fragment
@@ -87,12 +135,12 @@ func extractBodyContent(htmlBytes []byte) []byte {
 
 // extractTextContent gets the plain text from an HTML node
 func extractTextContent(n *html.Node) string {
-	var text string
+	var text strings.Builder
 
 	var extract func(*html.Node)
 	extract = func(n *html.Node) {
 		if n.Type == html.TextNode {
-			text += n.Data
+			text.WriteString(n.Data)
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -101,7 +149,7 @@ func extractTextContent(n *html.Node) string {
 	}
 
 	extract(n)
-	return strings.TrimSpace(text)
+	return strings.TrimSpace(text.String())
 }
 
 func hasHTMLClass(node *html.Node, className string) bool {
