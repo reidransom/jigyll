@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+## 1.12.0 (Sep 9, 2026)
+
 ### New
 * Added `page.headings` for layout-visible article heading levels, emitted IDs,
   and plain-text labels. Metadata follows rendered content, includes nested
