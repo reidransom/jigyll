@@ -3,12 +3,10 @@
 [![go badge][go-svg]][go-url]
 [![Golangci-lint badge][golangci-lint-svg]][golangci-lint-url]
 
-
 Jigyll is a partially-compatible clone of the [Jekyll](https://jekyllrb.com)
 static site generator, written in the [Go](https://golang.org) programming
 language. It provides `build` and `serve` commands, with directory watch and
 live reload.
-
 
 ## Install
 
@@ -19,7 +17,6 @@ curl -fsSL https://raw.githubusercontent.com/reidransom/jigyll/main/install.sh |
 The installer also installs Dart Sass if `sass` is not detected on your `PATH`.
 
 [Find other installation methods in the documentation.](https://jigyll.r2ware.app/docs/installation/)
-
 
 ## Development
 
