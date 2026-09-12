@@ -86,22 +86,36 @@ Rouge-compatible CSS classes. Standard Liquid highlight blocks use Jekyll's
 Fenced blocks accept optional UI metadata after the language:
 
 ````markdown
-```go title="main.go" frame="editor"
+```go title="main.go" frame="editor" {2} ins={3-4} del="obsolete"
 fmt.Println("ready")
+return value
 ```
 ````
 
 `title` is a nonempty double-quoted string. `frame` accepts `editor`, `terminal`,
-or `none`. Inside either value, `\\` and `\"` are the only supported escapes.
-Duplicate keys, malformed recognized values, unsupported frame names, and a
-title combined with `frame="none"` fail the build with the source path and
-line. Unrecognized metadata retains its compatibility behavior.
+or `none`. Line markers use 1-based inclusive selectors: `{2,4-6}`,
+`ins={2,4-6}`, or `del={2,4-6}`. Text markers use exact, case-sensitive
+strings: `"return value"`, `ins="added"`, or `del="removed"`. Text selectors
+match every occurrence and may repeat. Inside quoted values, `\\` and `\"` are
+the only supported escapes.
+
+Malformed recognized values, missing text, invalid or out-of-range lines, and
+overlapping insertion/deletion selections fail the build with the source path
+and line. Neutral markers may overlap insertion/deletion markers; the latter
+presentation wins. Unrecognized metadata retains its compatibility behavior.
 
 A title without an explicit frame infers `terminal` for `bash`, `sh`, `shell`,
 `console`, `powershell`, and `ps1`; other languages infer `editor`. Explicit
 `frame` wins. Editor and terminal frames render as a semantic
 `figure.highlight` with `data-code-frame`, an escaped `figcaption.code-title`
 when titled, and the existing Chroma `pre > code` subtree. `frame="none"` and
-fences without recognized metadata retain the existing
-`div.highlighter-rouge > div.highlight` output. Code fences with an
-unrecognized language retain their plain `<pre><code>` fallback.
+marker-only metadata retain the unframed wrapper.
+
+Marked blocks add one `.code-line` span per logical source line. Whole-line
+classes are `is-marked`, `is-inserted`, and `is-deleted`; exact text matches use
+semantic `mark` elements with the same classes and one accessible label per
+region. Chroma token spans are split only where needed. Marker markup never
+adds decorative characters to the code text, so selection and clipboard output
+remain the authored source. Fences without recognized metadata retain their
+existing output byte-for-byte. Code fences with an unrecognized language retain
+their plain `<pre><code>` fallback.
