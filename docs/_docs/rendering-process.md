@@ -113,8 +113,8 @@ marker-only metadata retain the unframed wrapper.
 
 Marked blocks add one `.code-line` span per logical source line. Whole-line
 classes are `is-marked`, `is-inserted`, and `is-deleted`; exact text matches use
-semantic `mark` elements with the same classes and one accessible label per
-region. Chroma token spans are split only where needed. Marker markup never
+semantic `mark` elements with the same classes and one accessible description
+per region. Chroma token spans are split only where needed. Marker markup never
 adds decorative characters to the code text, so selection and clipboard output
 remain the authored source. Fences without recognized metadata retain their
 existing output byte-for-byte. Code fences with an unrecognized language retain

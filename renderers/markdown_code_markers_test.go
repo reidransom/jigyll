@@ -28,7 +28,7 @@ func TestRenderMarkdownCodeLineMarkers(t *testing.T) {
 	require.Contains(t, classList(lines[5]), "is-inserted")
 	require.NotContains(t, classList(lines[5]), "is-marked")
 	for _, line := range lines {
-		require.NotEmpty(t, attribute(line, "aria-label"))
+		require.NotEmpty(t, attribute(line, "aria-description"))
 	}
 	require.Equal(t, source, nodeText(code))
 	require.NotContains(t, nodeText(code), "+")
@@ -47,15 +47,15 @@ func TestRenderMarkdownCodeTextMarkers(t *testing.T) {
 	require.Len(t, elementsByClass(code, "is-marked"), 1)
 	require.Len(t, elementsByClass(code, "is-deleted"), 2)
 	for _, marker := range elementsByTag(code, "mark") {
-		require.NotEmpty(t, attribute(marker, "aria-label"))
-		require.Equal(t, 1, strings.Count(renderNode(marker), "aria-label="))
+		require.NotEmpty(t, attribute(marker, "aria-description"))
+		require.Equal(t, 1, strings.Count(renderNode(marker), "aria-description="))
 	}
 
 	neutral := elementsByClass(code, "is-marked")[0]
 	require.Equal(t, "return value", nodeText(neutral))
 	require.Contains(t, renderNode(neutral), `<span class="k">return</span>`)
 	require.Contains(t, renderNode(neutral), `<span class="nx">value</span>`)
-	require.Equal(t, "Highlighted text: return value", attribute(neutral, "aria-label"))
+	require.Equal(t, "Highlighted text", attribute(neutral, "aria-description"))
 	require.NotContains(t, out, "jigyll-code-markers")
 }
 

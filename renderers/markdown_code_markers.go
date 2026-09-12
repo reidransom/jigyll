@@ -426,8 +426,7 @@ func applyCodeMarkerPlan(line *html.Node, plan codeMarkerLinePlan, contentLength
 	appendHTMLClass(line, "code-line")
 	if plan.Kind != "" {
 		appendHTMLClass(line, "is-"+string(plan.Kind))
-		text := strings.TrimSuffix(nodeTextContent(line), "\n")
-		setHTMLAttribute(line, "aria-label", markerAriaLabel(plan.Kind, "line", text))
+		setHTMLAttribute(line, "aria-description", markerAriaDescription(plan.Kind, "line"))
 	}
 	if len(plan.Spans) == 0 {
 		return
@@ -442,7 +441,7 @@ func applyCodeMarkerPlan(line *html.Node, plan codeMarkerLinePlan, contentLength
 		for _, child := range cloneChildrenInRange(line, span.Start, span.End) {
 			marker.AppendChild(child)
 		}
-		setHTMLAttribute(marker, "aria-label", markerAriaLabel(span.Kind, "text", nodeTextContent(marker)))
+		setHTMLAttribute(marker, "aria-description", markerAriaDescription(span.Kind, "text"))
 		replacements = append(replacements, marker)
 		position = span.End
 	}
@@ -458,7 +457,7 @@ func applyCodeMarkerPlan(line *html.Node, plan codeMarkerLinePlan, contentLength
 	}
 }
 
-func markerAriaLabel(kind codeMarkerKind, noun, text string) string {
+func markerAriaDescription(kind codeMarkerKind, noun string) string {
 	action := "Highlighted"
 	switch kind {
 	case codeMarkerInserted:
@@ -466,7 +465,7 @@ func markerAriaLabel(kind codeMarkerKind, noun, text string) string {
 	case codeMarkerDeleted:
 		action = "Deleted"
 	}
-	return action + " " + noun + ": " + text
+	return action + " " + noun
 }
 
 func cloneChildrenInRange(parent *html.Node, start, end int) []*html.Node {
