@@ -83,9 +83,9 @@ func (p *Manager) Render(w io.Writer, src []byte, vars liquid.Bindings, filename
 		return p.WriteSass(w, src)
 	}
 	if p.cfg.IsMarkdown(filename) {
-		src, err = renderMarkdownWithOptions(src, p.getTOCOptions())
+		src, err = renderMarkdownWithOptionsAtLine(src, p.getTOCOptions(), lineNo)
 		if err != nil {
-			return err
+			return utils.WrapPathError(err, filename)
 		}
 	}
 	_, err = w.Write(src)

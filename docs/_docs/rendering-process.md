@@ -80,11 +80,48 @@ rewritten to goldmark's attribute syntax before parsing.
 
 Fenced code blocks and the `{% raw %}{% highlight %}{% endraw %}` tag are
 highlighted by [chroma](https://github.com/alecthomas/chroma), with
-Rouge-compatible CSS classes. Standard Liquid highlight blocks additionally use
-Jekyll's `figure.highlight > pre > code` shell and normalized language metadata.
-Chroma still supplies token spans and the `linenos` table internals, so this is
-wrapper compatibility rather than byte-for-byte Rouge markup. The `linenos`
-argument applies only to `{% raw %}{% highlight %}{% endraw %}`; fenced blocks
-retain their `div.highlighter-rouge > div.highlight` path and do not support line
-numbers. Code fences with an unrecognized language are wrapped in plain
-`<pre><code>`.
+Rouge-compatible CSS classes. Standard Liquid highlight blocks use Jekyll's
+`figure.highlight > pre > code` shell and normalized language metadata.
+
+Fenced blocks accept optional UI metadata after the language:
+
+````markdown
+```go title="main.go" frame="editor" startLineNumber=8 {2} ins={3-4} del="obsolete"
+fmt.Println("ready")
+return value
+```
+````
+
+`title` is a nonempty double-quoted string. `frame` accepts `editor`, `terminal`,
+or `none`. Line markers use 1-based inclusive selectors: `{2,4-6}`,
+`ins={2,4-6}`, or `del={2,4-6}`. Text markers use exact, case-sensitive
+strings: `"return value"`, `ins="added"`, or `del="removed"`. Text selectors
+match every occurrence and may repeat. `showLineNumbers` is a bare flag;
+`startLineNumber=N` enables numbering at decimal `N`, from 1 through 999999.
+Inside quoted values, `\\` and `\"` are the only supported escapes.
+
+Malformed recognized values, missing text, invalid or out-of-range lines,
+overlapping insertion/deletion selections, duplicate numbering metadata, and
+invalid numbering starts fail the build with the source path and line. Neutral
+markers may overlap insertion/deletion markers; the latter presentation wins.
+Unrecognized metadata retains its compatibility behavior.
+
+A title without an explicit frame infers `terminal` for `bash`, `sh`, `shell`,
+`console`, `powershell`, and `ps1`; other languages infer `editor`. Explicit
+`frame` wins. Editor and terminal frames render as a semantic
+`figure.highlight` with `data-code-frame`, an escaped `figcaption.code-title`
+when titled, and the existing Chroma `pre > code` subtree. `frame="none"` and
+annotation-only metadata retain the unframed wrapper.
+
+Marked or numbered blocks add one `.code-line` span per logical source line.
+Whole-line marker classes are `is-marked`, `is-inserted`, and `is-deleted`;
+exact text matches use semantic `mark` elements with the same classes and one
+accessible description per region. Chroma token spans are split only where
+needed. Numbered lines carry sequential decimal `data-line-number` attributes,
+and their `code` parent exposes `data-line-number-width` for a stable gutter;
+numbers are never text inside `code`. Annotation markup therefore adds no
+characters to selection or clipboard output. Blank source lines receive one
+line span, and the structural trailing newline does not create another line.
+Fences without recognized metadata retain their existing output byte-for-byte.
+Code fences with an unrecognized language retain their plain `<pre><code>`
+fallback.
