@@ -314,6 +314,10 @@ func renderCodeAnnotationFragment(fragment []byte, annotations codeAnnotations) 
 	if err != nil {
 		return nil, fmt.Errorf("render code annotations: highlighted source differs from authored source: %w", err)
 	}
+	if annotations.LineNumberStart > 0 && len(lines) > 0 {
+		last := annotations.LineNumberStart + len(lines) - 1
+		setHTMLAttribute(code, "data-line-number-width", strconv.Itoa(len(strconv.Itoa(last))))
+	}
 	for index, line := range lines {
 		applyCodeMarkerPlan(line, plans[index], len(nodeTextContent(line)))
 		if annotations.LineNumberStart > 0 {

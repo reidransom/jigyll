@@ -117,7 +117,8 @@ Marked or numbered blocks add one `.code-line` span per logical source line.
 Whole-line marker classes are `is-marked`, `is-inserted`, and `is-deleted`;
 exact text matches use semantic `mark` elements with the same classes and one
 accessible description per region. Chroma token spans are split only where
-needed. Numbered lines carry sequential decimal `data-line-number` attributes;
+needed. Numbered lines carry sequential decimal `data-line-number` attributes,
+and their `code` parent exposes `data-line-number-width` for a stable gutter;
 numbers are never text inside `code`. Annotation markup therefore adds no
 characters to selection or clipboard output. Blank source lines receive one
 line span, and the structural trailing newline does not create another line.
