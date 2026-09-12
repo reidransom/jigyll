@@ -40,13 +40,13 @@ var goldmarkEngine = goldmark.New(
 			highlighting.WithWrapperRenderer(func(w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {
 				lang, hasLanguage := c.Language()
 				frame, title := codeFrameDetails(c)
-				markers := ""
+				annotations := ""
 				if c.Attributes() != nil {
-					markers = codeMetadataAttribute(c.Attributes(), codeMarkersAttribute)
+					annotations = codeMetadataAttribute(c.Attributes(), codeAnnotationsAttribute)
 				}
 				if entering {
-					if markers != "" {
-						_, _ = w.WriteString(codeMarkersElementOpen + markers + `">`)
+					if annotations != "" {
+						_, _ = w.WriteString(codeAnnotationsElementOpen + annotations + `">`)
 					}
 					if hasLanguage {
 						_, _ = w.WriteString(`<div class="language-` + string(lang) + ` highlighter-rouge">`)
@@ -80,8 +80,8 @@ var goldmarkEngine = goldmark.New(
 					if hasLanguage {
 						_, _ = w.WriteString("</div>")
 					}
-					if markers != "" {
-						_, _ = w.WriteString(codeMarkersElementClose)
+					if annotations != "" {
+						_, _ = w.WriteString(codeAnnotationsElementClose)
 					}
 				}
 			}),
@@ -225,7 +225,7 @@ func renderMarkdownWithOptionsAtLine(md []byte, opts *TOCOptions, firstLine int)
 	if err != nil {
 		return nil, utils.WrapError(err, "markdown conversion")
 	}
-	html, err = applyCodeMarkers(html)
+	html, err = applyCodeAnnotations(html)
 	if err != nil {
 		return nil, err
 	}

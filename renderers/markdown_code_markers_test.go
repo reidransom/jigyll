@@ -33,7 +33,7 @@ func TestRenderMarkdownCodeLineMarkers(t *testing.T) {
 	require.Equal(t, source, nodeText(code))
 	require.NotContains(t, nodeText(code), "+")
 	require.NotContains(t, nodeText(code), "-")
-	require.NotContains(t, out, "jigyll-code-markers")
+	require.NotContains(t, out, "jigyll-code-annotations")
 }
 
 func TestRenderMarkdownCodeTextMarkers(t *testing.T) {
@@ -56,7 +56,7 @@ func TestRenderMarkdownCodeTextMarkers(t *testing.T) {
 	require.Contains(t, renderNode(neutral), `<span class="k">return</span>`)
 	require.Contains(t, renderNode(neutral), `<span class="nx">value</span>`)
 	require.Equal(t, "Highlighted text", attribute(neutral, "aria-description"))
-	require.NotContains(t, out, "jigyll-code-markers")
+	require.NotContains(t, out, "jigyll-code-annotations")
 }
 
 func TestRenderMarkdownCodeMarkersPreserveUnmarkedOutput(t *testing.T) {
@@ -76,7 +76,7 @@ func TestRenderMarkdownCodeMarkersComposeWithFramesAndAttributes(t *testing.T) {
 	require.Contains(t, framed, `<figcaption class="code-title">main.go</figcaption>`)
 	require.Contains(t, framed, `class="line code-line is-inserted"`)
 	require.Contains(t, framed, `class="ln">1</span>`)
-	require.NotContains(t, framed, "jigyll-code-markers")
+	require.NotContains(t, framed, "jigyll-code-annotations")
 	require.NotContains(t, none, "data-code-frame")
 	require.Contains(t, none, `class="line code-line is-marked"`)
 }

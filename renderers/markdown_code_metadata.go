@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	codeFrameAttribute   = "jigyll_code_frame"
-	codeMarkersAttribute = "jigyll_code_markers"
-	codeTitleAttribute   = "jigyll_code_title"
+	codeAnnotationsAttribute = "jigyll_code_annotations"
+	codeFrameAttribute       = "jigyll_code_frame"
+	codeTitleAttribute       = "jigyll_code_title"
 )
 
 type codeMarkerKind string
@@ -44,10 +44,19 @@ func (markers codeMarkers) empty() bool {
 	return len(markers.Lines) == 0 && len(markers.Texts) == 0
 }
 
+type codeAnnotations struct {
+	Markers         codeMarkers `json:"markers,omitempty"`
+	LineNumberStart int         `json:"line_number_start,omitempty"`
+}
+
+func (annotations codeAnnotations) empty() bool {
+	return annotations.Markers.empty() && annotations.LineNumberStart == 0
+}
+
 type codeFenceMetadata struct {
-	frame   string
-	title   string
-	markers codeMarkers
+	frame       string
+	title       string
+	annotations codeAnnotations
 }
 
 var fencedCodeOpenerRE = regexp.MustCompile("^( {0,3})(`{3,}|~{3,})(.*)$")
@@ -83,8 +92,8 @@ func preprocessCodeFenceMetadata(md []byte, firstLine int) ([]byte, error) {
 		fenceLength = len(delimiter)
 
 		rewritten, metadata, recognized, err := rewriteCodeFenceInfo(string(info))
-		if err == nil && !metadata.markers.empty() {
-			err = validateFenceCodeMarkers(metadata.markers, lines, index, fence, fenceLength)
+		if err == nil && !metadata.annotations.Markers.empty() {
+			err = validateFenceCodeMarkers(metadata.annotations.Markers, lines, index, fence, fenceLength)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("code fence metadata at line %d: %w", firstLine+index, err)
@@ -183,21 +192,23 @@ func encodedCodeMetadataAttributes(metadata codeFenceMetadata) (string, error) {
 			attributes = append(attributes, codeTitleAttribute+`="`+encodedTitle+`"`)
 		}
 	}
-	if !metadata.markers.empty() {
-		encodedMarkers, err := json.Marshal(metadata.markers)
+	if !metadata.annotations.empty() {
+		encodedAnnotations, err := json.Marshal(metadata.annotations)
 		if err != nil {
-			return "", fmt.Errorf("encode code markers: %w", err)
+			return "", fmt.Errorf("encode code annotations: %w", err)
 		}
-		attributes = append(attributes, codeMarkersAttribute+`="`+base64.RawURLEncoding.EncodeToString(encodedMarkers)+`"`)
+		attributes = append(attributes, codeAnnotationsAttribute+`="`+base64.RawURLEncoding.EncodeToString(encodedAnnotations)+`"`)
 	}
 	return strings.Join(attributes, " "), nil
 }
 
 type codeFenceMetadataParser struct {
-	metadata  codeFenceMetadata
-	unknown   []string
-	titleSeen bool
-	frameSeen bool
+	metadata            codeFenceMetadata
+	unknown             []string
+	titleSeen           bool
+	frameSeen           bool
+	lineNumbersSeen     bool
+	startLineNumberSeen bool
 }
 
 func parseCodeFenceMetadata(input string) (codeFenceMetadata, string, bool, error) {
@@ -225,7 +236,7 @@ func (parser *codeFenceMetadataParser) parseToken(input string, position int) (i
 	if input[position] == '{' {
 		markers, next, recognized, err := parseLineMarkerToken(input, position, codeMarkerNeutral, false)
 		if recognized || err != nil {
-			parser.metadata.markers.Lines = append(parser.metadata.markers.Lines, markers...)
+			parser.metadata.annotations.Markers.Lines = append(parser.metadata.annotations.Markers.Lines, markers...)
 			return next, true, "", err
 		}
 	}
@@ -243,6 +254,10 @@ func (parser *codeFenceMetadataParser) parseToken(input string, position int) (i
 		next, err := parser.parseTypedMarker(input, position, name)
 		return next, true, "", err
 	}
+	if name == "showLineNumbers" || name == "startLineNumber" {
+		next, err := parser.parseLineNumberMetadata(input, position, name)
+		return next, true, "", err
+	}
 	next, err := parser.parseFrameMetadata(input, position, name)
 	return next, true, "", err
 }
@@ -258,7 +273,7 @@ func (parser *codeFenceMetadataParser) parseNeutralTextMarker(input string, posi
 	if err := requireCodeMetadataWhitespace(input, next, "text marker"); err != nil {
 		return 0, err
 	}
-	parser.metadata.markers.Texts = append(parser.metadata.markers.Texts, codeTextMarker{
+	parser.metadata.annotations.Markers.Texts = append(parser.metadata.annotations.Markers.Texts, codeTextMarker{
 		Kind: codeMarkerNeutral,
 		Text: value,
 	})
@@ -277,7 +292,7 @@ func (parser *codeFenceMetadataParser) parseTypedMarker(input string, position i
 	position++
 	if input[position] == '{' {
 		markers, next, _, err := parseLineMarkerToken(input, position, kind, true)
-		parser.metadata.markers.Lines = append(parser.metadata.markers.Lines, markers...)
+		parser.metadata.annotations.Markers.Lines = append(parser.metadata.annotations.Markers.Lines, markers...)
 		return next, err
 	}
 	if input[position] != '"' {
@@ -294,7 +309,7 @@ func (parser *codeFenceMetadataParser) parseTypedMarker(input string, position i
 	if err := requireCodeMetadataWhitespace(input, next, name); err != nil {
 		return 0, err
 	}
-	parser.metadata.markers.Texts = append(parser.metadata.markers.Texts, codeTextMarker{Kind: kind, Text: value})
+	parser.metadata.annotations.Markers.Texts = append(parser.metadata.annotations.Markers.Texts, codeTextMarker{Kind: kind, Text: value})
 	return next, nil
 }
 
@@ -341,9 +356,65 @@ func (parser *codeFenceMetadataParser) recordUniqueFrameMetadata(name string) er
 	parser.frameSeen = true
 	return nil
 }
+func (parser *codeFenceMetadataParser) parseLineNumberMetadata(input string, position int, name string) (int, error) {
+	if name == "showLineNumbers" {
+		if parser.lineNumbersSeen {
+			return 0, fmt.Errorf("duplicate showLineNumbers metadata")
+		}
+		parser.lineNumbersSeen = true
+		next := position + len(name)
+		if next < len(input) && input[next] == '=' {
+			return 0, fmt.Errorf("showLineNumbers must be a bare flag")
+		}
+		if parser.metadata.annotations.LineNumberStart == 0 {
+			parser.metadata.annotations.LineNumberStart = 1
+		}
+		return next, nil
+	}
+
+	if parser.startLineNumberSeen {
+		return 0, fmt.Errorf("duplicate startLineNumber metadata")
+	}
+	parser.startLineNumberSeen = true
+	position += len(name)
+	if position >= len(input) || input[position] != '=' || position+1 >= len(input) {
+		return 0, fmt.Errorf("startLineNumber must use a decimal value")
+	}
+	position++
+	end := skipCodeMetadataValue(input, position)
+	value := input[position:end]
+	if !isDecimalCodeMetadata(value) {
+		return 0, fmt.Errorf("startLineNumber must use a decimal value")
+	}
+	start, err := strconv.Atoi(value)
+	if err != nil || start < 1 || start > 999999 {
+		return 0, fmt.Errorf("startLineNumber must be between 1 and 999999")
+	}
+	parser.metadata.annotations.LineNumberStart = start
+	return end, nil
+}
+
+func skipCodeMetadataValue(input string, position int) int {
+	for position < len(input) && input[position] != ' ' && input[position] != '\t' {
+		position++
+	}
+	return position
+}
+
+func isDecimalCodeMetadata(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, character := range value {
+		if character < '0' || character > '9' {
+			return false
+		}
+	}
+	return true
+}
 
 func codeMetadataName(input string) string {
-	for _, name := range []string{"title", "frame", "ins", "del"} {
+	for _, name := range []string{"title", "frame", "ins", "del", "showLineNumbers", "startLineNumber"} {
 		if hasMetadataName(input, name) {
 			return name
 		}

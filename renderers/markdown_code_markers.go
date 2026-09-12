@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -13,8 +14,8 @@ import (
 )
 
 const (
-	codeMarkersElementOpen  = `<jigyll-code-markers value="`
-	codeMarkersElementClose = `</jigyll-code-markers>`
+	codeAnnotationsElementOpen  = `<jigyll-code-annotations value="`
+	codeAnnotationsElementClose = `</jigyll-code-annotations>`
 )
 
 type codeMarkerSpan struct {
@@ -247,57 +248,56 @@ func compactSortedInts(values []int) []int {
 	return compacted
 }
 
-func applyCodeMarkers(rendered []byte) ([]byte, error) {
+func applyCodeAnnotations(rendered []byte) ([]byte, error) {
 	for {
-		open := bytes.Index(rendered, []byte(codeMarkersElementOpen))
+		open := bytes.Index(rendered, []byte(codeAnnotationsElementOpen))
 		if open < 0 {
 			return rendered, nil
 		}
-		valueStart := open + len(codeMarkersElementOpen)
+		valueStart := open + len(codeAnnotationsElementOpen)
 		valueEnd := bytes.Index(rendered[valueStart:], []byte(`">`))
 		if valueEnd < 0 {
-			return nil, fmt.Errorf("render code markers: malformed private marker element")
+			return nil, fmt.Errorf("render code annotations: malformed private annotation element")
 		}
 		valueEnd += valueStart
 		contentStart := valueEnd + len(`">`)
-		contentEnd := bytes.Index(rendered[contentStart:], []byte(codeMarkersElementClose))
+		contentEnd := bytes.Index(rendered[contentStart:], []byte(codeAnnotationsElementClose))
 		if contentEnd < 0 {
-			return nil, fmt.Errorf("render code markers: unclosed private marker element")
+			return nil, fmt.Errorf("render code annotations: unclosed private annotation element")
 		}
 		contentEnd += contentStart
 
-		encoded := rendered[valueStart:valueEnd]
-		payload, err := base64.RawURLEncoding.DecodeString(string(encoded))
+		payload, err := base64.RawURLEncoding.DecodeString(string(rendered[valueStart:valueEnd]))
 		if err != nil {
-			return nil, fmt.Errorf("render code markers: decode private metadata: %w", err)
+			return nil, fmt.Errorf("render code annotations: decode private metadata: %w", err)
 		}
-		var markers codeMarkers
-		if err := json.Unmarshal(payload, &markers); err != nil {
-			return nil, fmt.Errorf("render code markers: parse private metadata: %w", err)
+		var annotations codeAnnotations
+		if err := json.Unmarshal(payload, &annotations); err != nil {
+			return nil, fmt.Errorf("render code annotations: parse private metadata: %w", err)
 		}
-		marked, err := renderCodeMarkerFragment(rendered[contentStart:contentEnd], markers)
+		annotated, err := renderCodeAnnotationFragment(rendered[contentStart:contentEnd], annotations)
 		if err != nil {
 			return nil, err
 		}
 
 		var next bytes.Buffer
-		next.Grow(len(rendered) + len(marked))
+		next.Grow(len(rendered) + len(annotated))
 		next.Write(rendered[:open])
-		next.Write(marked)
-		next.Write(rendered[contentEnd+len(codeMarkersElementClose):])
+		next.Write(annotated)
+		next.Write(rendered[contentEnd+len(codeAnnotationsElementClose):])
 		rendered = next.Bytes()
 	}
 }
 
-func renderCodeMarkerFragment(fragment []byte, markers codeMarkers) ([]byte, error) {
+func renderCodeAnnotationFragment(fragment []byte, annotations codeAnnotations) ([]byte, error) {
 	context := &html.Node{Type: html.ElementNode, DataAtom: atom.Div, Data: "div"}
 	nodes, err := html.ParseFragment(bytes.NewReader(fragment), context)
 	if err != nil {
-		return nil, fmt.Errorf("render code markers: parse highlighted code: %w", err)
+		return nil, fmt.Errorf("render code annotations: parse highlighted code: %w", err)
 	}
 	code := firstElement(nodes, "code")
 	if code == nil {
-		return nil, fmt.Errorf("render code markers: highlighted code has no code element")
+		return nil, fmt.Errorf("render code annotations: highlighted code has no code element")
 	}
 	lines := elementsWithClass(code, "line")
 	if len(lines) == 0 {
@@ -310,18 +310,21 @@ func renderCodeMarkerFragment(fragment []byte, markers codeMarkers) ([]byte, err
 		text = strings.TrimSuffix(text, "\n")
 		sourceLines[index] = []byte(text)
 	}
-	plans, err := resolveCodeMarkers(markers, sourceLines)
+	plans, err := resolveCodeMarkers(annotations.Markers, sourceLines)
 	if err != nil {
-		return nil, fmt.Errorf("render code markers: highlighted source differs from authored source: %w", err)
+		return nil, fmt.Errorf("render code annotations: highlighted source differs from authored source: %w", err)
 	}
 	for index, line := range lines {
 		applyCodeMarkerPlan(line, plans[index], len(nodeTextContent(line)))
+		if annotations.LineNumberStart > 0 {
+			setHTMLAttribute(line, "data-line-number", strconv.Itoa(annotations.LineNumberStart+index))
+		}
 	}
 
 	var rendered bytes.Buffer
 	for _, node := range nodes {
 		if err := html.Render(&rendered, node); err != nil {
-			return nil, fmt.Errorf("render code markers: serialize highlighted code: %w", err)
+			return nil, fmt.Errorf("render code annotations: serialize highlighted code: %w", err)
 		}
 	}
 	return rendered.Bytes(), nil
