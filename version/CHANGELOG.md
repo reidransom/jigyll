@@ -3,6 +3,17 @@
 
 ## Unreleased
 
+## 1.13.0 (Sep 12, 2026)
+
+### New
+* Added fenced-code metadata for semantic editor and terminal frames, escaped
+  titles, server-rendered line and text markers, and CSS-only line-number
+  gutters with validated starting values.
+* Added stable renderer seams for code-frame captions, logical source lines,
+  marker regions, and decimal line-number presentation without changing copied
+  source text or unannotated fenced-code output.
+
+
 ## 1.12.0 (Sep 9, 2026)
 
 ### New
