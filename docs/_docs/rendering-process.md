@@ -80,11 +80,28 @@ rewritten to goldmark's attribute syntax before parsing.
 
 Fenced code blocks and the `{% raw %}{% highlight %}{% endraw %}` tag are
 highlighted by [chroma](https://github.com/alecthomas/chroma), with
-Rouge-compatible CSS classes. Standard Liquid highlight blocks additionally use
-Jekyll's `figure.highlight > pre > code` shell and normalized language metadata.
-Chroma still supplies token spans and the `linenos` table internals, so this is
-wrapper compatibility rather than byte-for-byte Rouge markup. The `linenos`
-argument applies only to `{% raw %}{% highlight %}{% endraw %}`; fenced blocks
-retain their `div.highlighter-rouge > div.highlight` path and do not support line
-numbers. Code fences with an unrecognized language are wrapped in plain
-`<pre><code>`.
+Rouge-compatible CSS classes. Standard Liquid highlight blocks use Jekyll's
+`figure.highlight > pre > code` shell and normalized language metadata.
+
+Fenced blocks accept optional UI metadata after the language:
+
+````markdown
+```go title="main.go" frame="editor"
+fmt.Println("ready")
+```
+````
+
+`title` is a nonempty double-quoted string. `frame` accepts `editor`, `terminal`,
+or `none`. Inside either value, `\\` and `\"` are the only supported escapes.
+Duplicate keys, malformed recognized values, unsupported frame names, and a
+title combined with `frame="none"` fail the build with the source path and
+line. Unrecognized metadata retains its compatibility behavior.
+
+A title without an explicit frame infers `terminal` for `bash`, `sh`, `shell`,
+`console`, `powershell`, and `ps1`; other languages infer `editor`. Explicit
+`frame` wins. Editor and terminal frames render as a semantic
+`figure.highlight` with `data-code-frame`, an escaped `figcaption.code-title`
+when titled, and the existing Chroma `pre > code` subtree. `frame="none"` and
+fences without recognized metadata retain the existing
+`div.highlighter-rouge > div.highlight` output. Code fences with an
+unrecognized language retain their plain `<pre><code>` fallback.

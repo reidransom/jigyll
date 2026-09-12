@@ -2,6 +2,8 @@ package renderers
 
 import (
 	"bytes"
+	"encoding/base64"
+	"html"
 	"regexp"
 
 	chromahtml "github.com/alecthomas/chroma/formatters/html"
@@ -36,10 +38,19 @@ var goldmarkEngine = goldmark.New(
 				chromahtml.WithLineNumbers(false),
 			),
 			highlighting.WithWrapperRenderer(func(w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {
-				lang, ok := c.Language()
+				lang, hasLanguage := c.Language()
+				frame, title := codeFrameDetails(c)
 				if entering {
-					if ok {
-						_, _ = w.WriteString(`<div class="language-` + string(lang) + ` highlighter-rouge"><div class="highlight">`)
+					if hasLanguage {
+						_, _ = w.WriteString(`<div class="language-` + string(lang) + ` highlighter-rouge">`)
+					}
+					if frame != "" {
+						_, _ = w.WriteString(`<figure class="highlight" data-code-frame="` + frame + `">`)
+						if title != "" {
+							_, _ = w.WriteString(`<figcaption class="code-title">` + html.EscapeString(title) + `</figcaption>`)
+						}
+					} else if hasLanguage {
+						_, _ = w.WriteString(`<div class="highlight">`)
 					}
 					// When chroma has no lexer for the fence language (e.g. `liquid`)
 					// or the fence is unlabeled, goldmark-highlighting takes its
@@ -54,8 +65,13 @@ var goldmarkEngine = goldmark.New(
 					if !c.Highlighted() {
 						_, _ = w.WriteString("</code></pre>")
 					}
-					if ok {
-						_, _ = w.WriteString("</div></div>")
+					if frame != "" {
+						_, _ = w.WriteString("</figure>")
+					} else if hasLanguage {
+						_, _ = w.WriteString("</div>")
+					}
+					if hasLanguage {
+						_, _ = w.WriteString("</div>")
 					}
 				}
 			}),
@@ -155,10 +171,14 @@ func deIndentHTMLBlocks(md []byte) []byte {
 }
 
 func renderMarkdown(md []byte) ([]byte, error) {
-	return renderMarkdownWithOptions(md, nil)
+	return renderMarkdownWithOptionsAtLine(md, nil, 1)
 }
 
 func renderMarkdownWithOptions(md []byte, opts *TOCOptions) ([]byte, error) {
+	return renderMarkdownWithOptionsAtLine(md, opts, 1)
+}
+
+func renderMarkdownWithOptionsAtLine(md []byte, opts *TOCOptions, firstLine int) ([]byte, error) {
 	// Set default options if not provided
 	// Jekyll's default toc_levels is "2..6" to exclude H1 headings
 	if opts == nil {
@@ -180,9 +200,14 @@ func renderMarkdownWithOptions(md []byte, opts *TOCOptions) ([]byte, error) {
 		opts.MaxLevel = 6
 	}
 
-	// Preprocess: rewrite kramdown heading IALs to goldmark attribute syntax,
-	// and de-indent HTML blocks to prevent Goldmark from treating indented
-	// HTML as code blocks (kramdown compatibility)
+	// Parse fenced-code UI metadata before other Markdown preprocessing. The
+	// renderer consumes private attributes from this pass; callers see only
+	// the stable semantic HTML seam.
+	var err error
+	md, err = preprocessCodeFenceMetadata(md, firstLine)
+	if err != nil {
+		return nil, err
+	}
 	md = preprocessHeadingIALs(md)
 	md = deIndentHTMLBlocks(md)
 
@@ -207,6 +232,41 @@ func renderMarkdownWithOptions(md []byte, opts *TOCOptions) ([]byte, error) {
 		}
 	}
 	return html, nil
+}
+
+func codeFrameDetails(c highlighting.CodeBlockContext) (string, string) {
+	attrs := c.Attributes()
+	if attrs == nil {
+		return "", ""
+	}
+	frame := codeMetadataAttribute(attrs, codeFrameAttribute)
+	if frame != "editor" && frame != "terminal" {
+		return "", ""
+	}
+	encodedTitle := codeMetadataAttribute(attrs, codeTitleAttribute)
+	if encodedTitle == "" {
+		return frame, ""
+	}
+	title, err := base64.RawURLEncoding.DecodeString(encodedTitle)
+	if err != nil {
+		return frame, ""
+	}
+	return frame, string(title)
+}
+
+func codeMetadataAttribute(attrs highlighting.ImmutableAttributes, name string) string {
+	value, ok := attrs.GetString(name)
+	if !ok {
+		return ""
+	}
+	switch value := value.(type) {
+	case []byte:
+		return string(value)
+	case string:
+		return value
+	default:
+		return ""
+	}
 }
 
 func _renderMarkdown(md []byte) ([]byte, error) {
