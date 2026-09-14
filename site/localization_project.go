@@ -813,12 +813,18 @@ func discoverLocalizedPages(site *Site, discover func(string, string, string, st
 		}
 		relativePath = filepath.ToSlash(relativePath)
 		if info.IsDir() {
-			if relativePath != "." && (site.Exclude(relativePath) || strings.HasPrefix(filepath.Base(relativePath), "_")) {
+			switch {
+			case relativePath != "." && site.Exclude(relativePath):
 				return filepath.SkipDir
+			case site.isConfiguredCollectionDirectory(relativePath):
+				return filepath.SkipDir
+			case relativePath != "." && strings.HasPrefix(relativePath, "_") && !site.isIncludedPath(relativePath):
+				return filepath.SkipDir
+			default:
+				return nil
 			}
-			return nil
 		}
-		if site.Exclude(relativePath) || strings.HasPrefix(relativePath, "_") {
+		if site.Exclude(relativePath) || (strings.HasPrefix(relativePath, "_") && !site.isIncludedPath(relativePath)) {
 			return nil
 		}
 		return discover(filename, relativePath, localization.PagesNamespace, "pages")
