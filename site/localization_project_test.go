@@ -242,6 +242,185 @@ Unpublished
 	}
 }
 
+func TestLocalizedProjectIncludesExplicitUnderscorePages(t *testing.T) {
+	source := localizedIncludedPagesFixture(t, `include: [_pages]
+`)
+	writeLocalizedProjectFile(t, source, "_pages/index.html", `---
+lang: en
+translation_key: home
+permalink: /
+---
+Home
+`)
+	writeLocalizedProjectFile(t, source, "_pages/es/index.html", `---
+lang: es
+translation_key: home
+permalink: /
+---
+Inicio
+`)
+
+	base, err := FromDirectory(source, config.Flags{})
+	require.NoError(t, err)
+	project, count, err := BuildLocalizedProject(base)
+	require.NoError(t, err)
+	require.Equal(t, 2, count)
+	require.Contains(t, string(readLocalizedProjectOutput(t, filepath.Join(source, "_site", "index.html"))), "Home")
+	require.Contains(t, string(readLocalizedProjectOutput(t, filepath.Join(source, "_site", "es", "index.html"))), "Inicio")
+
+	englishSite, englishDocument, found := project.URLPage("/")
+	require.True(t, found)
+	englishPage, ok := englishDocument.(Page)
+	require.True(t, ok)
+	require.Len(t, englishSite.Pages(), 1)
+	require.NotContains(t, englishPage.FrontMatter(), "collection")
+
+	localization, found := englishSite.LocalizationContext().PageLocalization(englishPage)
+	require.True(t, found)
+	require.Len(t, localization.Translations, 1)
+	require.Equal(t, "/es/", localization.Translations[0].URL())
+	require.Equal(t, []string{"https://example.test/", "https://example.test/es/"}, []string{
+		localization.Alternates[0].URL,
+		localization.Alternates[1].URL,
+	})
+	require.Equal(t, []string{"en", "es"}, []string{
+		localization.Alternates[0].Language.Tag,
+		localization.Alternates[1].Language.Tag,
+	})
+}
+
+func TestLocalizedProjectRequiresTranslationsForExplicitlyIncludedUnderscorePages(t *testing.T) {
+	source := localizedIncludedPagesFixture(t, `include: [_pages]
+`)
+	writeLocalizedProjectFile(t, source, "_pages/index.html", `---
+lang: en
+translation_key: home
+permalink: /
+---
+Home
+`)
+
+	base, err := FromDirectory(source, config.Flags{})
+	require.NoError(t, err)
+	_, _, err = BuildLocalizedProject(base)
+	require.ErrorContains(t, err, `namespace "pages" translation_key "home" is missing required locale "es"`)
+}
+
+func TestLocalizedProjectUnderscorePageDiscoveryHonorsExclusions(t *testing.T) {
+	source := localizedIncludedPagesFixture(t, `include: [_pages]
+exclude: [_pages/ignored]
+`)
+	writeLocalizedProjectFile(t, source, "_pages/ignored/index.html", `---
+lang: en
+translation_key: ignored
+permalink: /ignored/
+---
+Ignored
+`)
+	for _, relativePath := range []string{
+		"_layouts/unlisted.html",
+		"_includes/unlisted.html",
+		"_data/unlisted.html",
+		"_sass/unlisted.html",
+	} {
+		writeLocalizedProjectFile(t, source, relativePath, `---
+lang: en
+translation_key: unlisted
+permalink: /unlisted/
+---
+Unlisted
+`)
+	}
+
+	base, err := FromDirectory(source, config.Flags{})
+	require.NoError(t, err)
+	_, count, err := BuildLocalizedProject(base)
+	require.NoError(t, err)
+	require.Zero(t, count)
+	require.NoFileExists(t, filepath.Join(source, "_site", "ignored", "index.html"))
+	require.NoFileExists(t, filepath.Join(source, "_site", "unlisted", "index.html"))
+}
+
+func TestLocalizedProjectCollectionOwnsIncludedSourceDirectory(t *testing.T) {
+	for _, collectionConfig := range []struct {
+		name       string
+		output     string
+		wantOutput bool
+	}{
+		{name: "output", output: "true", wantOutput: true},
+		{name: "non-output", output: "false"},
+	} {
+		t.Run(collectionConfig.name, func(t *testing.T) {
+			source := localizedIncludedPagesFixture(t, `include: [_guides]
+collections:
+  guides:
+    output: `+collectionConfig.output+`
+defaults:
+  - scope:
+      type: guides
+    values:
+      collection_default: applied
+`)
+			writeLocalizedProjectFile(t, source, "_guides/index.html", `---
+lang: en
+translation_key: home
+permalink: /
+---
+Guide
+`)
+			writeLocalizedProjectFile(t, source, "_guides/es/index.html", `---
+lang: es
+translation_key: home
+permalink: /
+---
+Guía
+`)
+
+			base, err := FromDirectory(source, config.Flags{})
+			require.NoError(t, err)
+			project, count, err := BuildLocalizedProject(base)
+			require.NoError(t, err)
+
+			if !collectionConfig.wantOutput {
+				require.Zero(t, count)
+				require.NoFileExists(t, filepath.Join(source, "_site", "index.html"))
+				return
+			}
+
+			require.Equal(t, 2, count)
+			englishSite, englishDocument, found := project.URLPage("/")
+			require.True(t, found)
+			englishPage, ok := englishDocument.(Page)
+			require.True(t, ok)
+			require.Equal(t, "guides", englishPage.FrontMatter().String("collection", ""))
+			require.Equal(t, "applied", englishPage.FrontMatter().String("collection_default", ""))
+			require.Len(t, englishSite.Pages(), 1)
+			for _, collection := range englishSite.Collections {
+				if collection.Name == "guides" {
+					require.Len(t, collection.Pages(), 1)
+					return
+				}
+			}
+			require.Fail(t, "guides collection was not registered")
+		})
+	}
+}
+
+func localizedIncludedPagesFixture(t *testing.T, extraConfig string) string {
+	t.Helper()
+	source := t.TempDir()
+	writeLocalizedProjectFile(t, source, "_config.yml", `destination: _site
+url: https://example.test
+localization:
+  default_language: en
+  required_translations: [es]
+  locales:
+    en: {tag: en, label: English}
+    es: {tag: es, label: Español}
+`+extraConfig)
+	return source
+}
+
 func localizedDevelopmentProjectFixture(t *testing.T) (source, destination string) {
 	t.Helper()
 	source = t.TempDir()

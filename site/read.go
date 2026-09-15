@@ -77,6 +77,17 @@ func (s *Site) isIncludedPath(siteRel string) bool {
 	return false
 }
 
+// isConfiguredCollectionDirectory reports whether siteRel is the root of a
+// configured collection. Localized ordinary-page discovery must leave these
+// directories to ReadCollections even when an include pattern admits them.
+func (s *Site) isConfiguredCollectionDirectory(siteRel string) bool {
+	if filepath.Dir(siteRel) != "." || !strings.HasPrefix(siteRel, "_") {
+		return false
+	}
+	_, configured := s.cfg.Collections[strings.TrimPrefix(siteRel, "_")]
+	return configured
+}
+
 // readFiles scans the source directory and creates pages and collection.
 //
 //nolint:gocyclo
@@ -88,6 +99,8 @@ func (s *Site) readFiles(dir, base string) error {
 		rel := utils.MustRel(base, filename)
 		switch {
 		case info.IsDir() && s.Exclude(rel):
+			return filepath.SkipDir
+		case info.IsDir() && s.localizedSources != nil && s.isConfiguredCollectionDirectory(rel):
 			return filepath.SkipDir
 		case info.IsDir() && strings.HasPrefix(rel, "_") && !s.isIncludedPath(rel):
 			// Top-level underscore directories (_layouts, _includes, _sass,
