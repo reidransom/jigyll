@@ -18,8 +18,8 @@ A fast, partially-compatible clone of Jekyll — written in Go, with `build` and
 | Fast                    | ✓ ([~20×Jekyll]({{ '/docs/benchmarks/' | relative_url }})) |        |
 | Template language       | Liquid                               | Liquid |
 | SASS                    | ✓                                    | ✓      |
-| Jekyll compatibility    | [partial](./differences.md)          | ✓      |
-| Plugins                 | [some](./plugins.md)                 | yes    |
+| Jekyll compatibility    | [partial]({% link _docs/differences.md %}) | ✓      |
+| Plugins                 | [some]({% link _docs/plugins.md %})     | yes    |
 | Windows support         | ✓                                    | ✓      |
 | Implementation language | Go                                   | Ruby   |
 
