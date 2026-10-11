@@ -3,12 +3,10 @@
 [![go badge][go-svg]][go-url]
 [![Golangci-lint badge][golangci-lint-svg]][golangci-lint-url]
 
-
 Jigyll is a partially-compatible clone of the [Jekyll](https://jekyllrb.com)
 static site generator, written in the [Go](https://golang.org) programming
 language. It provides `build` and `serve` commands, with directory watch and
 live reload.
-
 
 ## Install
 
@@ -19,39 +17,6 @@ curl -fsSL https://raw.githubusercontent.com/reidransom/jigyll/main/install.sh |
 The installer also installs Dart Sass if `sass` is not detected on your `PATH`.
 
 [Find other installation methods in the documentation.](https://jigyll.r2ware.app/docs/installation/)
-
-
-## Source portability audit
-
-Install the independent executable with `go install github.com/reidransom/jigyll/cmd/jigyll-lint@latest` (or `go build -o jigyll-lint ./cmd/jigyll-lint`). It does not run Jigyll or build a site:
-
-```sh
-jigyll-lint --policy /path/to/shared.yml /path/to/site
-```
-
-One site root is audited per invocation. `_config.yml` supplies `url` and `baseurl`; `--config` selects another site config. `--policy` selects a shared policy and an optional `.jigyll-source-lint.yml` in the site root supplies site overrides (`--site-policy` selects another file). Both policy paths can be outside the site. Example:
-
-```yaml
-rules:
-  first-party-origin: true
-  root-relative: true
-  liquid-url: true
-  external-host: true
-  image-placement: true
-  javascript-url: false
-allowed_hosts: [fonts.googleapis.com, cdn.example.org]
-files:
-  - glob: '_includes/**'
-    rules: {image-placement: false}
-lines:
-  - file: index.md
-    line: 12
-    rules: {root-relative: false}
-```
-
-The default-enabled rules are `first-party-origin`, `root-relative`, and `liquid-url`. The opt-in rules are `external-host` (navigation, assets, forms), `image-placement` (local images outside site-root `assets/`), and heuristic `javascript-url`. `allowed_hosts` contains hostnames without schemes; the site's configured host is always internal. A site policy's `allowed_hosts` replaces the shared list. Rule precedence is shared defaults, site defaults, matching shared files, matching site files, matching shared lines, matching site lines; narrower exceptions can enable or disable any rule. File globs and line file paths are relative to the site root, using `/`. A rule ID typo is an error.
-
-The scanner checks HTML/Liquid URL attributes, Markdown links and images, URL-bearing YAML/front matter fields, CSS `url(...)`, and (when enabled) quoted JavaScript URL strings. A filtered `{{ '/path' | relative_url }}` or `absolute_url` expression is portable; an opaque expression is reported. Root-relative local URLs are flagged when `baseurl` is nonempty; external links, fragments, and non-web schemes are not local-path violations. Diagnostics use `file:line: rule: explanation`; exit codes are 0 (clean), 1 (findings), and 2 (usage/I/O/configuration error). This is regex-based source policy, not a proof of rendered or runtime URL correctness. Generated `_site`, dot-directories, `node_modules`, and `vendor` are skipped.
 
 ## Development
 

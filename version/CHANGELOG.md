@@ -3,6 +3,12 @@
 
 ## Unreleased
 
+## 1.13.1 (Sep 14, 2026)
+
+### Fixed
+* Localized builds now honor `include` settings for underscore-prefixed page
+  directories while validating required translations.
+
 ## 1.13.0 (Sep 12, 2026)
 
 ### New
