@@ -31,6 +31,7 @@ type Site struct {
 
 	docs               []Document // all documents, whether or not they are output
 	nonCollectionPages []Page
+	documentation      *documentationInventory
 
 	renderer   *renderers.Manager
 	renderOnce sync.Once

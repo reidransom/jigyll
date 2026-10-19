@@ -36,6 +36,9 @@ func (s *Site) initializeDrop() error {
 		// TODO read time from _config, if it's available
 		"time": time.Now(),
 	})
+	if s.documentation != nil {
+		drop["documentation"] = s.documentation.liquid()
+	}
 	if context := s.localizationContext; context != nil {
 		languages := make([]map[string]interface{}, 0, len(context.registry.Locales))
 		for _, locale := range context.registry.OrderedLocales() {

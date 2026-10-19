@@ -63,7 +63,10 @@ func (s *Site) Read() error {
 			return err
 		}
 	}
-	return s.runHooks(func(p plugins.Plugin) error { return p.PostReadSite(s) })
+	if err := s.runHooks(func(p plugins.Plugin) error { return p.PostReadSite(s) }); err != nil {
+		return err
+	}
+	return s.prepareDocumentation()
 }
 
 // isIncludedPath checks if a path or its parent directory is explicitly in the include list

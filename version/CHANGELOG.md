@@ -6,6 +6,8 @@
 ### New
 * Added a shared article API for Liquid-resolved documentation source, rendered
   body HTML, and heading metadata, without repeating Liquid evaluation.
+* Added an opt-in public documentation inventory shared by templates and
+  versioned export records, preserving published-by-omission behavior.
 
 ## 1.13.1 (Sep 14, 2026)
 
