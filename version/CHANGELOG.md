@@ -15,6 +15,8 @@
 * Added native build/serve documentation artifacts with content-derived snapshots,
   generated Markdown routes, stale-export cleanup, and an offline
   `documentation-finalize` command for post-asset-processing publication.
+* Exposed inventory-mapped same-origin Markdown paths for preview-safe article
+  format and discovery links while retaining canonical citation metadata.
 
 ## 1.13.1 (Sep 14, 2026)
 

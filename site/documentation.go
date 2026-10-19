@@ -155,6 +155,7 @@ func (d *documentationInventory) liquid() map[string]interface{} {
 			"id": article.ID, "title": article.Title, "description": article.Description,
 			"nav_section": article.NavSection, "nav_order": article.NavOrder,
 			"url": article.URL, "canonical_url": article.CanonicalURL, "markdown_url": article.MarkdownURL,
+			"markdown_path": article.URL + "index.md",
 		}
 	}
 	return map[string]interface{}{"groups": groups, "articles": articles}

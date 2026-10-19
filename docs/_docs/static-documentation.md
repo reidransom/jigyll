@@ -37,7 +37,7 @@ Full, non-localized builds with an empty `baseurl` are supported. Documentation-
 
 Generated routes cannot shadow authored output and do not become additional source pages. Build cleaning removes obsolete exports; watch reloads use a complete new inventory. Invalid article metadata or ambiguous/missing heading targets fail generation before the destination is cleaned.
 
-Templates use `site.documentation.groups` and `site.documentation.articles` for the same selected navigation inventory. Layouts can render `page.headings` into a TOC without client-side heading construction. Final article HTML must wrap the body in exactly one `<article class="docs-article">` for post-processing finalization.
+Templates use `site.documentation.groups` and `site.documentation.articles` for the same selected navigation inventory. Each template article includes canonical `markdown_url` and same-origin `markdown_path`; use the latter for visible/alternate links that must work on preview hosts. Layouts can render `page.headings` into a TOC without client-side heading construction. Final article HTML must wrap the body in exactly one `<article class="docs-article">` for post-processing finalization.
 
 Markdown keeps code blocks, tables, and literal examples. Real navigation/media destinations are resolved against the original canonical HTML article, including fragment-only links. Section records are disjoint: introduction text precedes the first heading, and each heading's body ends at the next heading of any level. Heading hierarchy supplies context without duplicating parent text. No-heading articles have an introductory record when nonempty. Raw headings require unique explicit IDs.
 
