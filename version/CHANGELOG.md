@@ -3,6 +3,10 @@
 
 ## Unreleased
 
+### New
+* Added a shared article API for Liquid-resolved documentation source, rendered
+  body HTML, and heading metadata, without repeating Liquid evaluation.
+
 ## 1.13.1 (Sep 14, 2026)
 
 ### Fixed

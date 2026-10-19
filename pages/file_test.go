@@ -29,17 +29,21 @@ func (rm renderManagerFake) ApplyLayout(layout string, content []byte, vars liqu
 }
 
 func (rm renderManagerFake) Render(w io.Writer, src []byte, vars liquid.Bindings, filename string, lineNo int) error {
-	if bytes.Contains(src, []byte("{% error %}")) {
-		return fmt.Errorf("render error")
-	}
-	_, err := io.WriteString(w, "rendered: ")
+	resolved, err := rm.RenderTemplate(src, vars, filename, lineNo)
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(src)
-	return err
+	return rm.Convert(w, resolved, filename, lineNo)
 }
 
 func (rm renderManagerFake) RenderTemplate(src []byte, vars liquid.Bindings, filename string, lineNo int) ([]byte, error) {
+	if bytes.Contains(src, []byte("{% error %}")) {
+		return nil, fmt.Errorf("render error")
+	}
 	return append([]byte("rendered: "), src...), nil
+}
+
+func (rm renderManagerFake) Convert(w io.Writer, src []byte, filename string, lineNo int) error {
+	_, err := w.Write(src)
+	return err
 }

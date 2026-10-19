@@ -23,6 +23,7 @@ type Page interface {
 	// Render asks a page to compute its content.
 	// This has the side effect of causing the content to subsequently appear in the drop.
 	Render() error
+	Article() (Article, error)
 	SetContent(string)
 	FrontMatter() FrontMatter
 	// PostDate returns the date computed from the filename or frontmatter.
@@ -33,6 +34,16 @@ type Page interface {
 
 	Categories() []string
 	Tags() []string
+}
+
+// Article is the body of a rendered page, before layouts are applied.
+// Source is the Liquid-resolved source, or nil when source capture is disabled
+// or the body was supplied by SetContent. Source and Headings are shared,
+// immutable page-owned data; callers must not modify them.
+type Article struct {
+	Source   []byte
+	HTML     string
+	Headings []renderers.Heading
 }
 
 // PageEmbed can be embedded to give defaults for the Page interface.
@@ -72,13 +83,14 @@ type page struct {
 	// only read afterwards, so it needs no locking.
 	extraContext map[string]interface{}
 
-	m            sync.RWMutex
-	content      string
-	contentError error
-	contentOnce  sync.Once
-	excerpt      interface{} // []byte or string, depending on rendering stage
-	headings     []renderers.Heading
-	rendered     bool
+	m              sync.RWMutex
+	content        string
+	contentError   error
+	contentOnce    sync.Once
+	excerpt        interface{} // []byte or string, depending on rendering stage
+	headings       []renderers.Heading
+	resolvedSource []byte
+	rendered       bool
 }
 
 // IsStatic is in the File interface.
@@ -121,6 +133,7 @@ func (p *page) reset() {
 	p.contentOnce = sync.Once{}
 	p.rendered = false
 	p.headings = nil
+	p.resolvedSource = nil
 }
 
 func readFrontMatter(f *file) (b []byte, lineNo int, err error) {
@@ -257,6 +270,16 @@ func (p *page) Render() error {
 	return p.contentError
 }
 
+// Article renders the page and returns its shared, immutable article body.
+func (p *page) Article() (Article, error) {
+	if err := p.Render(); err != nil {
+		return Article{}, err
+	}
+	p.m.RLock()
+	defer p.m.RUnlock()
+	return Article{Source: p.resolvedSource, HTML: p.content, Headings: p.headings}, nil
+}
+
 func (p *page) SetContent(content string) {
 	p.contentOnce.Do(func() {}) // prevent Render from overwriting
 	headings, err := p.extractHeadings(content)
@@ -265,6 +288,7 @@ func (p *page) SetContent(content string) {
 	p.content = content
 	p.contentError = utils.WrapPathError(err, p.filename)
 	p.headings = headings
+	p.resolvedSource = nil
 	p.rendered = true
 }
 
@@ -278,9 +302,18 @@ func (p *page) extractHeadings(content string) ([]renderers.Heading, error) {
 func (p *page) computeContent() (cn string, ex string, err error) {
 	pl := p.site.RendererManager()
 	buf := new(bytes.Buffer)
-	err = pl.Render(buf, p.raw, p.TemplateContext(), p.filename, p.firstLine)
+	src, err := pl.RenderTemplate(p.raw, p.TemplateContext(), p.filename, p.firstLine)
+	if err != nil {
+		return "", "", err
+	}
+	err = pl.Convert(buf, src, p.filename, p.firstLine)
 	if err != nil {
 		return
+	}
+	if documentation, ok := p.site.Config().Map("documentation"); ok && len(documentation) > 0 && documentation["enabled"] != false && p.fm["layout"] == "docs" {
+		p.m.Lock()
+		p.resolvedSource = src
+		p.m.Unlock()
 	}
 	cn = buf.String()
 	ex = cn

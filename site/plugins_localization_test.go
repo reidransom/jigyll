@@ -24,11 +24,12 @@ type generatedPluginPage struct {
 	pages.PageEmbed
 }
 
-func (p *generatedPluginPage) Render() error                  { return nil }
-func (p *generatedPluginPage) SetContent(string)              {}
-func (p *generatedPluginPage) FrontMatter() pages.FrontMatter { return nil }
-func (p *generatedPluginPage) PostDate() time.Time            { return time.Time{} }
-func (p *generatedPluginPage) IsPost() bool                   { return false }
-func (p *generatedPluginPage) Categories() []string           { return nil }
-func (p *generatedPluginPage) Write(io.Writer) error          { return nil }
-func (p *generatedPluginPage) Tags() []string                 { return nil }
+func (p *generatedPluginPage) Render() error                   { return nil }
+func (p *generatedPluginPage) Article() (pages.Article, error) { return pages.Article{}, nil }
+func (p *generatedPluginPage) SetContent(string)               {}
+func (p *generatedPluginPage) FrontMatter() pages.FrontMatter  { return nil }
+func (p *generatedPluginPage) PostDate() time.Time             { return time.Time{} }
+func (p *generatedPluginPage) IsPost() bool                    { return false }
+func (p *generatedPluginPage) Categories() []string            { return nil }
+func (p *generatedPluginPage) Write(io.Writer) error           { return nil }
+func (p *generatedPluginPage) Tags() []string                  { return nil }

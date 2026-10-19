@@ -31,6 +31,7 @@ var (
 type Renderers interface {
 	ApplyLayout(string, []byte, liquid.Bindings) ([]byte, error)
 	Render(io.Writer, []byte, liquid.Bindings, string, int) error
+	Convert(io.Writer, []byte, string, int) error
 	RenderTemplate([]byte, liquid.Bindings, string, int) ([]byte, error)
 }
 
@@ -79,6 +80,12 @@ func (p *Manager) Render(w io.Writer, src []byte, vars liquid.Bindings, filename
 	if err != nil {
 		return err
 	}
+	return p.Convert(w, src, filename, lineNo)
+}
+
+// Convert applies extension-selected conversion to already Liquid-resolved content.
+func (p *Manager) Convert(w io.Writer, src []byte, filename string, lineNo int) error {
+	var err error
 	if p.cfg.IsSASSPath(filename) {
 		return p.WriteSass(w, src)
 	}
