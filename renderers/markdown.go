@@ -11,9 +11,11 @@ import (
 	"github.com/reidransom/jigyll/utils"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting"
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	gmhtml "github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 )
 
@@ -99,6 +101,12 @@ var goldmarkEngine = goldmark.New(
 		gmhtml.WithUnsafe(), // allow raw HTML passthrough
 	),
 )
+
+// ParseMarkdown uses the article renderer's syntax extensions without
+// evaluating Liquid, converting output, or modifying the input source.
+func ParseMarkdown(source []byte, context parser.Context) ast.Node {
+	return goldmarkEngine.Parser().Parse(text.NewReader(source), parser.WithContext(context))
+}
 
 // goldmarkConvert renders markdown to HTML using the shared goldmark engine.
 func goldmarkConvert(md []byte) ([]byte, error) {

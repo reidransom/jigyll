@@ -131,6 +131,7 @@ func validateSnapshot(manifest Manifest, corpus Corpus, markdown map[string][]by
 		groups[group.Slug] = true
 	}
 	articles := make(map[string]Article)
+	paths := []string{"/llms.txt", "/docs/manifest.json", "/docs/search.json"}
 	for _, article := range manifest.Articles {
 		if err := validateArticle(article); err != nil {
 			return err
@@ -142,9 +143,13 @@ func validateSnapshot(manifest Manifest, corpus Corpus, markdown map[string][]by
 			return fmt.Errorf("article %q: unknown group %q", article.ID, article.NavSection)
 		}
 		articles[article.ID] = article
+		paths = append(paths, article.URL+"index.html", article.URL+"index.md")
 		if _, ok := markdown[article.URL+"index.md"]; !ok {
 			return fmt.Errorf("article %q: missing exported Markdown", article.ID)
 		}
+	}
+	if err := ValidateOutputPaths(paths); err != nil {
+		return err
 	}
 	if len(markdown) != len(articles) {
 		return fmt.Errorf("exported Markdown set does not match manifest articles")

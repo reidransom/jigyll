@@ -18,6 +18,13 @@
 * Exposed inventory-mapped same-origin Markdown paths for preview-safe article
   format and discovery links while retaining canonical citation metadata.
 
+### Fixed
+* Preserve Markdown link titles, escaped destinations, container-nested references,
+  footnote prose, and raw-element bodies while revising actual URLs. Export parsing
+  now shares the article renderer's syntax extensions.
+* Reject documentation output file/directory collisions before cleaning completed
+  output, including collisions with generated manifests and Markdown files.
+
 ## 1.13.1 (Sep 14, 2026)
 
 ### Fixed

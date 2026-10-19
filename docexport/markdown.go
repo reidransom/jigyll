@@ -8,10 +8,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/yuin/goldmark"
+	"github.com/reidransom/jigyll/renderers"
 	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/util"
 	"golang.org/x/net/html"
 )
@@ -30,9 +29,11 @@ func Markdown(source []byte, canonical string, assets map[string]string) ([]byte
 	if err != nil || base.Host == "" {
 		return nil, fmt.Errorf("invalid canonical article URL %q", canonical)
 	}
-	doc := goldmark.New(goldmark.WithExtensions(extension.GFM)).Parser().Parse(text.NewReader(source))
+	context := parser.NewContext()
+	doc := renderers.ParseMarkdown(source, context)
 	destinations := map[string]bool{}
 	protected := []sourceRange{}
+	rawHTML := []sourceRange{}
 	err = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
@@ -42,6 +43,14 @@ func Markdown(source []byte, canonical string, assets map[string]string) ([]byte
 			destinations[stdhtml.UnescapeString(string(util.UnescapePunctuations(n.Destination)))] = true
 		case *ast.Image:
 			destinations[stdhtml.UnescapeString(string(util.UnescapePunctuations(n.Destination)))] = true
+		case *ast.HTMLBlock:
+			for i := range n.Lines().Len() {
+				line := n.Lines().At(i)
+				rawHTML = append(rawHTML, sourceRange{line.Start, line.Stop})
+			}
+			if n.HasClosure() {
+				rawHTML = append(rawHTML, sourceRange{n.ClosureLine.Start, n.ClosureLine.Stop})
+			}
 		case *ast.CodeBlock:
 			for i := range n.Lines().Len() {
 				line := n.Lines().At(i)
@@ -59,8 +68,10 @@ func Markdown(source []byte, canonical string, assets map[string]string) ([]byte
 		return nil, err
 	}
 	sort.Slice(protected, func(i, j int) bool { return protected[i].start < protected[j].start })
+	sort.Slice(rawHTML, func(i, j int) bool { return rawHTML[i].start < rawHTML[j].start })
 	edits := []sourceEdit{}
 	protection := 0
+	rawPosition := 0
 	brackets := 0
 	for i := 0; i < len(source); {
 		for protection < len(protected) && protected[protection].end <= i {
@@ -68,6 +79,13 @@ func Markdown(source []byte, canonical string, assets map[string]string) ([]byte
 		}
 		if protection < len(protected) && i >= protected[protection].start {
 			i = protected[protection].end
+			continue
+		}
+		for rawPosition < len(rawHTML) && rawHTML[rawPosition].end <= i {
+			rawPosition++
+		}
+		if rawPosition < len(rawHTML) && i >= rawHTML[rawPosition].start && source[i] != '<' {
+			i++
 			continue
 		}
 		switch source[i] {
@@ -113,11 +131,15 @@ func Markdown(source []byte, canonical string, assets map[string]string) ([]byte
 			}
 			if hadBracket && i+1 < len(source) && (source[i+1] == '(' || source[i+1] == ':') {
 				definition := source[i+1] == ':'
+				var reference parser.Reference
 				if definition {
 					line := bytes.LastIndexByte(source[:i], '\n') + 1
-					prefix := source[line:i]
-					opening := bytes.IndexByte(prefix, '[')
-					if opening < 0 || opening > 3 || strings.TrimSpace(string(prefix[:opening])) != "" {
+					opening := bytes.IndexByte(source[line:i], '[')
+					var found bool
+					if opening >= 0 && definitionPrefix(source[line:line+opening]) {
+						reference, found = context.Reference(util.ToLinkReference(source[line+opening+1 : i]))
+					}
+					if !found {
 						i++
 						continue
 					}
@@ -126,12 +148,17 @@ func Markdown(source []byte, canonical string, assets map[string]string) ([]byte
 				if ok {
 					raw := string(source[start:end])
 					decoded := stdhtml.UnescapeString(string(util.UnescapePunctuations([]byte(raw))))
-					if definition || destinations[decoded] {
-						if value := rebaseDestination(decoded, base, assets); value != decoded {
-							edits = append(edits, sourceEdit{start, end, value})
-						}
+					active := destinations[decoded]
+					if definition {
+						active = decoded == stdhtml.UnescapeString(string(util.UnescapePunctuations(reference.Destination())))
 					}
 					i = end
+					if active {
+						if value := rebaseDestination(decoded, base, assets); value != decoded {
+							edits = append(edits, sourceEdit{start, end, serializeDestination(value, start > 0 && source[start-1] == '<')})
+						}
+						i = markdownLinkEnd(source, end, definition)
+					}
 					continue
 				}
 			}
@@ -145,20 +172,12 @@ func Markdown(source []byte, canonical string, assets map[string]string) ([]byte
 			if kind == html.StartTagToken || kind == html.SelfClosingTagToken {
 				raw := tokenizer.Raw()
 				token := tokenizer.Token()
-				// Text inside these elements is not navigation or media markup.
-				if token.Data == "pre" || token.Data == "code" || token.Data == "script" || token.Data == "style" || token.Data == "textarea" {
-					closing := []byte("</" + token.Data + ">")
-					if end := closingElement(source, i+len(raw), closing); end >= 0 {
-						i = end
-						continue
-					}
-				}
 				changed := false
 				for a := range token.Attr {
 					attribute := &token.Attr[a]
 					value := attribute.Val
 					switch attribute.Key {
-					case "href", "src", "poster", "action":
+					case "href", "src", "poster", "action", "data-manifest":
 						value = rebaseDestination(value, base, assets)
 					case "srcset":
 						value = rebaseSrcset(value, base, assets)
@@ -170,6 +189,10 @@ func Markdown(source []byte, canonical string, assets map[string]string) ([]byte
 				}
 				if changed {
 					edits = append(edits, sourceEdit{i, i + len(raw), token.String()})
+				}
+				if token.Data == "pre" || token.Data == "code" || token.Data == "script" || token.Data == "style" || token.Data == "textarea" {
+					i += rawElementLength(tokenizer, token.Data, len(raw))
+					continue
 				}
 				i += len(raw)
 				continue
@@ -304,17 +327,130 @@ func rebaseSrcset(value string, base *url.URL, assets map[string]string) string 
 	return out.String()
 }
 
-func closingElement(source []byte, start int, closing []byte) int {
-	for start+len(closing) <= len(source) {
-		offset := bytes.IndexByte(source[start:], '<')
-		if offset < 0 {
-			break
+// rawElementLength follows HTML tokenization, including valid whitespace in
+// end tags, while preserving all raw-text/code bytes after the opening tag.
+func rawElementLength(tokenizer *html.Tokenizer, tag string, consumed int) int {
+	depth := 1
+	for {
+		kind := tokenizer.Next()
+		consumed += len(tokenizer.Raw())
+		if kind == html.ErrorToken {
+			return consumed
 		}
-		start += offset
-		if start+len(closing) <= len(source) && bytes.EqualFold(source[start:start+len(closing)], closing) {
-			return start + len(closing)
+		if kind == html.StartTagToken || kind == html.EndTagToken {
+			name, _ := tokenizer.TagName()
+			if string(name) == tag {
+				if kind == html.StartTagToken {
+					depth++
+				} else {
+					depth--
+					if depth == 0 {
+						return consumed
+					}
+				}
+			}
 		}
-		start++
 	}
-	return -1
+}
+
+func definitionPrefix(prefix []byte) bool {
+	for {
+		prefix = bytes.TrimLeft(prefix, " \t")
+		if len(prefix) == 0 {
+			return true
+		}
+		if prefix[0] == '>' {
+			prefix = prefix[1:]
+			continue
+		}
+		marker := 0
+		if strings.ContainsRune("-+*", rune(prefix[0])) {
+			marker = 1
+		} else {
+			for marker < len(prefix) && marker < 9 && prefix[marker] >= '0' && prefix[marker] <= '9' {
+				marker++
+			}
+			if marker == 0 || marker >= len(prefix) || (prefix[marker] != '.' && prefix[marker] != ')') {
+				return false
+			}
+			marker++
+		}
+		if marker >= len(prefix) || (prefix[marker] != ' ' && prefix[marker] != '\t') {
+			return false
+		}
+		prefix = prefix[marker+1:]
+	}
+}
+
+func serializeDestination(value string, angle bool) string {
+	if angle {
+		return strings.NewReplacer("<", "%3C", ">", "%3E").Replace(value)
+	}
+	depth := 0
+	for _, character := range value {
+		switch character {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth < 0 {
+				return "<" + strings.NewReplacer("<", "%3C", ">", "%3E").Replace(value) + ">"
+			}
+		}
+	}
+	if depth != 0 {
+		return "<" + strings.NewReplacer("<", "%3C", ">", "%3E").Replace(value) + ">"
+	}
+	return value
+}
+
+// Skip link titles as syntax, not as another Markdown document to rewrite.
+func markdownLinkEnd(source []byte, end int, definition bool) int {
+	cursor := end
+	if cursor < len(source) && source[cursor] == '>' {
+		cursor++
+	}
+	gap := cursor
+	lines := 0
+	for cursor < len(source) && strings.ContainsRune(" \t\r\n", rune(source[cursor])) {
+		if source[cursor] == '\n' {
+			lines++
+		}
+		cursor++
+	}
+	if lines > 1 || cursor >= len(source) {
+		return end
+	}
+	if !definition && source[cursor] == ')' {
+		return cursor + 1
+	}
+	if gap == cursor || !strings.ContainsRune("\"'(", rune(source[cursor])) {
+		return end
+	}
+	closing := source[cursor]
+	if closing == '(' {
+		closing = ')'
+	}
+	for cursor++; cursor < len(source); cursor++ {
+		if source[cursor] == '\\' {
+			cursor++
+			continue
+		}
+		if source[cursor] != closing {
+			continue
+		}
+		after := cursor + 1
+		for after < len(source) && (source[after] == ' ' || source[after] == '\t' || source[after] == '\r') {
+			after++
+		}
+		if definition {
+			if after == len(source) || source[after] == '\n' {
+				return after
+			}
+		} else if after < len(source) && source[after] == ')' {
+			return after + 1
+		}
+		return end
+	}
+	return end
 }

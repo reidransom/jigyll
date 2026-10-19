@@ -3,6 +3,7 @@ package site
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/reidransom/jigyll/docexport"
 	"github.com/reidransom/jigyll/pages"
@@ -41,6 +42,14 @@ func (s *Site) addDocumentationRoutes() error {
 		if _, exists := s.Routes[route]; exists {
 			return fmt.Errorf("generated documentation route collides with authored output: %s", route)
 		}
+	}
+	paths := make([]string, 0, len(s.Routes)+len(routes))
+	for _, document := range s.Routes {
+		paths = append(paths, filepath.ToSlash(destinationRelativePath(document)))
+	}
+	paths = append(paths, routes...)
+	if err := docexport.ValidateOutputPaths(paths); err != nil {
+		return err
 	}
 	for _, route := range routes {
 		s.AddDocument(&documentationDocument{PageEmbed: pages.PageEmbed{Path: route}, site: s}, true)
