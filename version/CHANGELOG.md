@@ -8,6 +8,8 @@
   body HTML, and heading metadata, without repeating Liquid evaluation.
 * Added an opt-in public documentation inventory shared by templates and
   versioned export records, preserving published-by-omission behavior.
+* Added source-preserving documentation Markdown destination rebasing with
+  protected code examples and support for publish-time asset maps.
 
 ## 1.13.1 (Sep 14, 2026)
 
