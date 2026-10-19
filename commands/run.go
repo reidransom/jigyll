@@ -38,6 +38,8 @@ func run(cmd string) error { // nolint: gocyclo
 	}
 	// These commands run *without* loading the site
 	switch cmd {
+	case documentationFinalize.FullCommand():
+		return documentationFinalizeCommand()
 	case benchmark.FullCommand():
 		return benchmarkCommand()
 	case new.FullCommand():

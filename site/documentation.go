@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/reidransom/jigyll/docexport"
 )
@@ -20,6 +21,9 @@ type documentationInventory struct {
 	title       string
 	description string
 	openAPI     string
+	once        sync.Once
+	artifacts   map[string][]byte
+	err         error
 }
 
 func (s *Site) prepareDocumentation() error {
@@ -137,7 +141,7 @@ func (s *Site) prepareDocumentation() error {
 		inventory.articles = append(inventory.articles, entry.article)
 	}
 	s.documentation = inventory
-	return nil
+	return s.addDocumentationRoutes()
 }
 
 func (d *documentationInventory) liquid() map[string]interface{} {

@@ -21,6 +21,11 @@ func (s *Site) Write() (int, error) {
 	if err := s.ensureRendered(); err != nil {
 		return 0, err
 	}
+	if s.documentation != nil {
+		if _, err := s.documentation.snapshot(); err != nil {
+			return 0, err
+		}
+	}
 	if err := s.Clean(); err != nil {
 		return 0, err
 	}

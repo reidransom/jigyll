@@ -311,6 +311,9 @@ func (p *page) computeContent() (cn string, ex string, err error) {
 		return
 	}
 	if documentation, ok := p.site.Config().Map("documentation"); ok && len(documentation) > 0 && documentation["enabled"] != false && p.fm["layout"] == "docs" {
+		if src == nil {
+			src = []byte{}
+		}
 		p.m.Lock()
 		p.resolvedSource = src
 		p.m.Unlock()

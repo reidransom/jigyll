@@ -42,9 +42,16 @@ type Article struct {
 	Sections     []Heading `json:"sections" liquid:"sections"`
 }
 
+type Project struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	OpenAPI     string `json:"openapi"`
+}
+
 type Manifest struct {
 	SchemaVersion int       `json:"schema_version"`
 	SnapshotID    string    `json:"snapshot_id"`
+	Project       Project   `json:"project"`
 	Groups        []Group   `json:"groups"`
 	Articles      []Article `json:"articles"`
 }

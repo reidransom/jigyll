@@ -12,6 +12,9 @@
   protected code examples and support for publish-time asset maps.
 * Added disjoint rendered documentation sections with exact fragment validation,
   introductory text, heading hierarchy, and code/table-aware text extraction.
+* Added native build/serve documentation artifacts with content-derived snapshots,
+  generated Markdown routes, stale-export cleanup, and an offline
+  `documentation-finalize` command for post-asset-processing publication.
 
 ## 1.13.1 (Sep 14, 2026)
 
