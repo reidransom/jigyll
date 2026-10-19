@@ -10,6 +10,8 @@
   versioned export records, preserving published-by-omission behavior.
 * Added source-preserving documentation Markdown destination rebasing with
   protected code examples and support for publish-time asset maps.
+* Added disjoint rendered documentation sections with exact fragment validation,
+  introductory text, heading hierarchy, and code/table-aware text extraction.
 
 ## 1.13.1 (Sep 14, 2026)
 
