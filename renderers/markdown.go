@@ -184,10 +184,6 @@ func renderMarkdown(md []byte) ([]byte, error) {
 	return renderMarkdownWithOptionsAtLine(md, nil, 1)
 }
 
-func renderMarkdownWithOptions(md []byte, opts *TOCOptions) ([]byte, error) {
-	return renderMarkdownWithOptionsAtLine(md, opts, 1)
-}
-
 func renderMarkdownWithOptionsAtLine(md []byte, opts *TOCOptions, firstLine int) ([]byte, error) {
 	// Set default options if not provided
 	// Jekyll's default toc_levels is "2..6" to exclude H1 headings
