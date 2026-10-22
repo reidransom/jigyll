@@ -53,3 +53,22 @@ have full control of the output URL.
 Pages have an `excerpt` variable just like posts — by default the first
 paragraph of content. (In Jekyll this requires setting `page_excerpts: true`;
 in Jigyll it is always available.)
+
+## Article rendering API
+
+Go integrations can call `Page.Article()` to render a page and obtain its body
+HTML and heading metadata before layouts are applied. The returned `Article`
+also contains the exact Liquid-resolved, pre-conversion source when the page
+uses `layout: docs` and the `documentation` configuration map is nonempty
+and not disabled with `enabled: false`.
+
+Liquid runs once for the page body; Markdown or other extension-selected
+conversion consumes that same resolved source. `Article.Source` is `nil` when
+capture is disabled or content was replaced with `SetContent`; HTML is never
+substituted for authored source. Reloads and clones start with fresh capture
+state. Source and heading slices are shared immutable page data and must not
+be modified by callers.
+
+Renderer integrations can continue using `Render` for the full pipeline, or
+call `RenderTemplate` followed by `Convert` to separate Liquid evaluation from
+extension-selected conversion without evaluating a template twice.
