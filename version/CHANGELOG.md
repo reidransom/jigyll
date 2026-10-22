@@ -24,7 +24,6 @@
   now shares the article renderer's syntax extensions.
 * Reject documentation output file/directory collisions before cleaning completed
   output, including collisions with generated manifests and Markdown files.
-
 ## 1.13.1 (Sep 14, 2026)
 
 ### Fixed
