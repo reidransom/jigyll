@@ -22,67 +22,28 @@ import (
 // is atomic, but the set is not a filesystem transaction: the caller must publish
 // the output directory only after this function succeeds.
 func Finalize(directory string, assetMap map[string]string) error {
-	for original, revised := range assetMap {
-		target, err := url.Parse(revised)
-		if original == "" || strings.TrimSpace(revised) == "" || err != nil || target.User != nil || (target.Scheme != "" && target.Scheme != "http" && target.Scheme != "https") || strings.ContainsAny(revised, "\\\x00\r\n") {
-			return fmt.Errorf("invalid asset revision mapping %q to %q", original, revised)
-		}
+	if err := validateAssetMap(assetMap); err != nil {
+		return err
 	}
 	root, err := os.OpenRoot(directory)
 	if err != nil {
 		return fmt.Errorf("open documentation output: %w", err)
 	}
 	defer root.Close()
-	data, err := readSnapshotFile(root, "docs/manifest.json")
+	manifest, markdown, err := readSnapshotInputs(root)
 	if err != nil {
 		return err
-	}
-	var manifest Manifest
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&manifest); err != nil {
-		return fmt.Errorf("decode docs/manifest.json: %w", err)
-	}
-	if err := decoder.Decode(new(any)); err != io.EOF {
-		return fmt.Errorf("decode docs/manifest.json: expected exactly one JSON object")
-	}
-	markdown := make(map[string][]byte, len(manifest.Articles))
-	for _, article := range manifest.Articles {
-		if err := validateArticle(article); err != nil {
-			return err
-		}
-		route := article.URL + "index.md"
-		source, err := readSnapshotFile(root, strings.TrimPrefix(route, "/"))
-		if err != nil {
-			return err
-		}
-		markdown[route] = source
 	}
 	corpus := Corpus{SchemaVersion: SchemaVersion, Records: []Section{}}
 	if err := validateSnapshot(manifest, corpus, markdown); err != nil {
 		return err
 	}
 	for i := range manifest.Articles {
-		article := &manifest.Articles[i]
-		route := article.URL + "index.md"
-		revised, err := Markdown(markdown[route], article.CanonicalURL, assetMap)
-		if err != nil {
-			return fmt.Errorf("article %q Markdown: %w", article.ID, err)
-		}
-		markdown[route] = revised
-		page, err := readSnapshotFile(root, strings.TrimPrefix(article.URL+"index.html", "/"))
+		records, headings, err := finalizeArticle(root, &manifest.Articles[i], markdown, assetMap)
 		if err != nil {
 			return err
 		}
-		body, err := finalArticleBody(page)
-		if err != nil {
-			return fmt.Errorf("article %q: %w", article.ID, err)
-		}
-		records, headings, err := Sections(*article, body)
-		if err != nil {
-			return err
-		}
-		article.Sections = headings
+		manifest.Articles[i].Sections = headings
 		corpus.Records = append(corpus.Records, records...)
 	}
 	artifacts, err := Assemble(manifest, corpus, markdown)
@@ -90,6 +51,67 @@ func Finalize(directory string, assetMap map[string]string) error {
 		return err
 	}
 	return replaceSnapshotFiles(root, artifacts)
+}
+
+func validateAssetMap(assetMap map[string]string) error {
+	for original, revised := range assetMap {
+		target, err := url.Parse(revised)
+		if original == "" || strings.TrimSpace(revised) == "" || err != nil || target.User != nil || !validAssetScheme(target.Scheme) || strings.ContainsAny(revised, "\\\x00\r\n") {
+			return fmt.Errorf("invalid asset revision mapping %q to %q", original, revised)
+		}
+	}
+	return nil
+}
+
+func validAssetScheme(scheme string) bool {
+	return scheme == "" || scheme == "http" || scheme == "https"
+}
+
+func readSnapshotInputs(root *os.Root) (Manifest, map[string][]byte, error) {
+	data, err := readSnapshotFile(root, "docs/manifest.json")
+	if err != nil {
+		return Manifest{}, nil, err
+	}
+	var manifest Manifest
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&manifest); err != nil {
+		return Manifest{}, nil, fmt.Errorf("decode docs/manifest.json: %w", err)
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		return Manifest{}, nil, fmt.Errorf("decode docs/manifest.json: expected exactly one JSON object")
+	}
+	markdown := make(map[string][]byte, len(manifest.Articles))
+	for _, article := range manifest.Articles {
+		if err := validateArticle(article); err != nil {
+			return Manifest{}, nil, err
+		}
+		route := article.URL + "index.md"
+		source, err := readSnapshotFile(root, strings.TrimPrefix(route, "/"))
+		if err != nil {
+			return Manifest{}, nil, err
+		}
+		markdown[route] = source
+	}
+	return manifest, markdown, nil
+}
+
+func finalizeArticle(root *os.Root, article *Article, markdown map[string][]byte, assetMap map[string]string) ([]Section, []Heading, error) {
+	route := article.URL + "index.md"
+	revised, err := Markdown(markdown[route], article.CanonicalURL, assetMap)
+	if err != nil {
+		return nil, nil, fmt.Errorf("article %q Markdown: %w", article.ID, err)
+	}
+	markdown[route] = revised
+	page, err := readSnapshotFile(root, strings.TrimPrefix(article.URL+"index.html", "/"))
+	if err != nil {
+		return nil, nil, err
+	}
+	body, err := finalArticleBody(page)
+	if err != nil {
+		return nil, nil, fmt.Errorf("article %q: %w", article.ID, err)
+	}
+	return Sections(*article, body)
 }
 
 func readSnapshotFile(root *os.Root, name string) ([]byte, error) {

@@ -31,20 +31,40 @@ func (s *Site) prepareDocumentation() error {
 	if !enabled || len(settings) == 0 || settings["enabled"] == false {
 		return nil
 	}
+	origin, base, err := s.validateDocumentationConfig()
+	if err != nil {
+		return err
+	}
+	inventory, positions, err := s.initDocumentationInventory(origin, settings)
+	if err != nil {
+		return err
+	}
+	if err := s.collectDocumentationArticles(inventory, positions, base); err != nil {
+		return err
+	}
+	s.documentation = inventory
+	return s.addDocumentationRoutes()
+}
+
+func (s *Site) validateDocumentationConfig() (*url.URL, string, error) {
 	if s.cfg.Incremental {
-		return fmt.Errorf("documentation snapshots require full builds; disable incremental")
+		return nil, "", fmt.Errorf("documentation snapshots require full builds; disable incremental")
 	}
 	if s.cfg.Enabled() {
-		return fmt.Errorf("documentation snapshots do not support localized builds")
+		return nil, "", fmt.Errorf("documentation snapshots do not support localized builds")
 	}
 	origin, err := url.Parse(s.cfg.AbsoluteURL)
 	if err != nil || (origin.Scheme != "https" && origin.Scheme != "http") || origin.Host == "" || origin.RawQuery != "" || origin.Fragment != "" {
-		return fmt.Errorf("documentation requires an absolute HTTP(S) site url")
+		return nil, "", fmt.Errorf("documentation requires an absolute HTTP(S) site url")
 	}
 	base := strings.TrimSuffix(s.cfg.BaseURL, "/") + "/docs/"
 	if base != "/docs/" {
-		return fmt.Errorf("documentation currently requires an empty baseurl")
+		return nil, "", fmt.Errorf("documentation currently requires an empty baseurl")
 	}
+	return origin, base, nil
+}
+
+func (s *Site) initDocumentationInventory(origin *url.URL, settings map[string]interface{}) (*documentationInventory, map[string]int, error) {
 	inventory := &documentationInventory{origin: origin, title: fmt.Sprint(s.cfg.Variables()["title"]), articles: []docexport.Article{}}
 	if value, ok := settings["description"].(string); ok {
 		inventory.description = value
@@ -58,73 +78,41 @@ func (s *Site) prepareDocumentation() error {
 	}
 	data, err := json.Marshal(s.data[sectionsKey])
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	if err = json.Unmarshal(data, &inventory.groups); err != nil || len(inventory.groups) == 0 {
-		return fmt.Errorf("documentation requires a nonempty %s data list", sectionsKey)
+		return nil, nil, fmt.Errorf("documentation requires a nonempty %s data list", sectionsKey)
 	}
 	positions := make(map[string]int, len(inventory.groups))
 	for i, group := range inventory.groups {
 		if group.Slug == "" || group.Title == "" {
-			return fmt.Errorf("documentation groups require slug and title")
+			return nil, nil, fmt.Errorf("documentation groups require slug and title")
 		}
 		if _, exists := positions[group.Slug]; exists {
-			return fmt.Errorf("duplicate documentation group %q", group.Slug)
+			return nil, nil, fmt.Errorf("duplicate documentation group %q", group.Slug)
 		}
 		positions[group.Slug] = i
 	}
-	type entry struct {
-		page    Page
-		article docexport.Article
-	}
-	entries := []entry{}
+	return inventory, positions, nil
+}
+
+type docArticleEntry struct {
+	page    Page
+	article docexport.Article
+}
+
+func (s *Site) collectDocumentationArticles(inventory *documentationInventory, positions map[string]int, base string) error {
+	var entries []docArticleEntry
 	ids := map[string]bool{}
 	for _, p := range s.Pages() {
-		fm := p.FrontMatter()
-		group := fm.String("nav_section", "")
-		if fm.String("layout", "") != "docs" || !fm.Bool("published", true) || fm.Get("redirect_to", nil) != nil {
-			continue
-		}
-		if _, ok := positions[group]; !ok {
-			continue
-		}
-		rel, err := filepath.Rel(s.SourceDir(), p.Source())
+		entry, ok, err := s.inspectDocumentationPage(p, inventory.origin, positions, base, ids)
 		if err != nil {
 			return err
 		}
-		planning := false
-		for _, part := range strings.Split(filepath.ToSlash(rel), "/") {
-			if strings.HasPrefix(part, ".") || part == "_plans" {
-				planning = true
-				break
-			}
+		if ok {
+			entries = append(entries, entry)
+			ids[entry.article.ID] = true
 		}
-		if planning {
-			continue
-		}
-		route := p.URL()
-		if !strings.HasPrefix(route, base) || !strings.HasSuffix(route, "/") || path.Clean(route)+"/" != route || strings.ContainsAny(route, "?#%\\") {
-			return fmt.Errorf("documentation article %s requires a clean /docs/.../ permalink", rel)
-		}
-		id := strings.TrimSuffix(strings.TrimPrefix(route, base), "/")
-		if id == "" || ids[id] {
-			return fmt.Errorf("duplicate or empty documentation article ID %q", id)
-		}
-		if s.Routes[route] != p {
-			return fmt.Errorf("documentation route collision at %s", route)
-		}
-		title, description := fm.String("title", ""), fm.String("description", "")
-		if title == "" || description == "" {
-			return fmt.Errorf("documentation article %s requires title and description", rel)
-		}
-		order, ok := fm["nav_order"].(int)
-		if !ok {
-			return fmt.Errorf("documentation article %s requires integer nav_order", rel)
-		}
-		canonical := origin.ResolveReference(&url.URL{Path: route}).String()
-		markdown := origin.ResolveReference(&url.URL{Path: route + "index.md"}).String()
-		entries = append(entries, entry{p, docexport.Article{ID: id, Title: title, Description: description, NavSection: group, NavOrder: order, CanonicalURL: canonical, MarkdownURL: markdown, URL: route, Sections: []docexport.Heading{}}})
-		ids[id] = true
 	}
 	sort.Slice(entries, func(i, j int) bool {
 		a, b := entries[i].article, entries[j].article
@@ -140,8 +128,66 @@ func (s *Site) prepareDocumentation() error {
 		inventory.pages = append(inventory.pages, entry.page)
 		inventory.articles = append(inventory.articles, entry.article)
 	}
-	s.documentation = inventory
-	return s.addDocumentationRoutes()
+	return nil
+}
+
+func (s *Site) inspectDocumentationPage(p Page, origin *url.URL, positions map[string]int, base string, ids map[string]bool) (docArticleEntry, bool, error) {
+	fm := p.FrontMatter()
+	group := fm.String("nav_section", "")
+	if fm.String("layout", "") != "docs" || !fm.Bool("published", true) || fm.Get("redirect_to", nil) != nil {
+		return docArticleEntry{}, false, nil
+	}
+	if _, ok := positions[group]; !ok {
+		return docArticleEntry{}, false, nil
+	}
+	rel, err := filepath.Rel(s.SourceDir(), p.Source())
+	if err != nil {
+		return docArticleEntry{}, false, err
+	}
+	if isPlanningPath(rel) {
+		return docArticleEntry{}, false, nil
+	}
+	return s.buildDocArticleEntry(p, fm, rel, group, origin, base, ids)
+}
+
+func (s *Site) buildDocArticleEntry(p Page, fm map[string]interface{}, rel, group string, origin *url.URL, base string, ids map[string]bool) (docArticleEntry, bool, error) {
+	route := p.URL()
+	if !isCleanDocRoute(route, base) {
+		return docArticleEntry{}, false, fmt.Errorf("documentation article %s requires a clean /docs/.../ permalink", rel)
+	}
+	id := strings.TrimSuffix(strings.TrimPrefix(route, base), "/")
+	if id == "" || ids[id] {
+		return docArticleEntry{}, false, fmt.Errorf("duplicate or empty documentation article ID %q", id)
+	}
+	if s.Routes[route] != p {
+		return docArticleEntry{}, false, fmt.Errorf("documentation route collision at %s", route)
+	}
+	title, _ := fm["title"].(string)
+	description, _ := fm["description"].(string)
+	if title == "" || description == "" {
+		return docArticleEntry{}, false, fmt.Errorf("documentation article %s requires title and description", rel)
+	}
+	order, ok := fm["nav_order"].(int)
+	if !ok {
+		return docArticleEntry{}, false, fmt.Errorf("documentation article %s requires integer nav_order", rel)
+	}
+	canonical := origin.ResolveReference(&url.URL{Path: route}).String()
+	markdown := origin.ResolveReference(&url.URL{Path: route + "index.md"}).String()
+	article := docexport.Article{ID: id, Title: title, Description: description, NavSection: group, NavOrder: order, CanonicalURL: canonical, MarkdownURL: markdown, URL: route, Sections: []docexport.Heading{}}
+	return docArticleEntry{p, article}, true, nil
+}
+
+func isPlanningPath(rel string) bool {
+	for _, part := range strings.Split(filepath.ToSlash(rel), "/") {
+		if strings.HasPrefix(part, ".") || part == "_plans" {
+			return true
+		}
+	}
+	return false
+}
+
+func isCleanDocRoute(route, base string) bool {
+	return strings.HasPrefix(route, base) && strings.HasSuffix(route, "/") && path.Clean(route)+"/" == route && !strings.ContainsAny(route, "?#%\\")
 }
 
 func (d *documentationInventory) liquid() map[string]interface{} {

@@ -52,20 +52,20 @@ func (m *mockPage) FrontMatter() pages.FrontMatter {
 	}
 	return m.fm
 }
-func (m *mockPage) IsPost() bool          { return m.isPost }
-func (m *mockPage) URL() string           { return m.url }
-func (m *mockPage) IsStatic() bool        { return false }
-func (m *mockPage) Published() bool       { return true }
-func (m *mockPage) Source() string        { return "" }
-func (m *mockPage) OutputExt() string     { return ".html" }
-func (m *mockPage) Render() error         { return nil }
+func (m *mockPage) IsPost() bool                    { return m.isPost }
+func (m *mockPage) URL() string                     { return m.url }
+func (m *mockPage) IsStatic() bool                  { return false }
+func (m *mockPage) Published() bool                 { return true }
+func (m *mockPage) Source() string                  { return "" }
+func (m *mockPage) OutputExt() string               { return ".html" }
+func (m *mockPage) Render() error                   { return nil }
 func (m *mockPage) Article() (pages.Article, error) { return pages.Article{}, nil }
-func (m *mockPage) SetContent(string)     {}
-func (m *mockPage) PostDate() time.Time   { return time.Time{} }
-func (m *mockPage) Categories() []string  { return nil }
-func (m *mockPage) Tags() []string        { return nil }
-func (m *mockPage) Write(io.Writer) error { return nil }
-func (m *mockPage) Reload() error         { return nil }
+func (m *mockPage) SetContent(string)               {}
+func (m *mockPage) PostDate() time.Time             { return time.Time{} }
+func (m *mockPage) Categories() []string            { return nil }
+func (m *mockPage) Tags() []string                  { return nil }
+func (m *mockPage) Write(io.Writer) error           { return nil }
+func (m *mockPage) Reload() error                   { return nil }
 
 func TestDefaultLayout_layoutNames(t *testing.T) {
 	plugin := jekyllDefaultLayout{}

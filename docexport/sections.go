@@ -19,23 +19,7 @@ func Sections(article Article, bodyHTML string) ([]Section, []Heading, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse article %q: %w", article.ID, err)
 	}
-	// Count all targets, including ignored chrome: those IDs still participate
-	// in browser fragment resolution and can make an otherwise valid heading ambiguous.
-	ids := make(map[string]int)
-	var countIDs func(*html.Node)
-	countIDs = func(n *html.Node) {
-		if n.Type == html.ElementNode {
-			if id := sectionAttribute(n, "id"); id != "" {
-				ids[id]++
-			}
-		}
-		for child := n.FirstChild; child != nil; child = child.NextSibling {
-			countIDs(child)
-		}
-	}
-	for _, n := range nodes {
-		countIDs(n)
-	}
+	ids := countElementIDs(nodes)
 	base, err := url.Parse(article.CanonicalURL)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid canonical article URL %q: %w", article.CanonicalURL, err)
@@ -51,40 +35,15 @@ func Sections(article Article, bodyHTML string) ([]Section, []Heading, error) {
 			text = sectionText{}
 			return
 		}
-		record := Section{
-			ArticleID: article.ID, Title: article.Title, Description: article.Description,
-			NavSection: article.NavSection, MarkdownURL: article.MarkdownURL,
-			Text: body, CanonicalURL: article.CanonicalURL, ID: article.ID, Hierarchy: []Heading{},
-		}
-		if current != nil {
-			record.ID = article.ID + "#" + current.Fragment
-			record.Heading = current.Text
-			record.Fragment = current.Fragment
-			record.Hierarchy = append([]Heading(nil), hierarchy...)
-			target := *base
-			target.Fragment = current.Fragment
-			target.RawFragment = ""
-			record.CanonicalURL = target.String()
-		}
-		records = append(records, record)
+		records = append(records, buildSectionRecord(article, base, current, hierarchy, body))
 		text = sectionText{}
 	}
 	onHeading := func(n *html.Node) error {
-		fragment := sectionAttribute(n, "id")
-		if fragment == "" {
-			return fmt.Errorf("article %q: %s heading has no fragment ID", article.ID, n.Data)
-		}
-		if ids[fragment] != 1 {
-			return fmt.Errorf("article %q: heading fragment %q is not unique", article.ID, fragment)
+		heading, err := parseHeadingNode(article.ID, n, ids)
+		if err != nil {
+			return err
 		}
 		flush()
-		var title sectionText
-		for child := n.FirstChild; child != nil; child = child.NextSibling {
-			if err := walkSectionText(child, false, &title, nil); err != nil {
-				return err
-			}
-		}
-		heading := Heading{Level: int(n.Data[1] - '0'), Text: title.String(), Fragment: fragment}
 		for len(hierarchy) > 0 && hierarchy[len(hierarchy)-1].Level >= heading.Level {
 			hierarchy = hierarchy[:len(hierarchy)-1]
 		}
@@ -100,6 +59,63 @@ func Sections(article Article, bodyHTML string) ([]Section, []Heading, error) {
 	}
 	flush()
 	return records, headings, nil
+}
+
+// Count all targets, including ignored chrome: those IDs still participate
+// in browser fragment resolution and can make an otherwise valid heading ambiguous.
+func countElementIDs(nodes []*html.Node) map[string]int {
+	ids := make(map[string]int)
+	var countIDs func(*html.Node)
+	countIDs = func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			if id := sectionAttribute(n, "id"); id != "" {
+				ids[id]++
+			}
+		}
+		for child := n.FirstChild; child != nil; child = child.NextSibling {
+			countIDs(child)
+		}
+	}
+	for _, n := range nodes {
+		countIDs(n)
+	}
+	return ids
+}
+
+func buildSectionRecord(article Article, base *url.URL, current *Heading, hierarchy []Heading, body string) Section {
+	record := Section{
+		ArticleID: article.ID, Title: article.Title, Description: article.Description,
+		NavSection: article.NavSection, MarkdownURL: article.MarkdownURL,
+		Text: body, CanonicalURL: article.CanonicalURL, ID: article.ID, Hierarchy: []Heading{},
+	}
+	if current != nil {
+		record.ID = article.ID + "#" + current.Fragment
+		record.Heading = current.Text
+		record.Fragment = current.Fragment
+		record.Hierarchy = append([]Heading(nil), hierarchy...)
+		target := *base
+		target.Fragment = current.Fragment
+		target.RawFragment = ""
+		record.CanonicalURL = target.String()
+	}
+	return record
+}
+
+func parseHeadingNode(articleID string, n *html.Node, ids map[string]int) (Heading, error) {
+	fragment := sectionAttribute(n, "id")
+	if fragment == "" {
+		return Heading{}, fmt.Errorf("article %q: %s heading has no fragment ID", articleID, n.Data)
+	}
+	if ids[fragment] != 1 {
+		return Heading{}, fmt.Errorf("article %q: heading fragment %q is not unique", articleID, fragment)
+	}
+	var title sectionText
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		if err := walkSectionText(child, false, &title, nil); err != nil {
+			return Heading{}, err
+		}
+	}
+	return Heading{Level: int(n.Data[1] - '0'), Text: title.String(), Fragment: fragment}, nil
 }
 
 func sectionAttribute(n *html.Node, key string) string {
@@ -141,30 +157,40 @@ func walkSectionText(n *html.Node, code bool, text *sectionText, heading func(*h
 		if ignoredSectionElement(n) {
 			return nil
 		}
-		if !code && len(n.Data) == 2 && n.Data[0] == 'h' && n.Data[1] >= '1' && n.Data[1] <= '6' && heading != nil {
+		if !code && isHeadingElement(n.Data) && heading != nil {
 			return heading(n)
 		}
 	}
-	separator := byte(0)
-	if n.Type == html.ElementNode {
-		switch n.Data {
-		case "td", "th":
-			separator = '\t'
-		case "address", "article", "aside", "blockquote", "br", "dd", "div", "dl", "dt", "figcaption", "figure", "footer", "header", "hr", "li", "main", "ol", "p", "pre", "section", "table", "tr", "ul":
-			separator = '\n'
-		}
-		if n.Data == "pre" || n.Data == "code" {
-			code = true
-		}
-	}
+	separator, childCode := elementSectionMode(n, code)
 	text.separate(separator)
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
-		if err := walkSectionText(child, code, text, heading); err != nil {
+		if err := walkSectionText(child, childCode, text, heading); err != nil {
 			return err
 		}
 	}
 	text.separate(separator)
 	return nil
+}
+
+func isHeadingElement(tag string) bool {
+	return len(tag) == 2 && tag[0] == 'h' && tag[1] >= '1' && tag[1] <= '6'
+}
+
+func elementSectionMode(n *html.Node, code bool) (byte, bool) {
+	if n.Type != html.ElementNode {
+		return 0, code
+	}
+	var separator byte
+	switch n.Data {
+	case "td", "th":
+		separator = '\t'
+	case "address", "article", "aside", "blockquote", "br", "dd", "div", "dl", "dt", "figcaption", "figure", "footer", "header", "hr", "li", "main", "ol", "p", "pre", "section", "table", "tr", "ul":
+		separator = '\n'
+	}
+	if n.Data == "pre" || n.Data == "code" {
+		code = true
+	}
+	return separator, code
 }
 
 // sectionText collapses prose whitespace without merging tokens across block or
@@ -189,7 +215,7 @@ func (t *sectionText) separate(separator byte) {
 
 func (t *sectionText) emitPending() {
 	if t.pending != 0 {
-		if t.Len() > 0 && t.last != '\n' && !(t.pending == ' ' && (t.last == ' ' || t.last == '\t')) {
+		if t.Len() > 0 && t.last != '\n' && (t.pending != ' ' || (t.last != ' ' && t.last != '\t')) {
 			t.WriteByte(t.pending)
 			t.last = t.pending
 		}

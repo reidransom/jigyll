@@ -56,31 +56,46 @@ type settings struct {
 
 func loadSettings(o Options) (settings, error) {
 	var s settings
-	for _, item := range []struct {
-		path string
-		out  *policy
-	}{{o.SharedPolicy, &s.shared}, {o.SitePolicy, &s.site}} {
-		if item.path == "" {
-			continue
-		}
-		data, err := os.ReadFile(item.path)
-		if err != nil {
-			return s, err
-		}
-		if err := yaml.UnmarshalStrict(data, item.out); err != nil {
-			return s, fmt.Errorf("%s: %w", item.path, err)
-		}
-		if err := validatePolicy(*item.out); err != nil {
-			return s, fmt.Errorf("%s: %w", item.path, err)
-		}
+	if err := loadPolicyFile(o.SharedPolicy, &s.shared); err != nil {
+		return s, err
 	}
+	if err := loadPolicyFile(o.SitePolicy, &s.site); err != nil {
+		return s, err
+	}
+	if err := loadSiteOrigin(o, &s); err != nil {
+		return s, err
+	}
+	if err := buildAllowedHosts(&s); err != nil {
+		return s, err
+	}
+	return s, nil
+}
+
+func loadPolicyFile(path string, out *policy) error {
+	if path == "" {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if err := yaml.UnmarshalStrict(data, out); err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	if err := validatePolicy(*out); err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
+	return nil
+}
+
+func loadSiteOrigin(o Options, s *settings) error {
 	config := o.SiteConfig
 	if config == "" {
 		config = filepath.Join(o.Site, "_config.yml")
 	}
 	data, err := os.ReadFile(config)
 	if err != nil && (o.SiteConfig != "" || !os.IsNotExist(err)) {
-		return s, err
+		return err
 	}
 	var site struct {
 		URL     string `yaml:"url"`
@@ -88,13 +103,13 @@ func loadSettings(o Options) (settings, error) {
 	}
 	if len(data) > 0 {
 		if err := yaml.Unmarshal(data, &site); err != nil {
-			return s, fmt.Errorf("%s: %w", config, err)
+			return fmt.Errorf("%s: %w", config, err)
 		}
 	}
 	if site.URL != "" {
 		origin, ok := webHost(site.URL)
 		if !ok {
-			return s, fmt.Errorf("%s: url must be an http(s) origin", config)
+			return fmt.Errorf("%s: url must be an http(s) origin", config)
 		}
 		s.origin = origin
 	}
@@ -102,6 +117,10 @@ func loadSettings(o Options) (settings, error) {
 	if s.base == "/" {
 		s.base = ""
 	}
+	return nil
+}
+
+func buildAllowedHosts(s *settings) error {
 	hosts := s.shared.AllowedHosts
 	if s.site.AllowedHosts != nil {
 		hosts = s.site.AllowedHosts
@@ -109,11 +128,11 @@ func loadSettings(o Options) (settings, error) {
 	s.allowed = make(map[string]bool, len(hosts))
 	for _, h := range hosts {
 		if h == "" || strings.ContainsAny(h, "/: ") {
-			return s, fmt.Errorf("allowed_hosts must contain hostnames without schemes or ports: %q", h)
+			return fmt.Errorf("allowed_hosts must contain hostnames without schemes or ports: %q", h)
 		}
 		s.allowed[strings.ToLower(h)] = true
 	}
-	return s, nil
+	return nil
 }
 
 func validatePolicy(p policy) error {

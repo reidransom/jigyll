@@ -112,6 +112,27 @@ func validateArticle(article Article) error {
 }
 
 func validateSnapshot(manifest Manifest, corpus Corpus, markdown map[string][]byte) error {
+	if err := validateSnapshotMetadata(manifest, corpus); err != nil {
+		return err
+	}
+	groups, err := indexSnapshotGroups(manifest.Groups)
+	if err != nil {
+		return err
+	}
+	articles, paths, err := indexSnapshotArticles(manifest.Articles, groups, markdown)
+	if err != nil {
+		return err
+	}
+	if err := ValidateOutputPaths(paths); err != nil {
+		return err
+	}
+	if len(markdown) != len(articles) {
+		return fmt.Errorf("exported Markdown set does not match manifest articles")
+	}
+	return validateCorpusRecords(corpus.Records, articles)
+}
+
+func validateSnapshotMetadata(manifest Manifest, corpus Corpus) error {
 	if manifest.SchemaVersion != SchemaVersion || corpus.SchemaVersion != SchemaVersion {
 		return fmt.Errorf("documentation schema must be %d", SchemaVersion)
 	}
@@ -123,39 +144,45 @@ func validateSnapshot(manifest Manifest, corpus Corpus, markdown map[string][]by
 			return fmt.Errorf("project OpenAPI: %w", err)
 		}
 	}
-	groups := make(map[string]bool)
-	for _, group := range manifest.Groups {
+	return nil
+}
+
+func indexSnapshotGroups(list []Group) (map[string]bool, error) {
+	groups := make(map[string]bool, len(list))
+	for _, group := range list {
 		if group.Slug == "" || groups[group.Slug] {
-			return fmt.Errorf("empty or duplicate documentation group %q", group.Slug)
+			return nil, fmt.Errorf("empty or duplicate documentation group %q", group.Slug)
 		}
 		groups[group.Slug] = true
 	}
-	articles := make(map[string]Article)
+	return groups, nil
+}
+
+func indexSnapshotArticles(list []Article, groups map[string]bool, markdown map[string][]byte) (map[string]Article, []string, error) {
+	articles := make(map[string]Article, len(list))
 	paths := []string{"/llms.txt", "/docs/manifest.json", "/docs/search.json"}
-	for _, article := range manifest.Articles {
+	for _, article := range list {
 		if err := validateArticle(article); err != nil {
-			return err
+			return nil, nil, err
 		}
 		if _, exists := articles[article.ID]; exists {
-			return fmt.Errorf("duplicate article %q", article.ID)
+			return nil, nil, fmt.Errorf("duplicate article %q", article.ID)
 		}
 		if !groups[article.NavSection] {
-			return fmt.Errorf("article %q: unknown group %q", article.ID, article.NavSection)
+			return nil, nil, fmt.Errorf("article %q: unknown group %q", article.ID, article.NavSection)
 		}
 		articles[article.ID] = article
 		paths = append(paths, article.URL+"index.html", article.URL+"index.md")
 		if _, ok := markdown[article.URL+"index.md"]; !ok {
-			return fmt.Errorf("article %q: missing exported Markdown", article.ID)
+			return nil, nil, fmt.Errorf("article %q: missing exported Markdown", article.ID)
 		}
 	}
-	if err := ValidateOutputPaths(paths); err != nil {
-		return err
-	}
-	if len(markdown) != len(articles) {
-		return fmt.Errorf("exported Markdown set does not match manifest articles")
-	}
-	records := make(map[string]bool)
-	for _, record := range corpus.Records {
+	return articles, paths, nil
+}
+
+func validateCorpusRecords(list []Section, articles map[string]Article) error {
+	records := make(map[string]bool, len(list))
+	for _, record := range list {
 		article, ok := articles[record.ArticleID]
 		if !ok || records[record.ID] {
 			return fmt.Errorf("unknown article or duplicate search record %q", record.ID)
