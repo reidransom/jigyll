@@ -132,7 +132,7 @@ func mergeWatchChanges(first, second site.FilesEvent) site.FilesEvent {
 		seen[path] = struct{}{}
 		paths = append(paths, path)
 	}
-	return site.FilesEvent{Time: second.Time, Paths: paths}
+	return site.FilesEvent{Time: second.Time, Paths: paths, Topology: first.Topology || second.Topology}
 }
 
 // liveReloadIntent describes the minimum work a client must perform for one
@@ -182,10 +182,11 @@ func (s *Server) liveReloadBatch(change site.FilesEvent) liveReloadBatch {
 			intent:    liveReloadIntent{pageReload: true},
 		}
 	}
-	return liveReloadBatch{
-		transport: s.liveReload,
-		intent:    newLiveReloadIntent(s.Site, change.Paths),
+	intent := newLiveReloadIntent(s.Site, change.Paths)
+	if change.Topology {
+		intent = liveReloadIntent{pageReload: true}
 	}
+	return liveReloadBatch{transport: s.liveReload, intent: intent}
 }
 
 type liveReloadBatch struct {
@@ -226,7 +227,7 @@ func (s *Server) reload(change site.FilesEvent) bool {
 		return true
 	}
 
-	replacement, err := current.Reloaded(change.Paths)
+	replacement, err := current.ReloadedForEvent(change)
 	if err != nil {
 		s.reportReloadError(liveReload, err)
 		return false

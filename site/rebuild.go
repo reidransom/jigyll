@@ -42,11 +42,24 @@ func (s *Site) Reloaded(paths []string) (*Site, error) {
 	return s, s.Read()
 }
 
+// ReloadedForEvent constructs a fresh site for topology changes so a failed
+// discovery cannot mutate the site currently served to clients.
+func (s *Site) ReloadedForEvent(event FilesEvent) (*Site, error) {
+	if !event.Topology {
+		return s.Reloaded(event.Paths)
+	}
+	fresh, err := FromDirectory(s.SourceDir(), s.flags)
+	if err != nil {
+		return nil, err
+	}
+	return fresh, fresh.Read()
+}
+
 func (s *Site) processFilesEvent(fileset FilesEvent, messages chan<- interface{}) *Site {
 	// similar code to server.reload
 	messages <- fmt.Sprintf("Regenerating: %s...", fileset)
 	start := time.Now()
-	r, count, err := s.rebuild(fileset.Paths)
+	r, count, err := s.rebuildEvent(fileset)
 	if err != nil {
 		fmt.Println()
 		fmt.Fprintln(os.Stderr, err)
@@ -56,6 +69,21 @@ func (s *Site) processFilesEvent(fileset FilesEvent, messages chan<- interface{}
 	inflect := map[bool]string{true: "", false: "s"}[count == 1]
 	messages <- fmt.Sprintf("wrote %d file%s in %.2fs.\n", count, inflect, elapsed.Seconds())
 	return r
+}
+
+func (s *Site) rebuildEvent(event FilesEvent) (*Site, int, error) {
+	if !event.Topology {
+		return s.rebuild(event.Paths)
+	}
+	fresh, err := s.ReloadedForEvent(event)
+	if err != nil {
+		return s, 0, err
+	}
+	count, err := fresh.Write()
+	if err != nil {
+		return s, count, err
+	}
+	return fresh, count, nil
 }
 
 // reloads and rebuilds the site; returns a copy and count

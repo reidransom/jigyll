@@ -10,6 +10,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestDebounceEventsKeepsTopology(t *testing.T) {
+	input := make(chan FilesEvent, 2)
+	output := debounceEvents(20*time.Millisecond, input)
+	input <- FilesEvent{Topology: true}
+	input <- FilesEvent{Paths: []string{"note.md"}}
+	select {
+	case event := <-output:
+		require.True(t, event.Topology)
+		require.Equal(t, []string{"note.md"}, event.Paths)
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for topology event")
+	}
+	close(input)
+}
+
 func TestEventWatcher_SubdirectoryChanges(t *testing.T) {
 	// Create a temp site directory with a subdirectory
 	dir := t.TempDir()

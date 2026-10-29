@@ -9,6 +9,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMergeWatchChangesRetainsTopology(t *testing.T) {
+	for _, events := range [][2]site.FilesEvent{
+		{{Topology: true}, {Paths: []string{"page.md"}}},
+		{{Paths: []string{"page.md"}}, {Topology: true}},
+	} {
+		merged := mergeWatchChanges(events[0], events[1])
+		require.True(t, merged.Topology)
+		require.Equal(t, []string{"page.md"}, merged.Paths)
+	}
+}
+
 func TestLocalizedWatchReloadsCoalescesEventsDuringAnActiveRebuild(t *testing.T) {
 	changes := make(chan site.FilesEvent)
 	results := make(chan bool)

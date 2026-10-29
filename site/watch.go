@@ -15,8 +15,9 @@ import (
 // FilesEvent is a list of changed or added site source files, with a single
 // timestamp that approximates when they were changed.
 type FilesEvent struct {
-	Time  time.Time // A single time is used for all the changes
-	Paths []string  // relative to site source
+	Time     time.Time // A single time is used for all the changes
+	Paths    []string  // relative to site source
+	Topology bool      // source tree structure changed; require complete rediscovery
 }
 
 func (e FilesEvent) String() string {
@@ -27,41 +28,51 @@ func (e FilesEvent) String() string {
 
 // WatchFiles returns a channel that receives FilesEvent on changes within the site directory.
 func (s *Site) WatchFiles() (<-chan FilesEvent, error) {
-	filenames, err := s.makeFileWatcher()
+	changes, err := s.makeFileWatcher()
 	if err != nil {
 		return nil, err
 	}
 	var (
-		debounced = debounce(time.Second/2, filenames)
+		debounced = debounceEvents(time.Second/2, changes)
 		filesets  = make(chan FilesEvent)
 	)
 	go func() {
-		for {
-			paths := s.affectsBuildFilter(<-debounced)
-			if len(paths) > 0 {
-				// Create a new timestamp. Except under pathological
-				// circumstances, it will be close enough.
-				filesets <- FilesEvent{time.Now(), paths}
+		for change := range debounced {
+			change.Paths = s.affectsBuildFilter(change.Paths)
+			if len(change.Paths) > 0 || change.Topology {
+				change.Time = time.Now()
+				filesets <- change
 			}
 		}
 	}()
 	return filesets, nil
 }
 
-func (s *Site) makeFileWatcher() (<-chan string, error) {
+func (s *Site) makeFileWatcher() (<-chan FilesEvent, error) {
+	var filenames <-chan string
+	var err error
 	if s.cfg.ForcePolling {
-		return s.makePollingWatcher()
-	}
-	// Try fsnotify first, but fall back to polling if there are too many
-	// directories to watch without risking file-descriptor exhaustion.
-	filenames, err := s.tryEventWatcher()
-	if err != nil {
-		if s.cfg.Verbose {
-			fmt.Fprintf(os.Stderr, "Event watcher unavailable (%v), using polling watcher\n", err)
+		filenames, err = s.makePollingWatcher()
+	} else {
+		filenames, err = s.tryEventWatcher()
+		if err != nil {
+			if s.cfg.Verbose {
+				fmt.Fprintf(os.Stderr, "Event watcher unavailable (%v), using polling watcher\n", err)
+			}
+			filenames, err = s.makePollingWatcher()
 		}
-		return s.makePollingWatcher()
 	}
-	return filenames, nil
+	if err != nil {
+		return nil, err
+	}
+	changes := make(chan FilesEvent)
+	go func() {
+		for filename := range filenames {
+			changes <- FilesEvent{Paths: []string{filename}}
+		}
+		close(changes)
+	}()
+	return changes, nil
 }
 
 // tryEventWatcher attempts to create an fsnotify watcher, returning an error
@@ -197,6 +208,41 @@ func (s *Site) makePollingWatcher() (<-chan string, error) {
 		}
 	}()
 	return filenames, nil
+}
+
+// debounceEvents preserves topology changes even when no file path survives.
+func debounceEvents(interval time.Duration, input <-chan FilesEvent) <-chan FilesEvent {
+	output := make(chan FilesEvent)
+	go func() {
+		defer close(output)
+		var pending FilesEvent
+		var timer <-chan time.Time
+		for {
+			select {
+			case event, ok := <-input:
+				if !ok {
+					if len(pending.Paths) != 0 || pending.Topology {
+						output <- pending
+					}
+					return
+				}
+				for _, path := range event.Paths {
+					if path != "." {
+						pending.Paths = append(pending.Paths, path)
+					}
+				}
+				pending.Topology = pending.Topology || event.Topology
+				timer = time.After(interval)
+			case <-timer:
+				timer = nil
+				if len(pending.Paths) != 0 || pending.Topology {
+					output <- pending
+					pending = FilesEvent{}
+				}
+			}
+		}
+	}()
+	return output
 }
 
 // debounce relays values from input to output, merging successive values so long as they keep changing
