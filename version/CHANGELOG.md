@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+## 1.14.0 (Oct 29, 2026)
+
 ### New
 * Added a shared article API for Liquid-resolved documentation source, rendered
   body HTML, and heading metadata, without repeating Liquid evaluation.
@@ -24,6 +26,7 @@
   now shares the article renderer's syntax extensions.
 * Reject documentation output file/directory collisions before cleaning completed
   output, including collisions with generated manifests and Markdown files.
+
 ## 1.13.1 (Sep 14, 2026)
 
 ### Fixed
