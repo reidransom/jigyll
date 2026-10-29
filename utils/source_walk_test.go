@@ -70,3 +70,21 @@ func TestWalkSourceProtectsOutput(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, filepath.Join(external, "missing", "output"), canonical)
 }
+
+func TestWalkSourcePrunesLinkToAbsentOutput(t *testing.T) {
+	root := t.TempDir()
+	source := filepath.Join(root, "source")
+	output := filepath.Join(root, "output")
+	require.NoError(t, os.Mkdir(source, 0755))
+	require.NoError(t, os.Symlink(output, filepath.Join(source, "output-link")))
+	var visited []string
+	err := WalkSource(source, SourceWalkOptions{Protected: []string{output}}, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		visited = append(visited, filepath.Base(path))
+		return nil
+	})
+	require.NoError(t, err)
+	require.NotContains(t, visited, "output-link")
+}

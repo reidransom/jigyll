@@ -60,7 +60,7 @@ func (c *Collection) scanDirectory(dirname string, strategy collectionStrategy) 
 		FollowDirectorySymlinks: c.cfg.FollowDirectorySymlinks,
 		Protected:               protected,
 		Prune: func(path string, info os.FileInfo) bool {
-			return path != dir && c.site.Exclude(utils.MustRel(sitePath, path))
+			return c.site.Exclude(utils.MustRel(sitePath, path))
 		},
 	}
 	return utils.WalkSource(dir, opts, func(filename string, info os.FileInfo, err error) error {

@@ -3,6 +3,12 @@
 
 ## Unreleased
 
+### New
+* Add `--follow-directory-symlinks` for explicitly publishing linked source
+  directories, including linked collections and localized content. Watch mode
+  tracks external edits and mount changes; directory links are rejected by
+  default.
+
 ## 1.14.0 (Oct 29, 2026)
 
 ### New

@@ -870,7 +870,7 @@ func discoverLocalizedCollection(site *Site, directory, namespace string, discov
 		FollowDirectorySymlinks: site.cfg.FollowDirectorySymlinks,
 		Protected:               append([]string{site.DestDir()}, site.cfg.ProtectedSourcePaths...),
 		Prune: func(filename string, info os.FileInfo) bool {
-			return filename != root && site.Exclude(filepath.ToSlash(utils.MustRel(site.SourceDir(), filename)))
+			return site.Exclude(filepath.ToSlash(utils.MustRel(site.SourceDir(), filename)))
 		},
 	}
 	err := utils.WalkSource(root, opts, func(filename string, info os.FileInfo, err error) error {

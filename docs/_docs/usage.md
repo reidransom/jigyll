@@ -25,6 +25,7 @@ These work on both `build` and `serve`:
 | --- | --- |
 | `--source`, `-s` | Source directory (default: current) |
 | `--destination`, `-d` | Output directory (default: `./_site`) |
+| `--follow-directory-symlinks` | Follow directory symlinks in site sources (off by default; CLI only) |
 | `--config` | Comma-separated config files; later files override earlier ones |
 | `--drafts`, `-D` | Render posts in `_drafts` |
 | `--future` | Render posts with future dates |

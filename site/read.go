@@ -252,5 +252,5 @@ func (s *Site) ReadCollections() (err error) {
 		return cols[i].Name < cols[j].Name
 	})
 	s.Collections = cols
-	return nil
+	return err
 }

@@ -63,3 +63,27 @@ include:
   - _pages
   - .htaccess
 ```
+
+## Directory symlinks
+
+An included directory symlink fails the build by default. To publish content
+from a linked directory, explicitly enable traversal for each build or serve
+command:
+
+```bash
+ln -s /home/me/notes ./notes
+jigyll build --follow-directory-symlinks
+jigyll serve --follow-directory-symlinks
+```
+
+The linked files keep paths relative to the link: `notes/topic.md` is treated
+as a site file at that path. Normal front matter, collection, `include`, and
+`exclude` rules still apply. Excluded links are not traversed. File symlinks
+do not require the flag.
+
+Watch mode follows changes in linked directories, including changes to the
+link itself. Broken links and directory cycles report errors. Generated output
+is excluded even when a link points to it.
+
+Linked directories can expose files outside the site source. Link only
+content intended for publication, or exclude private files explicitly.

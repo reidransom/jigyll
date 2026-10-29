@@ -58,8 +58,16 @@ func pathWithin(path, root string) bool {
 // WalkSource visits logical source paths, optionally following directory links.
 // The callback may return filepath.SkipDir to prune a directory.
 func WalkSource(root string, opts SourceWalkOptions, visit filepath.WalkFunc) error {
+	if opts.Prune != nil {
+		if info, err := os.Lstat(root); err == nil && opts.Prune(root, info) {
+			return nil
+		}
+	}
 	rootPhysical, err := CanonicalPath(root)
 	if err != nil {
+		if info, lstatErr := os.Lstat(root); lstatErr == nil && info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("resolving source symlink %q: %w", root, err)
+		}
 		return visit(root, nil, err)
 	}
 	protected := make([]string, 0, len(opts.Protected))
@@ -68,8 +76,8 @@ func WalkSource(root string, opts SourceWalkOptions, visit filepath.WalkFunc) er
 		if err != nil {
 			return fmt.Errorf("resolving protected path %q: %w", p, err)
 		}
-		if canonical == rootPhysical {
-			return fmt.Errorf("source %q and protected output %q are the same directory", root, p)
+		if pathWithin(rootPhysical, canonical) {
+			return fmt.Errorf("source %q is inside protected output %q (same directory or ancestor)", root, p)
 		}
 		protected = append(protected, canonical)
 	}
@@ -83,6 +91,20 @@ func WalkSource(root string, opts SourceWalkOptions, visit filepath.WalkFunc) er
 			return nil
 		}
 		if info.Mode()&os.ModeSymlink != 0 {
+			target, linkErr := os.Readlink(path)
+			if linkErr != nil {
+				return fmt.Errorf("reading source symlink %q: %w", path, linkErr)
+			}
+			if !filepath.IsAbs(target) {
+				target = filepath.Join(filepath.Dir(path), target)
+			}
+			if canonical, resolveErr := CanonicalPath(target); resolveErr == nil {
+				for _, p := range protected {
+					if pathWithin(canonical, p) {
+						return nil
+					}
+				}
+			}
 			info, err = os.Stat(path)
 			if err != nil {
 				return fmt.Errorf("resolving source symlink %q: %w", path, err)
