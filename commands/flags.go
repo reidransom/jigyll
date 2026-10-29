@@ -34,6 +34,7 @@ func init() {
 	// these flags are just present on build and serve, but I don't see a DRY way to say this
 	app.Flag("incremental", "Enable incremental rebuild.").Short('I').Action(boolVar("incremental", &options.Incremental)).Bool()
 	app.Flag("force_polling", "Force watch to use polling").BoolVar(&options.ForcePolling)
+	app.Flag("follow-directory-symlinks", "Follow directory symlinks in site sources").BoolVar(&options.FollowDirectorySymlinks)
 
 	// --watch has different defaults for build and serve
 	watchText := "Watch for changes and rebuild"

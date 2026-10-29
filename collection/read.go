@@ -48,7 +48,22 @@ func addPrevNext(ps []Page) {
 func (c *Collection) scanDirectory(dirname string, strategy collectionStrategy) error {
 	sitePath := c.cfg.Source
 	dir := filepath.Join(sitePath, dirname)
-	return filepath.Walk(dir, func(filename string, info os.FileInfo, err error) error {
+	var protected []string
+	if c.cfg.Destination != "" {
+		destination := c.cfg.Destination
+		if !filepath.IsAbs(destination) {
+			destination = filepath.Join(sitePath, destination)
+		}
+		protected = append(protected, destination)
+	}
+	opts := utils.SourceWalkOptions{
+		FollowDirectorySymlinks: c.cfg.FollowDirectorySymlinks,
+		Protected:               protected,
+		Prune: func(path string, info os.FileInfo) bool {
+			return path != dir && c.site.Exclude(utils.MustRel(sitePath, path))
+		},
+	}
+	return utils.WalkSource(dir, opts, func(filename string, info os.FileInfo, err error) error {
 		if err != nil {
 			if os.IsNotExist(err) {
 				return nil

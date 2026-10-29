@@ -16,6 +16,7 @@ type Flags struct {
 
 	// these aren't in the config file, so make them actual values
 	DryRun, ForcePolling, Watch bool
+	FollowDirectorySymlinks     bool
 	ConfigFiles                 string
 }
 

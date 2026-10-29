@@ -95,7 +95,15 @@ func (s *Site) isConfiguredCollectionDirectory(siteRel string) bool {
 //
 //nolint:gocyclo
 func (s *Site) readFiles(dir, base string) error {
-	return filepath.Walk(dir, func(filename string, info os.FileInfo, err error) error {
+	opts := utils.SourceWalkOptions{
+		FollowDirectorySymlinks: s.cfg.FollowDirectorySymlinks,
+		Protected:               []string{s.DestDir()},
+		Prune: func(filename string, info os.FileInfo) bool {
+			rel := utils.MustRel(base, filename)
+			return rel != "." && (info.IsDir() || info.Mode()&os.ModeSymlink != 0) && (s.Exclude(rel) || (strings.HasPrefix(rel, "_") && !s.isIncludedPath(rel)))
+		},
+	}
+	return utils.WalkSource(dir, opts, func(filename string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
