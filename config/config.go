@@ -73,10 +73,11 @@ type Config struct {
 	}
 
 	// CLI-only
-	DryRun                  bool `yaml:"-"`
-	ForcePolling            bool `yaml:"-"`
-	Watch                   bool `yaml:"-"`
-	FollowDirectorySymlinks bool `yaml:"-"`
+	DryRun                  bool     `yaml:"-"`
+	ForcePolling            bool     `yaml:"-"`
+	Watch                   bool     `yaml:"-"`
+	FollowDirectorySymlinks bool     `yaml:"-"`
+	ProtectedSourcePaths    []string `yaml:"-"`
 
 	// Meta
 	ConfigFile string                 `yaml:"-"`

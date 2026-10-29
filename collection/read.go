@@ -48,7 +48,7 @@ func addPrevNext(ps []Page) {
 func (c *Collection) scanDirectory(dirname string, strategy collectionStrategy) error {
 	sitePath := c.cfg.Source
 	dir := filepath.Join(sitePath, dirname)
-	var protected []string
+	protected := append([]string(nil), c.cfg.ProtectedSourcePaths...)
 	if c.cfg.Destination != "" {
 		destination := c.cfg.Destination
 		if !filepath.IsAbs(destination) {

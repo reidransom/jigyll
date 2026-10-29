@@ -97,7 +97,7 @@ func (s *Site) isConfiguredCollectionDirectory(siteRel string) bool {
 func (s *Site) readFiles(dir, base string) error {
 	opts := utils.SourceWalkOptions{
 		FollowDirectorySymlinks: s.cfg.FollowDirectorySymlinks,
-		Protected:               []string{s.DestDir()},
+		Protected:               append([]string{s.DestDir()}, s.cfg.ProtectedSourcePaths...),
 		Prune: func(filename string, info os.FileInfo) bool {
 			rel := utils.MustRel(base, filename)
 			return rel != "." && (info.IsDir() || info.Mode()&os.ModeSymlink != 0) && (s.Exclude(rel) || (strings.HasPrefix(rel, "_") && !s.isIncludedPath(rel)))

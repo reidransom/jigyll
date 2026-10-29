@@ -497,6 +497,7 @@ func (p *localizationProject) prepareLocaleSite(stage string, sources map[string
 	if err != nil {
 		return nil, err
 	}
+	derived.ProtectedSourcePaths = append(derived.ProtectedSourcePaths, p.base.DestDir())
 	if stage != "" {
 		derived.Destination = stage
 	}
@@ -803,7 +804,18 @@ func discoverLocalizedDocuments(site *Site) ([]localization.Document, error) {
 }
 
 func discoverLocalizedPages(site *Site, discover func(string, string, string, string) error) error {
-	err := filepath.Walk(site.SourceDir(), func(filename string, info os.FileInfo, err error) error {
+	opts := utils.SourceWalkOptions{
+		FollowDirectorySymlinks: site.cfg.FollowDirectorySymlinks,
+		Protected:               append([]string{site.DestDir()}, site.cfg.ProtectedSourcePaths...),
+		Prune: func(filename string, info os.FileInfo) bool {
+			if !info.IsDir() && info.Mode()&os.ModeSymlink == 0 {
+				return false
+			}
+			rel := filepath.ToSlash(utils.MustRel(site.SourceDir(), filename))
+			return rel != "." && (site.Exclude(rel) || site.isConfiguredCollectionDirectory(rel) || (strings.HasPrefix(rel, "_") && !site.isIncludedPath(rel)))
+		},
+	}
+	err := utils.WalkSource(site.SourceDir(), opts, func(filename string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -854,7 +866,14 @@ func discoverLocalizedCollections(site *Site, discover func(string, string, stri
 
 func discoverLocalizedCollection(site *Site, directory, namespace string, discover func(source, relativePath, namespace, typename string) error) error {
 	root := filepath.Join(site.SourceDir(), directory)
-	err := filepath.Walk(root, func(filename string, info os.FileInfo, err error) error {
+	opts := utils.SourceWalkOptions{
+		FollowDirectorySymlinks: site.cfg.FollowDirectorySymlinks,
+		Protected:               append([]string{site.DestDir()}, site.cfg.ProtectedSourcePaths...),
+		Prune: func(filename string, info os.FileInfo) bool {
+			return filename != root && site.Exclude(filepath.ToSlash(utils.MustRel(site.SourceDir(), filename)))
+		},
+	}
+	err := utils.WalkSource(root, opts, func(filename string, info os.FileInfo, err error) error {
 		if err != nil {
 			if os.IsNotExist(err) {
 				return nil
