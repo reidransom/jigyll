@@ -2,14 +2,10 @@ package site
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/radovskyb/watcher"
-	"github.com/reidransom/jigyll/utils"
 )
 
 // FilesEvent is a list of changed or added site source files, with a single
@@ -61,18 +57,7 @@ func (s *Site) makeFileWatcher() (<-chan FilesEvent, error) {
 			fmt.Fprintf(os.Stderr, "Event watcher unavailable (%v), using polling watcher\n", err)
 		}
 	}
-	filenames, err := s.makePollingWatcher()
-	if err != nil {
-		return nil, err
-	}
-	changes := make(chan FilesEvent)
-	go func() {
-		for filename := range filenames {
-			changes <- FilesEvent{Paths: []string{filename}}
-		}
-		close(changes)
-	}()
-	return changes, nil
+	return s.makePollingWatcher()
 }
 
 // makeEventWatcher registers each reachable physical directory once and
@@ -164,43 +149,6 @@ func (s *Site) makeEventWatcher() (<-chan FilesEvent, error) {
 	return changes, nil
 }
 
-func (s *Site) makePollingWatcher() (<-chan string, error) {
-	var (
-		sourceDir = utils.MustAbs(s.SourceDir())
-		filenames = make(chan string, 100)
-		w         = watcher.New()
-	)
-	if err := w.AddRecursive(sourceDir); err != nil {
-		return nil, err
-	}
-	for _, path := range s.cfg.Exclude {
-		if err := w.Ignore(filepath.Join(sourceDir, path)); err != nil {
-			return nil, err
-		}
-	}
-	if err := w.Ignore(s.DestDir()); err != nil {
-		return nil, err
-	}
-	go func() {
-		for {
-			select {
-			case event := <-w.Event:
-				filenames <- utils.MustRel(sourceDir, event.Path)
-			case err := <-w.Error:
-				fmt.Fprintln(os.Stderr, "error:", err)
-			case <-w.Closed:
-				return
-			}
-		}
-	}()
-	go func() {
-		if err := w.Start(time.Millisecond * 250); err != nil {
-			log.Fatal(err)
-		}
-	}()
-	return filenames, nil
-}
-
 // debounceEvents preserves topology changes even when no file path survives.
 func debounceEvents(interval time.Duration, input <-chan FilesEvent) <-chan FilesEvent {
 	output := make(chan FilesEvent)
@@ -229,36 +177,6 @@ func debounceEvents(interval time.Duration, input <-chan FilesEvent) <-chan File
 				if len(pending.Paths) != 0 || pending.Topology {
 					output <- pending
 					pending = FilesEvent{}
-				}
-			}
-		}
-	}()
-	return output
-}
-
-// debounce relays values from input to output, merging successive values so long as they keep changing
-// faster than interval
-// TODO consider https://github.com/ReactiveX/RxGo
-func debounce(interval time.Duration, input <-chan string) <-chan []string {
-	var (
-		pending = []string{}
-		output  = make(chan []string)
-		ticker  <-chan time.Time
-	)
-	go func() {
-		for {
-			select {
-			case value := <-input:
-				if value == "." {
-					continue
-				}
-				pending = append(pending, value)
-				ticker = time.After(interval) // replaces the previous ticker
-			case <-ticker:
-				ticker = nil
-				if len(pending) > 0 {
-					output <- pending
-					pending = []string{}
 				}
 			}
 		}

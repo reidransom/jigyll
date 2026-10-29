@@ -14,7 +14,6 @@ require (
 	github.com/kyokomi/emoji v2.2.4+incompatible
 	github.com/montanaflynn/stats v0.7.1
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
-	github.com/radovskyb/watcher v1.0.7
 	github.com/stretchr/testify v1.11.1
 	github.com/tdewolff/minify v2.3.6+incompatible
 	github.com/yuin/goldmark v1.7.16

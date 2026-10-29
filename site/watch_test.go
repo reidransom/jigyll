@@ -55,35 +55,3 @@ func TestEventWatcher_SubdirectoryChanges(t *testing.T) {
 		t.Fatal("timed out waiting for subdirectory file change event")
 	}
 }
-
-func TestDebounce(t *testing.T) {
-	input := make(chan string, 10)
-	output := debounce(50*time.Millisecond, input)
-
-	// Send several values in quick succession
-	input <- "a"
-	input <- "b"
-	input <- "c"
-
-	select {
-	case batch := <-output:
-		require.Equal(t, []string{"a", "b", "c"}, batch)
-	case <-time.After(time.Second):
-		t.Fatal("timed out waiting for debounced output")
-	}
-}
-
-func TestDebounce_SkipsDot(t *testing.T) {
-	input := make(chan string, 10)
-	output := debounce(50*time.Millisecond, input)
-
-	input <- "."
-	input <- "a"
-
-	select {
-	case batch := <-output:
-		require.Equal(t, []string{"a"}, batch)
-	case <-time.After(time.Second):
-		t.Fatal("timed out waiting for debounced output")
-	}
-}
