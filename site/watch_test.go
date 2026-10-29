@@ -49,8 +49,8 @@ func TestEventWatcher_SubdirectoryChanges(t *testing.T) {
 
 	// We should receive a notification for the subdirectory file
 	select {
-	case rel := <-filenames:
-		require.Equal(t, filepath.Join("subdir", "test.txt"), rel)
+	case change := <-filenames:
+		require.Contains(t, change.Paths, filepath.Join("subdir", "test.txt"))
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for subdirectory file change event")
 	}

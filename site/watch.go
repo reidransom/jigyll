@@ -49,19 +49,19 @@ func (s *Site) WatchFiles() (<-chan FilesEvent, error) {
 }
 
 func (s *Site) makeFileWatcher() (<-chan FilesEvent, error) {
-	var filenames <-chan string
-	var err error
-	if s.cfg.ForcePolling {
-		filenames, err = s.makePollingWatcher()
-	} else {
-		filenames, err = s.tryEventWatcher()
-		if err != nil {
-			if s.cfg.Verbose {
-				fmt.Fprintf(os.Stderr, "Event watcher unavailable (%v), using polling watcher\n", err)
-			}
-			filenames, err = s.makePollingWatcher()
+	if _, err := s.scanWatchInventory(); err != nil {
+		return nil, err
+	}
+	if !s.cfg.ForcePolling {
+		changes, err := s.makeEventWatcher()
+		if err == nil {
+			return changes, nil
+		}
+		if s.cfg.Verbose {
+			fmt.Fprintf(os.Stderr, "Event watcher unavailable (%v), using polling watcher\n", err)
 		}
 	}
+	filenames, err := s.makePollingWatcher()
 	if err != nil {
 		return nil, err
 	}
@@ -75,102 +75,93 @@ func (s *Site) makeFileWatcher() (<-chan FilesEvent, error) {
 	return changes, nil
 }
 
-// tryEventWatcher attempts to create an fsnotify watcher, returning an error
-// if there are too many directories (to avoid exhausting file descriptors)
-func (s *Site) tryEventWatcher() (<-chan string, error) {
-	sourceDir := s.SourceDir()
-	dirCount := 0
-	err := filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			return nil
-		}
-		rel := utils.MustRel(sourceDir, path)
-		switch {
-		case rel != "." && s.Exclude(rel):
-			return filepath.SkipDir
-		case path == s.DestDir():
-			return filepath.SkipDir
-		}
-		dirCount++
-		return nil
-	})
+// makeEventWatcher registers each reachable physical directory once and
+// translates events back to every logical path that names it.
+func (s *Site) makeEventWatcher() (<-chan FilesEvent, error) {
+	inventory, err := s.scanWatchInventory()
 	if err != nil {
 		return nil, err
 	}
-	// Conservative limit to avoid exhausting inotify watches
-	// (default limit is often 8192, but other programs use them too)
-	const maxDirs = 500
-	if dirCount > maxDirs {
-		return nil, fmt.Errorf("directory count %d exceeds safe limit %d for fsnotify", dirCount, maxDirs)
+	dirs := inventory.registrations()
+	if len(dirs) > 500 {
+		return nil, watchLimitError(len(dirs))
 	}
-	return s.makeEventWatcher()
-}
-
-//nolint:gocyclo
-func (s *Site) makeEventWatcher() (<-chan string, error) {
-	var (
-		sourceDir = s.SourceDir()
-		filenames = make(chan string, 100)
-		w, err    = fsnotify.NewWatcher()
-	)
+	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
-	// Watch the source directory and all subdirectories recursively.
-	// fsnotify.Watcher.Add only watches a single directory, so we walk
-	// the tree and add each directory individually.
-	addRecursive := func(dir string) error {
-		return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if info.IsDir() {
-				rel := utils.MustRel(sourceDir, path)
-				switch {
-				case rel != "." && s.Exclude(rel):
-					return filepath.SkipDir
-				case path == s.DestDir():
-					return filepath.SkipDir
-				}
-				return w.Add(path)
-			}
-			return nil
-		})
+	for dir := range dirs {
+		if err := w.Add(dir); err != nil {
+			w.Close()
+			return nil, err
+		}
 	}
-	if err := addRecursive(sourceDir); err != nil {
-		return nil, err
-	}
+	changes := make(chan FilesEvent, 100)
 	go func() {
+		defer w.Close()
+		defer close(changes)
 		for {
 			select {
-			case event := <-w.Events:
-				// Ignore attribute-only changes (Chmod). On macOS, reading a
-				// file can update extended attributes (e.g.
-				// com.apple.lastuseddate#PS), which fires a Chmod event and
-				// causes an infinite rebuild loop.
-				if !event.Has(fsnotify.Write) && !event.Has(fsnotify.Create) &&
-					!event.Has(fsnotify.Remove) && !event.Has(fsnotify.Rename) {
+			case event, ok := <-w.Events:
+				if !ok {
+					return
+				}
+				if !event.Has(fsnotify.Write) && !event.Has(fsnotify.Create) && !event.Has(fsnotify.Remove) && !event.Has(fsnotify.Rename) {
 					continue
 				}
-				// If a new directory is created, watch it and any
-				// subdirectories created along with it (e.g. mkdir -p)
-				if event.Has(fsnotify.Create) {
-					if info, err := os.Stat(event.Name); err == nil && info.IsDir() {
-						if err := addRecursive(event.Name); err != nil {
-							fmt.Fprintf(os.Stderr, "error adding directory to watcher: %v\n", err)
+				if s.watchProtected(event.Name) {
+					continue
+				}
+				paths, target := inventory.event(event.Name)
+				if len(paths) == 0 && !target {
+					continue
+				}
+				topology := target || event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename)
+				if topology {
+					next, scanErr := s.scanWatchInventory()
+					if scanErr != nil {
+						fmt.Fprintf(os.Stderr, "error refreshing source watches: %v\n", scanErr)
+					} else {
+						nextDirs := next.registrations()
+						if len(nextDirs) > 500 {
+							fmt.Fprintln(os.Stderr, watchLimitError(len(nextDirs)))
+						} else {
+							added := make([]string, 0)
+							for dir := range nextDirs {
+								if !dirs[dir] {
+									if addErr := w.Add(dir); addErr != nil {
+										scanErr = addErr
+										break
+									}
+									added = append(added, dir)
+								}
+							}
+							if scanErr != nil {
+								for _, dir := range added {
+									_ = w.Remove(dir)
+								}
+								fmt.Fprintf(os.Stderr, "error refreshing source watches: %v\n", scanErr)
+							} else {
+								for dir := range dirs {
+									if !nextDirs[dir] {
+										_ = w.Remove(dir)
+									}
+								}
+								dirs, inventory = nextDirs, next
+							}
 						}
 					}
 				}
-				filenames <- utils.MustRel(sourceDir, event.Name)
-			case err := <-w.Errors:
+				changes <- FilesEvent{Paths: paths, Topology: topology}
+			case err, ok := <-w.Errors:
+				if !ok {
+					return
+				}
 				fmt.Fprintln(os.Stderr, "error:", err)
 			}
 		}
 	}()
-	return filenames, nil
+	return changes, nil
 }
 
 func (s *Site) makePollingWatcher() (<-chan string, error) {
