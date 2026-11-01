@@ -22,7 +22,7 @@ func (s *Site) pollSnapshot() (pollSnapshot, error) {
 	snapshot := make(pollSnapshot)
 	options := utils.SourceWalkOptions{FollowDirectorySymlinks: s.cfg.FollowDirectorySymlinks, Protected: append([]string{s.DestDir()}, s.cfg.ProtectedSourcePaths...), Prune: func(path string, info os.FileInfo) bool {
 		rel := utils.MustRel(s.SourceDir(), path)
-		return rel != "." && s.Exclude(rel)
+		return rel != "." && s.excludeWatchPath(rel)
 	}}
 	err := utils.WalkSource(s.SourceDir(), options, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

@@ -8,15 +8,23 @@
   directories, including linked collections and localized content. Watch mode
   tracks external edits and mount changes; directory links are rejected by
   default.
-* Add opt-in `jigyll-llms-txt` for non-localized full builds and initial preview:
+* Add opt-in `jigyll-llms-txt` for non-localized builds and preview:
   automatic public Markdown discovery or ordered curated sections, external and
   HTML entries, canonical base-path URLs, and optional Markdown companions.
   Settings support title/description overrides and `markdown` (default true).
-  Localized discovery and generation-safe reloads are not included yet.
+  Localized discovery is not included yet.
 
 ### Improved
 * Scope Liquid-resolved source capture to selected export pages while preserving
   documentation capture without the discovery plugin.
+* Refresh complete discovery generations in watch mode, including plugin-enabled
+  incremental builds. Content, includes, data, curation, permalinks, publication,
+  and configuration changes refresh index/companion bytes and remove obsolete
+  routes and output files. Preserve authored output and `keep_files`.
+* Prepare fresh preview generations before publication; failed reads, renders,
+  conversions, and collisions retain the last good index/companions without a
+  successful refresh notification. Keep configured canonical origin/base-path
+  destinations across serving overrides and subsequent refreshes.
 
 ### Breaking
 * Documentation configuration no longer generates or reserves `/llms.txt`.

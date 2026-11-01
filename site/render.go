@@ -22,18 +22,15 @@ func (s *Site) render() error {
 	return combineErrors(errs)
 }
 
-func (s *Site) ensureRendered() (err error) {
+func (s *Site) ensureRendered() error {
 	s.renderOnce.Do(func() {
-		err = s.initializeRenderers()
-		if err != nil {
+		s.renderError = s.initializeRenderers()
+		if s.renderError != nil {
 			return
 		}
-		err = s.render()
-		if err != nil {
-			return
-		}
+		s.renderError = s.render()
 	})
-	return
+	return s.renderError
 }
 
 // returns a slice of collections, sorted by name but with _posts last.

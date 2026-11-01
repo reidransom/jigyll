@@ -38,12 +38,15 @@ func (s *Site) Exclude(siteRel string) bool {
 // static asset can cause pages to change if they reference its
 // variables.
 //
-// This function works on relative paths. It does not work for theme
-// sources.
+// Plugin exports depend on the complete inventory, including theme sources.
+// Without the plugin, incremental invalidation retains its existing behavior.
 func (s *Site) RequiresFullReload(paths []string) bool {
+	fullGeneration := s.hasLLMsTXT()
 	for _, path := range paths {
 		switch {
 		case s.cfg.IsConfigPath(path):
+			return true
+		case fullGeneration && s.fileAffectsBuild(path):
 			return true
 		case s.Exclude(path):
 			continue
@@ -60,6 +63,10 @@ func (s *Site) RequiresFullReload(paths []string) bool {
 		}
 	}
 	return false
+}
+
+func (s *Site) hasLLMsTXT() bool {
+	return utils.SearchStrings(s.plugins, "jigyll-llms-txt") || utils.SearchStrings(s.cfg.Plugins, "jigyll-llms-txt")
 }
 
 // De-dup relative paths, and filter to those that might affect the build.

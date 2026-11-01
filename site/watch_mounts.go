@@ -37,7 +37,7 @@ func (s *Site) scanWatchInventory() (*watchInventory, error) {
 	addTarget(s.SourceDir())
 	opts := utils.SourceWalkOptions{FollowDirectorySymlinks: s.cfg.FollowDirectorySymlinks, Protected: append([]string{s.DestDir()}, s.cfg.ProtectedSourcePaths...), Prune: func(path string, info os.FileInfo) bool {
 		rel := utils.MustRel(s.SourceDir(), path)
-		return rel != "." && s.Exclude(rel)
+		return rel != "." && s.excludeWatchPath(rel)
 	}}
 	err := utils.WalkSource(s.SourceDir(), opts, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -93,6 +93,18 @@ func (s *Site) scanWatchInventory() (*watchInventory, error) {
 		return nil, err
 	}
 	return inv, nil
+}
+
+// Theme templates are read outside ordinary page discovery. Keep their existing
+// source tree observable even when the plugin is enabled after watching starts.
+func (s *Site) excludeWatchPath(rel string) bool {
+	if s.themeDir != "" {
+		themeRel, err := filepath.Rel(s.themeDir, filepath.Join(s.SourceDir(), rel))
+		if err == nil && themeRel != ".." && !filepath.IsAbs(themeRel) && !strings.HasPrefix(themeRel, ".."+string(filepath.Separator)) {
+			return !s.fileAffectsBuild(rel)
+		}
+	}
+	return s.Exclude(rel)
 }
 
 func (s *Site) watchProtected(path string) bool {

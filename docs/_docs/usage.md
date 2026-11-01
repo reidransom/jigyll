@@ -30,7 +30,7 @@ These work on both `build` and `serve`:
 | `--drafts`, `-D` | Render posts in `_drafts` |
 | `--future` | Render posts with future dates |
 | `--unpublished` | Render pages/posts marked `published: false` |
-| `--incremental`, `-I` | Rebuild only changed files |
+| `--incremental`, `-I` | Rebuild changed files; `jigyll-llms-txt` refreshes the complete generation |
 | `--watch`, `-w` | Rebuild on file changes (default: off for `build`, on for `serve`) |
 | `--force_polling` | Use a polling file watcher |
 | `--quiet`, `-q` / `--verbose`, `-V` | Less / more output |
@@ -64,6 +64,15 @@ Builds the site and serves it locally, rebuilding on change.
 > write to the filesystem; **live reload is always on**; and watching also
 > reloads `_config.yml` and data files. `--baseurl`, `--detach`, and
 > `--ssl-*` are not implemented.
+
+With [`jigyll-llms-txt`](/docs/plugins/#builds-and-preview-refreshes) enabled,
+watch mode prepares a fresh index and Markdown companions before replacing the
+served generation. Invalid updates leave the previous exports available; a
+successful refresh updates canonical links and removes obsolete routes.
+`build --watch` also uses full generations with this plugin, even when
+`--incremental` is set. It validates exports before cleaning the destination,
+but does not provide filesystem-wide transactional writes. Documentation
+exports retain their explicit incremental-mode restriction.
 
 ## Jigyll-only commands
 

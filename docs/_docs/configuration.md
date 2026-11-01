@@ -95,7 +95,10 @@ An absolute HTTP(S) canonical `url` and nonempty effective title are required.
 Standalone discovery supports `baseurl`; local curated routes are written
 before that prefix, while generated canonical destinations include it.
 See the plugin guide for selection, exclusions, curation, and companion paths.
-Localized discovery and generation-safe reload support are not shipped yet.
+Plugin-enabled watch updates prepare fresh complete generations, even with
+`--incremental`; preview retains the last successful exports on failure.
+Canonical links preserve the configured origin/base path across serving URL
+overrides. Localized discovery is not shipped yet.
 
 [`documentation:`](/docs/static-documentation/) independently enables
 documentation manifest/corpus/article exports. It does **not** generate or

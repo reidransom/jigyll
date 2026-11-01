@@ -30,9 +30,9 @@ func (s *Site) WatchRebuild() (<-chan interface{}, error) {
 }
 
 // Reloaded returns the same or a new site reading the same source directory, configuration file, and load flags.
-// build --incremental and site --incremental use this.
+// Plugin exports always use a fresh, fully prepared generation, even in incremental mode.
 func (s *Site) Reloaded(paths []string) (*Site, error) {
-	if s.RequiresFullReload(paths) {
+	if s.hasLLMsTXT() || s.RequiresFullReload(paths) {
 		copy, err := FromDirectory(s.SourceDir(), s.flags)
 		if err != nil {
 			return nil, err
@@ -42,8 +42,8 @@ func (s *Site) Reloaded(paths []string) (*Site, error) {
 	return s, s.Read()
 }
 
-// ReloadedForEvent constructs a fresh site for topology changes so a failed
-// discovery cannot mutate the site currently served to clients.
+// ReloadedForEvent constructs a fresh site for topology changes or active
+// plugin exports so failed preparation cannot mutate the serving generation.
 func (s *Site) ReloadedForEvent(event FilesEvent) (*Site, error) {
 	if !event.Topology {
 		return s.Reloaded(event.Paths)

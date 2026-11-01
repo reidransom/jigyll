@@ -232,15 +232,13 @@ func (s *Server) reload(change site.FilesEvent) bool {
 		s.reportReloadError(liveReload, err)
 		return false
 	}
+	// Read completes artifact capture, conversion, and route validation before
+	// returning a plugin-enabled candidate. Apply the serving override before
+	// publication so requests cannot race with its configuration mutation.
+	replacement.SetAbsoluteURL(os.Getenv("JEKYLL_URL"))
 	s.m.Lock()
 	s.Site = replacement
 	s.m.Unlock()
-	// Only clear URL if JEKYLL_URL is not set
-	if jekyllURL := os.Getenv("JEKYLL_URL"); jekyllURL != "" {
-		replacement.SetAbsoluteURL(jekyllURL)
-	} else {
-		replacement.SetAbsoluteURL("")
-	}
 	fmt.Printf("done (%.2fs)\n", time.Since(start).Seconds())
 	return true
 }

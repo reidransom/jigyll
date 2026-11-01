@@ -33,8 +33,9 @@ type Site struct {
 	nonCollectionPages []Page
 	documentation      *documentationInventory
 
-	renderer   *renderers.Manager
-	renderOnce sync.Once
+	renderer    *renderers.Manager
+	renderOnce  sync.Once
+	renderError error
 
 	drop     map[string]interface{} // cached drop value
 	dropOnce sync.Once

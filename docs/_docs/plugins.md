@@ -163,10 +163,26 @@ The index has no snapshot ID or timestamp. `documentation-finalize` never
 updates it or general plugin-owned companions; post-processing rebasing by
 that command applies only to documentation-owned artifacts.
 
-This release supports non-localized full builds and initial preview delivery,
-including standalone sites with a nonempty `baseurl`. Generation-safe reloads
-and localized discovery are not yet supported. Documentation integration
-retains its own empty-baseurl, non-localized, non-incremental restrictions.
+### Builds and preview refreshes
+
+Non-localized builds and preview support standalone sites with a nonempty
+`baseurl`. With the plugin enabled, `--incremental` still refreshes the complete
+generation: content, includes, data, curation, publication state, permalinks,
+collection output, and configuration all feed a fresh inventory.
+
+Preview prepares and validates the entire index and selected companions before
+publishing the replacement. If reading, rendering, conversion, or collision
+validation fails, it keeps serving the previous index and companion bytes and
+does not send a successful refresh notification. Canonical destinations retain
+the configured origin and base path rather than adopting the serving host.
+
+Successful disk rebuilds remove obsolete exports, including after selection
+changes or plugin disablement, using the normal authored-output and `keep_files`
+rules. Export validation runs before destination cleaning; ordinary disk builds
+are not filesystem-wide transactions.
+
+Localized discovery is not yet supported. Documentation integration retains its
+own empty-baseurl, non-localized, non-incremental restrictions.
 
 
 [jekyll-avatar]: https://github.com/benbalter/jekyll-avatar
