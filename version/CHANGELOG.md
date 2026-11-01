@@ -9,6 +9,10 @@
   tracks external edits and mount changes; directory links are rejected by
   default.
 
+### Improved
+* Share discovery metadata escaping and ordered file-list formatting independently
+  of documentation snapshots, retaining the existing documentation exports.
+
 ## 1.14.0 (Oct 29, 2026)
 
 ### New

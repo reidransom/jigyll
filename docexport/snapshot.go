@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/reidransom/jigyll/internal/llmstxt"
 )
 
 // Assemble creates a complete immutable snapshot. Its SHA-256 input is, in order,
@@ -202,35 +204,38 @@ func validateCorpusRecords(list []Section, articles map[string]Article) error {
 	return nil
 }
 
-// Escape Markdown syntax and collapse line breaks so metadata cannot introduce
-// new list items, headings, links, or raw HTML into the llms document.
-func llmsText(value string) string {
-	value = strings.Join(strings.Fields(value), " ")
-	return strings.NewReplacer("\\", "\\\\", "`", "\\`", "*", "\\*", "_", "\\_", "{", "\\{", "}", "\\}", "[", "\\[", "]", "\\]", "<", "&lt;", ">", "&gt;", "#", "\\#", "!", "\\!", "|", "\\|").Replace(value)
-}
-
-func llmsDestination(value string) string {
-	return "<" + strings.NewReplacer("<", "%3C", ">", "%3E", "\n", "%0A", "\r", "%0D").Replace(value) + ">"
-}
-
 func renderLLMs(manifest Manifest) []byte {
-	var out strings.Builder
-	fmt.Fprintf(&out, "# %s\n\n> %s\n\nSnapshot: `%s`\n", llmsText(manifest.Project.Title), llmsText(manifest.Project.Description), manifest.SnapshotID)
-	out.WriteString("\n## Downloads\n\n- [Article manifest](/docs/manifest.json): Canonical URLs, Markdown URLs, and section metadata.\n- [Section corpus](/docs/search.json): Downloadable source text for local search.\n")
+	sections := make([]llmstxt.Section, 0, len(manifest.Groups)+2)
+	sections = append(sections, llmstxt.Section{
+		Title: "Downloads",
+		Entries: []llmstxt.Entry{
+			{Title: "Article manifest", URL: "/docs/manifest.json", Description: "Canonical URLs, Markdown URLs, and section metadata."},
+			{Title: "Section corpus", URL: "/docs/search.json", Description: "Downloadable source text for local search."},
+		},
+	})
 	for _, group := range manifest.Groups {
-		fmt.Fprintf(&out, "\n## %s\n", llmsText(group.Title))
-		if group.Description != "" {
-			fmt.Fprintf(&out, "\n%s\n", llmsText(group.Description))
-		}
-		out.WriteByte('\n')
+		section := llmstxt.Section{Title: group.Title, Description: group.Description}
 		for _, article := range manifest.Articles {
 			if article.NavSection == group.Slug {
-				fmt.Fprintf(&out, "- [%s](%s): %s\n", llmsText(article.Title), llmsDestination(article.MarkdownURL), llmsText(article.Description))
+				section.Entries = append(section.Entries, llmstxt.Entry{
+					Title: article.Title, URL: article.MarkdownURL, Description: article.Description,
+				})
 			}
 		}
+		sections = append(sections, section)
 	}
 	if manifest.Project.OpenAPI != "" {
-		fmt.Fprintf(&out, "\n## API specification\n\n- [OpenAPI](%s): Canonical API specification.\n", llmsDestination(manifest.Project.OpenAPI))
+		sections = append(sections, llmstxt.Section{
+			Title: "API specification",
+			Entries: []llmstxt.Entry{
+				{Title: "OpenAPI", URL: manifest.Project.OpenAPI, Description: "Canonical API specification."},
+			},
+		})
 	}
+
+	var out strings.Builder
+	llmstxt.WriteHeader(&out, llmstxt.Project{Title: manifest.Project.Title, Description: manifest.Project.Description})
+	fmt.Fprintf(&out, "\nSnapshot: `%s`\n", manifest.SnapshotID)
+	llmstxt.WriteSections(&out, sections)
 	return []byte(out.String())
 }

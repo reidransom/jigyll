@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func snapshotFixture() (Manifest, Corpus, map[string][]byte) {
@@ -66,5 +68,29 @@ func TestAssembleIdentityTracksSemanticInputs(t *testing.T) {
 	}
 	if !bytes.Contains(first["/llms.txt"], []byte("[Start \\[here\\]](<https://example.com/docs/guide/start/index.md>)")) || !bytes.Contains(first["/llms.txt"], []byte("[OpenAPI](<https://example.com/openapi.json>)")) {
 		t.Fatalf("llms links are not escaped/canonical: %s", first["/llms.txt"])
+	}
+}
+
+func TestAssembleDiscoveryDownloadsAndOptionalOpenAPI(t *testing.T) {
+	for _, openAPI := range []string{"", "https://reference.example.test/api.json"} {
+		t.Run(openAPI, func(t *testing.T) {
+			manifest, corpus, markdown := snapshotFixture()
+			manifest.Project.OpenAPI = openAPI
+			artifacts, err := Assemble(manifest, corpus, markdown)
+			require.NoError(t, err)
+			snapshotID(t, artifacts)
+			want := []semanticLink{
+				{destination: "/docs/manifest.json"},
+				{destination: "/docs/search.json"},
+				{destination: manifest.Articles[0].MarkdownURL},
+			}
+			if openAPI != "" {
+				want = append(want, semanticLink{destination: openAPI})
+			}
+			require.Equal(t, want, parsedLinks(t, artifacts["/llms.txt"]))
+			for _, route := range []string{"/docs/manifest.json", "/docs/search.json", manifest.Articles[0].URL + "index.md"} {
+				require.NotEmpty(t, artifacts[route], "discovery destination must be an emitted artifact")
+			}
+		})
 	}
 }
