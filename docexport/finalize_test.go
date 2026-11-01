@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func writeFinalizerFixture(t *testing.T, root string) Manifest {
@@ -30,40 +32,76 @@ func writeFinalizerFixture(t *testing.T, root string) Manifest {
 	return manifest
 }
 
-func TestFinalizeUsesFinalBodyAndRevisionMap(t *testing.T) {
-	root := t.TempDir()
-	manifest := writeFinalizerFixture(t, root)
-	if err := Finalize(root, map[string]string{"/assets/a.png": "https://cdn.example/a-123.png"}); err != nil {
-		t.Fatal(err)
-	}
-	data, err := os.ReadFile(filepath.Join(root, "docs/guide/start/index.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Contains(data, []byte("![asset](https://cdn.example/a-123.png)")) || !bytes.Contains(data, []byte("`/assets/a.png`")) {
-		t.Fatalf("lost destination revision or code fidelity: %s", data)
-	}
-	search, err := os.ReadFile(filepath.Join(root, "docs/search.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var corpus Corpus
-	if err := json.Unmarshal(search, &corpus); err != nil {
-		t.Fatal(err)
-	}
-	if len(corpus.Records) != 1 || corpus.Records[0].Heading != "Final heading" || corpus.Records[0].Text != "Final transformed text." || corpus.Records[0].ArticleID != manifest.Articles[0].ID {
-		t.Fatalf("search is not extracted from final article body: %+v", corpus.Records)
-	}
-	before := append([]byte(nil), search...)
-	if err := Finalize(root, map[string]string{"/assets/a.png": "https://cdn.example/a-123.png"}); err != nil {
-		t.Fatal(err)
-	}
-	after, err := os.ReadFile(filepath.Join(root, "docs/search.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(before, after) {
-		t.Fatal("finalization is not idempotent")
+func TestFinalizeUsesFinalBodyAndRevisionMapWithoutOwningDiscovery(t *testing.T) {
+	for _, scenario := range []struct {
+		name  string
+		index []byte
+	}{
+		{name: "docs-only"},
+		{
+			name:  "curated-plugin-index",
+			index: []byte("# Curated guides\n\n> Editorial overview.\n\n## Selected\n\n- [Start](<https://example.com/docs/guide/start/index.md>)\n- [External](<https://reference.example/guide>)\n"),
+		},
+		{
+			name:  "authored-index",
+			index: []byte("Authored sentinel\r\nKeep this file byte-for-byte.\r\n/assets/a.png\r\n"),
+		},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			root := t.TempDir()
+			manifest := writeFinalizerFixture(t, root)
+			indexName := filepath.Join(root, "llms.txt")
+			if scenario.index != nil {
+				require.NoError(t, os.WriteFile(indexName, scenario.index, 0644))
+			}
+			unrelatedName := filepath.Join(root, "unrelated.txt")
+			unrelated := []byte("Unrelated authored sentinel: /assets/a.png\n")
+			require.NoError(t, os.WriteFile(unrelatedName, unrelated, 0644))
+
+			readArtifacts := func() map[string][]byte {
+				t.Helper()
+				artifacts := make(map[string][]byte, 3)
+				for _, route := range []string{"/docs/manifest.json", "/docs/search.json", manifest.Articles[0].URL + "index.md"} {
+					data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(strings.TrimPrefix(route, "/"))))
+					require.NoError(t, err)
+					artifacts[route] = data
+				}
+				return artifacts
+			}
+			beforeID := snapshotID(t, readArtifacts())
+			assetMap := map[string]string{"/assets/a.png": "https://cdn.example/a-123.png"}
+			require.NoError(t, Finalize(root, assetMap))
+			artifacts := readArtifacts()
+			require.NotEqual(t, beforeID, snapshotID(t, artifacts), "asset/body revision must update manifest and corpus identity")
+			markdown := artifacts[manifest.Articles[0].URL+"index.md"]
+			require.Contains(t, string(markdown), "![asset](https://cdn.example/a-123.png)")
+			require.Contains(t, string(markdown), "`/assets/a.png`", "code samples must remain literal")
+
+			var corpus Corpus
+			require.NoError(t, json.Unmarshal(artifacts["/docs/search.json"], &corpus))
+			require.Len(t, corpus.Records, 1)
+			require.Equal(t, "Final heading", corpus.Records[0].Heading)
+			require.Equal(t, "Final transformed text.", corpus.Records[0].Text)
+			require.Equal(t, manifest.Articles[0].ID, corpus.Records[0].ArticleID)
+			var finalized Manifest
+			require.NoError(t, json.Unmarshal(artifacts["/docs/manifest.json"], &finalized))
+			require.Equal(t, manifest.Articles[0].MarkdownURL, finalized.Articles[0].MarkdownURL, "advertised article routes must stay stable")
+			require.Equal(t, finalized.Articles[0].MarkdownURL, corpus.Records[0].MarkdownURL)
+			require.Equal(t, []Heading{{Level: 1, Text: "Final heading", Fragment: "final"}}, finalized.Articles[0].Sections)
+
+			require.NoError(t, Finalize(root, assetMap))
+			require.Equal(t, artifacts, readArtifacts(), "documentation finalization must be idempotent")
+			index, err := os.ReadFile(indexName)
+			if scenario.index == nil {
+				require.ErrorIs(t, err, os.ErrNotExist, "docs-only finalization must not create an index")
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, scenario.index, index, "finalization must preserve separately owned discovery bytes")
+			}
+			data, err := os.ReadFile(unrelatedName)
+			require.NoError(t, err)
+			require.Equal(t, unrelated, data)
+		})
 	}
 }
 

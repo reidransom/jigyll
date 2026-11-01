@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/reidransom/jigyll/docexport"
 )
@@ -21,9 +20,6 @@ type documentationInventory struct {
 	title       string
 	description string
 	openAPI     string
-	once        sync.Once
-	artifacts   map[string][]byte
-	err         error
 }
 
 func (s *Site) prepareDocumentation() error {
@@ -43,7 +39,7 @@ func (s *Site) prepareDocumentation() error {
 		return err
 	}
 	s.documentation = inventory
-	return s.addDocumentationRoutes()
+	return nil
 }
 
 func (s *Site) validateDocumentationConfig() (*url.URL, string, error) {
@@ -66,6 +62,9 @@ func (s *Site) validateDocumentationConfig() (*url.URL, string, error) {
 
 func (s *Site) initDocumentationInventory(origin *url.URL, settings map[string]interface{}) (*documentationInventory, map[string]int, error) {
 	inventory := &documentationInventory{origin: origin, title: fmt.Sprint(s.cfg.Variables()["title"]), articles: []docexport.Article{}}
+	if value, ok := settings["title"].(string); ok {
+		inventory.title = value
+	}
 	if value, ok := settings["description"].(string); ok {
 		inventory.description = value
 	}

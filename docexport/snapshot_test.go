@@ -23,8 +23,8 @@ func snapshotID(t *testing.T, artifacts map[string][]byte) string {
 	if err := json.Unmarshal(artifacts["/docs/search.json"], &corpus); err != nil {
 		t.Fatal(err)
 	}
-	if manifest.SnapshotID == "" || manifest.SnapshotID != corpus.SnapshotID || !bytes.Contains(artifacts["/llms.txt"], []byte(manifest.SnapshotID)) {
-		t.Fatal("snapshot identity differs across artifacts")
+	if manifest.SnapshotID == "" || manifest.SnapshotID != corpus.SnapshotID {
+		t.Fatal("snapshot identity differs between manifest and corpus")
 	}
 	if manifest.Articles[0].Sections == nil || corpus.Records == nil {
 		t.Fatal("empty sections and records must be arrays")
@@ -66,12 +66,9 @@ func TestAssembleIdentityTracksSemanticInputs(t *testing.T) {
 	if snapshotID(t, changedSource) == snapshotID(t, changed) {
 		t.Fatal("Markdown source was omitted from identity")
 	}
-	if !bytes.Contains(first["/llms.txt"], []byte("[Start \\[here\\]](<https://example.com/docs/guide/start/index.md>)")) || !bytes.Contains(first["/llms.txt"], []byte("[OpenAPI](<https://example.com/openapi.json>)")) {
-		t.Fatalf("llms links are not escaped/canonical: %s", first["/llms.txt"])
-	}
 }
 
-func TestAssembleDiscoveryDownloadsAndOptionalOpenAPI(t *testing.T) {
+func TestAssembleEmitsOnlyDocumentationArtifacts(t *testing.T) {
 	for _, openAPI := range []string{"", "https://reference.example.test/api.json"} {
 		t.Run(openAPI, func(t *testing.T) {
 			manifest, corpus, markdown := snapshotFixture()
@@ -79,18 +76,17 @@ func TestAssembleDiscoveryDownloadsAndOptionalOpenAPI(t *testing.T) {
 			artifacts, err := Assemble(manifest, corpus, markdown)
 			require.NoError(t, err)
 			snapshotID(t, artifacts)
-			want := []semanticLink{
-				{destination: "/docs/manifest.json"},
-				{destination: "/docs/search.json"},
-				{destination: manifest.Articles[0].MarkdownURL},
-			}
-			if openAPI != "" {
-				want = append(want, semanticLink{destination: openAPI})
-			}
-			require.Equal(t, want, parsedLinks(t, artifacts["/llms.txt"]))
-			for _, route := range []string{"/docs/manifest.json", "/docs/search.json", manifest.Articles[0].URL + "index.md"} {
-				require.NotEmpty(t, artifacts[route], "discovery destination must be an emitted artifact")
-			}
+			markdownRoute := manifest.Articles[0].URL + "index.md"
+			require.Len(t, artifacts, 3)
+			require.Contains(t, artifacts, "/docs/manifest.json")
+			require.Contains(t, artifacts, "/docs/search.json")
+			require.Equal(t, markdown[markdownRoute], artifacts[markdownRoute])
+			require.NotContains(t, artifacts, "/llms.txt")
+
+			var emitted Manifest
+			require.NoError(t, json.Unmarshal(artifacts["/docs/manifest.json"], &emitted))
+			require.Equal(t, openAPI, emitted.Project.OpenAPI)
+			require.Equal(t, manifest.Articles[0].MarkdownURL, emitted.Articles[0].MarkdownURL)
 		})
 	}
 }

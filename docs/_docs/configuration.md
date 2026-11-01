@@ -73,6 +73,38 @@ Other supported keys: `theme`, `url`, `show_drafts`, `future`, `unpublished`,
 `defaults` (see below). `permalink` accepts the `date`, `pretty`, `ordinal`,
 and `none` styles or a custom template string.
 
+## Discovery and documentation exports
+
+[`jigyll-llms-txt`](/docs/plugins/#jigyll-native-discovery-jigyll-llms-txt)
+is opt-in through the `plugins` list. Its optional `llms_txt` map accepts
+`title`, `description`, `markdown` (default `true`), and ordered `sections`
+containing `title` and `entries`; entries accept `url`, `title`, and
+`description`. There is no separate `enabled` switch. Settings alone do not
+activate the plugin.
+
+```yaml
+url: https://example.com
+title: Example
+plugins:
+  - jigyll-llms-txt
+llms_txt:
+  markdown: true
+```
+
+An absolute HTTP(S) canonical `url` and nonempty effective title are required.
+Standalone discovery supports `baseurl`; local curated routes are written
+before that prefix, while generated canonical destinations include it.
+See the plugin guide for selection, exclusions, curation, and companion paths.
+Localized discovery and generation-safe reload support are not shipped yet.
+
+[`documentation:`](/docs/static-documentation/) independently enables
+documentation manifest/corpus/article exports. It does **not** generate or
+reserve `llms.txt`; add the plugin explicitly to retain discovery on migration.
+Documentation still requires full non-localized builds with empty `baseurl`
+and rejects incremental mode. `documentation.enabled: false` disables those
+exports, not an independently enabled discovery plugin.
+
+
 ## Front matter defaults
 
 The `defaults` key works like Jekyll's — an array of scope/values pairs:

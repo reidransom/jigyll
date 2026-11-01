@@ -8,10 +8,26 @@
   directories, including linked collections and localized content. Watch mode
   tracks external edits and mount changes; directory links are rejected by
   default.
+* Add opt-in `jigyll-llms-txt` for non-localized full builds and initial preview:
+  automatic public Markdown discovery or ordered curated sections, external and
+  HTML entries, canonical base-path URLs, and optional Markdown companions.
+  Settings support title/description overrides and `markdown` (default true).
+  Localized discovery and generation-safe reloads are not included yet.
 
 ### Improved
-* Share discovery metadata escaping and ordered file-list formatting independently
-  of documentation snapshots, retaining the existing documentation exports.
+* Scope Liquid-resolved source capture to selected export pages while preserving
+  documentation capture without the discovery plugin.
+
+### Breaking
+* Documentation configuration no longer generates or reserves `/llms.txt`.
+  Add `jigyll-llms-txt` to `plugins` to retain discovery. Combined builds reuse
+  documentation groups and article Markdown unless explicit plugin sections
+  replace selection; documentation-only builds retain manifest/corpus/Markdown.
+* Discovery has no snapshot ID or timestamp. Manifest/corpus schema and hashing
+  remain unchanged. `documentation-finalize` updates only documentation-owned
+  artifacts, preserving authored/plugin indexes and general plugin companions;
+  it does not rebase general companions after asset processing. Documentation's
+  localization, base-path, and incremental restrictions remain unchanged.
 
 ## 1.14.0 (Oct 29, 2026)
 

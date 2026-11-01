@@ -3,13 +3,13 @@ title: Plugins
 parent: Guides
 nav_order: 1
 permalink: /docs/plugins/
-description: Jigyll has no extensible plugin system, but emulates a fixed set of popular Jekyll plugins.
+description: Enable compiled-in Jekyll-compatible plugins and Jigyll's opt-in llms.txt generator.
 ---
 
 Jekyll has an extensible Ruby plugin system — generators, converters,
 commands, tags, filters, and hooks. **Jigyll does not.** Plugins are Go code
-compiled into the binary, and only a fixed set of popular Jekyll plugins is
-emulated.¹
+compiled into the binary: a fixed set of Jekyll plugins is emulated, alongside
+Jigyll-native features such as `jigyll-llms-txt`.¹
 
 Enable them in `_config.yml` (never a Gemfile):
 
@@ -61,6 +61,113 @@ documentation](https://jekyllrb.com/docs/).
 
 ⁴ Modified dates aren't that useful with source control and CI. (Post dates
 are included.)
+
+## Jigyll-native discovery: `jigyll-llms-txt`
+
+Enable theme-independent discovery explicitly in `_config.yml`:
+
+```yaml
+url: https://example.com
+baseurl: /project
+title: Example
+description: Guides for configuring and operating Example.
+plugins:
+  - jigyll-llms-txt
+llms_txt:
+  markdown: true
+```
+
+Plugin membership is the only enable switch; `llms_txt` is optional and has
+no effect without the plugin. `llms_txt.title` and `llms_txt.description`
+override site metadata. The effective title must be nonempty, and `url`
+must be an absolute HTTP(S) canonical URL; the description is optional.
+`markdown` defaults to `true`. The index is deployed at `/project/llms.txt`
+in this example, and its absolute destinations use the canonical origin and
+`baseurl`, not the preview server's host.
+
+### Automatic selection and ordered sections
+
+Without `sections`, the plugin lists public source-backed Markdown pages,
+posts, and output-enabled collection documents producing HTML in one `Pages`
+section, sorted by canonical route. Each entry needs a title from front matter
+or defaults; descriptions are optional and are not generated.
+
+Set `llms: false` in front matter or defaults to exclude content. Drafts,
+future and unpublished material remain excluded even under preview flags.
+Redirects, 404s, generated pagination clones, static assets, non-output
+collections, generated exports, hidden/planning sources, and explicit
+`robots: noindex` are also excluded. Discovery is not access control and does
+not implement general robots.txt semantics.
+
+Explicit sections replace automatic selection and preserve section and entry order:
+
+```yaml
+llms_txt:
+  title: Example developer guides
+  description: Start here to configure Example.
+  markdown: true
+  sections:
+    - title: Guides
+      entries:
+        - url: /getting-started/
+        - url: /configuration/
+          description: All supported configuration settings.
+    - title: Optional
+      entries:
+        - url: https://reference.example.org/reference.md
+          title: External reference
+          description: Supporting protocol documentation.
+```
+
+Local URLs name actual canonical routes **before** `baseurl`, not source
+filenames. They inherit page titles/descriptions unless overridden. Absolute
+URLs on the canonical origin under the deployed base path are normalized to
+local lookups, including publication exclusions. Other external entries need
+an explicit title and absolute HTTP(S) URL; their destinations are kept as
+authored and are never fetched. Explicit HTML-source pages link to canonical
+HTML rather than being converted to Markdown.
+
+Missing/excluded local routes, duplicate entries, invalid metadata or schemes,
+and output collisions fail before destination cleaning. An empty eligible
+inventory may produce just the title and optional summary. Selection does
+not scrape navigation or require a theme, `layout: docs`, or `/docs/` routes.
+
+### Markdown companions and ownership
+
+Selected Markdown pages export Liquid-resolved source without front matter
+or layouts. Actual links/media are rebased while code and literal examples
+are preserved. The index links only to registered companions:
+
+| HTML route | Markdown route |
+| --- | --- |
+| `/` | `/index.md` |
+| `/guide/` | `/guide/index.md` |
+| `/guide.html` | `/guide.html.md` |
+| `/guide` | `/guide.md` |
+
+These routes are relative to the deployed base path. Authored routes, aliases,
+files, and directories cannot be overwritten. `markdown: false` emits only
+the index and uses canonical HTML for local entries; it does not disable
+independently enabled documentation Markdown.
+
+With [documentation exports](/docs/static-documentation/) active and no
+explicit sections, the plugin uses the documentation inventory and group order
+instead of all pages. Metadata precedence is explicit `llms_txt`, then
+documentation metadata, then site metadata. It reuses documentation-owned
+Markdown artifacts; explicitly selected general pages can have separate plugin
+companions without joining the manifest/corpus. Only active documentation
+integration adds actual manifest/corpus downloads and configured authoritative
+OpenAPI links.
+
+The index has no snapshot ID or timestamp. `documentation-finalize` never
+updates it or general plugin-owned companions; post-processing rebasing by
+that command applies only to documentation-owned artifacts.
+
+This release supports non-localized full builds and initial preview delivery,
+including standalone sites with a nonempty `baseurl`. Generation-safe reloads
+and localized discovery are not yet supported. Documentation integration
+retains its own empty-baseurl, non-localized, non-incremental restrictions.
+
 
 [jekyll-avatar]: https://github.com/benbalter/jekyll-avatar
 [jekyll-coffeescript]: https://github.com/jekyll/jekyll-coffeescript

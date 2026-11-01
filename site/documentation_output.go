@@ -2,65 +2,9 @@ package site
 
 import (
 	"fmt"
-	"io"
-	"path/filepath"
 
 	"github.com/reidransom/jigyll/docexport"
-	"github.com/reidransom/jigyll/pages"
 )
-
-// Generated artifacts are ordinary output documents, never source pages. Both
-// the HTTP preview and disk builds read the same complete, immutable snapshot.
-type documentationDocument struct {
-	pages.PageEmbed
-	site *Site
-}
-
-func (d *documentationDocument) Write(w io.Writer) error {
-	if err := d.site.ensureRendered(); err != nil {
-		return err
-	}
-	artifacts, err := d.site.documentation.snapshot()
-	if err != nil {
-		return err
-	}
-	body, found := artifacts[d.Path]
-	if !found {
-		return fmt.Errorf("documentation artifact missing: %s", d.Path)
-	}
-	_, err = w.Write(body)
-	return err
-}
-
-func (s *Site) addDocumentationRoutes() error {
-	routes := []string{"/llms.txt", "/docs/manifest.json", "/docs/search.json"}
-	for _, article := range s.documentation.articles {
-		routes = append(routes, article.URL+"index.md")
-	}
-	// Check the entire namespace before registering any generated documents.
-	for _, route := range routes {
-		if _, exists := s.Routes[route]; exists {
-			return fmt.Errorf("generated documentation route collides with authored output: %s", route)
-		}
-	}
-	paths := make([]string, 0, len(s.Routes)+len(routes))
-	for _, document := range s.Routes {
-		paths = append(paths, filepath.ToSlash(destinationRelativePath(document)))
-	}
-	paths = append(paths, routes...)
-	if err := docexport.ValidateOutputPaths(paths); err != nil {
-		return err
-	}
-	for _, route := range routes {
-		s.AddDocument(&documentationDocument{PageEmbed: pages.PageEmbed{Path: route}, site: s}, true)
-	}
-	return nil
-}
-
-func (d *documentationInventory) snapshot() (map[string][]byte, error) {
-	d.once.Do(func() { d.artifacts, d.err = d.buildSnapshot() })
-	return d.artifacts, d.err
-}
 
 func (d *documentationInventory) buildSnapshot() (map[string][]byte, error) {
 	manifest := docexport.Manifest{

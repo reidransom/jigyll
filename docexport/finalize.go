@@ -15,9 +15,10 @@ import (
 	"golang.org/x/net/html"
 )
 
-// Finalize refreshes a built documentation snapshot after asset publication
-// rewrites. All inputs are read through os.Root, which confines symlink traversal
-// as well as lexical paths. No source tree, configuration, or network is used.
+// Finalize refreshes only documentation-owned Markdown, manifest, and corpus
+// artifacts after asset publication rewrites; it never reads or changes llms.txt.
+// All inputs are read through os.Root, which confines symlink traversal as well as
+// lexical paths. No source tree, configuration, or network is used.
 // Validation and staging finish before any artifact is replaced. Each replacement
 // is atomic, but the set is not a filesystem transaction: the caller must publish
 // the output directory only after this function succeeds.

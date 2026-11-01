@@ -90,6 +90,8 @@ type page struct {
 	excerpt        interface{} // []byte or string, depending on rendering stage
 	headings       []renderers.Heading
 	resolvedSource []byte
+	captureSource  bool
+	generated      bool
 	rendered       bool
 }
 
@@ -207,11 +209,19 @@ func (p *page) Clone(permalink string) Page {
 		file:      p.file,
 		firstLine: p.firstLine,
 		raw:       p.raw,
+		generated: true,
 	}
 	c.fm = frontmatter.Merge(p.fm) // fresh map; addPrevNext-style mutations can't alias
 	c.permalink = permalink
 	return &c
 }
+
+// SourceBacked distinguishes authored pages from generated pagination clones.
+func (p *page) SourceBacked() bool { return !p.generated }
+
+// CaptureSource retains the immutable Liquid-resolved body on the next render.
+// Selection must request capture before any page rendering begins.
+func (p *page) CaptureSource() { p.captureSource = true }
 
 // PostDate is part of the Page interface.
 // FIXME move this back to Page interface, or re-work this entirely.
@@ -310,7 +320,8 @@ func (p *page) computeContent() (cn string, ex string, err error) {
 	if err != nil {
 		return
 	}
-	if documentation, ok := p.site.Config().Map("documentation"); ok && len(documentation) > 0 && documentation["enabled"] != false && p.fm["layout"] == "docs" {
+	documentation, docsEnabled := p.site.Config().Map("documentation")
+	if p.captureSource || (docsEnabled && len(documentation) > 0 && documentation["enabled"] != false && p.fm["layout"] == "docs") {
 		if src == nil {
 			src = []byte{}
 		}

@@ -58,9 +58,12 @@ in Jigyll it is always available.)
 
 Go integrations can call `Page.Article()` to render a page and obtain its body
 HTML and heading metadata before layouts are applied. The returned `Article`
-also contains the exact Liquid-resolved, pre-conversion source when the page
-uses `layout: docs` and the `documentation` configuration map is nonempty
-and not disabled with `enabled: false`.
+also contains exact Liquid-resolved, pre-conversion source when source capture
+has been requested for that page before rendering. Capture is scoped to the
+selected pages that need source, rather than all rendered pages or one layout.
+The discovery plugin requests it for selected Markdown companions, including
+ordinary page layouts. Documentation preserves its own article capture needs
+when the discovery plugin is absent.
 
 Liquid runs once for the page body; Markdown or other extension-selected
 conversion consumes that same resolved source. `Article.Source` is `nil` when

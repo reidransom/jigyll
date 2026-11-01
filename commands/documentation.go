@@ -10,7 +10,7 @@ import (
 	"github.com/reidransom/jigyll/docexport"
 )
 
-var documentationFinalize = app.Command("documentation-finalize", "Finalize built native documentation after asset revision rewrites")
+var documentationFinalize = app.Command("documentation-finalize", "Refresh documentation Markdown, manifest, and corpus after asset revision rewrites; leave llms.txt unchanged")
 var documentationAssetMap = documentationFinalize.Flag("asset-map", "JSON object mapping original asset URLs to published revision URLs").Required().String()
 var documentationOutput = documentationFinalize.Arg("output-directory", "Built output directory to finalize without loading a source site").Required().String()
 

@@ -189,6 +189,15 @@ type siteResponseSource struct {
 }
 
 func (source siteResponseSource) response(urlpath string) (responseDocument, bool) {
+	// Ordinary site inventories are deployment-relative, just like disk output.
+	// Accept the configured deployment prefix on preview requests as well.
+	if base := strings.TrimSuffix(source.site.Config().BaseURL, "/"); base != "" {
+		if urlpath == base {
+			urlpath = "/"
+		} else if strings.HasPrefix(urlpath, base+"/") {
+			urlpath = strings.TrimPrefix(urlpath, base)
+		}
+	}
 	document, found := source.site.URLPage(urlpath)
 	if !found {
 		return nil, false
