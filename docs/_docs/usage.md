@@ -74,6 +74,12 @@ successful refresh updates canonical links and removes obsolete routes.
 but does not provide filesystem-wide transactional writes. Documentation
 exports retain their explicit incremental-mode restriction.
 
+Fetch advertised canonical paths on the loopback origin to inspect exports
+locally; for example, `curl http://127.0.0.1:4000/project/llms.txt`. Keep the
+configured public `url` and `baseurl` for canonical citations. Localized projects
+likewise serve one aggregate index and actual locale companions from a completed
+generation; their disk builds use staged project promotion.
+
 ## Jigyll-only commands
 
 > **Jigyll-only.** These have no Jekyll counterpart:

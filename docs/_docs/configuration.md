@@ -98,7 +98,9 @@ See the plugin guide for selection, exclusions, curation, and companion paths.
 Plugin-enabled watch updates prepare fresh complete generations, even with
 `--incremental`; preview retains the last successful exports on failure.
 Canonical links preserve the configured origin/base path across serving URL
-overrides. Localized discovery is not shipped yet.
+overrides. [Localized discovery](/docs/localization/#discovery-exports) publishes
+one project index with actual locale editions; different translated slugs require
+separate literal curated entries.
 
 [`documentation:`](/docs/static-documentation/) independently enables
 documentation manifest/corpus/article exports. It does **not** generate or

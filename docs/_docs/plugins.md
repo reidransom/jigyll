@@ -99,6 +99,10 @@ collections, generated exports, hidden/planning sources, and explicit
 `robots: noindex` are also excluded. Discovery is not access control and does
 not implement general robots.txt semantics.
 
+This is a public discovery file, not a crawler policy, authentication boundary,
+or permission to use content. It performs no crawling or AI summarization and
+provides no hosted search, embeddings, MCP endpoint, or `llms-full.txt`.
+
 Explicit sections replace automatic selection and preserve section and entry order:
 
 ```yaml
@@ -136,7 +140,12 @@ not scrape navigation or require a theme, `layout: docs`, or `/docs/` routes.
 
 Selected Markdown pages export Liquid-resolved source without front matter
 or layouts. Actual links/media are rebased while code and literal examples
-are preserved. The index links only to registered companions:
+are preserved. The index links only to registered companions.
+
+During preview, request the path from each advertised canonical URL on your
+local preview origin (for example, `http://127.0.0.1:4000/project/guide/index.md`).
+The index intentionally continues to cite the public canonical origin; it does
+not redirect canonical traffic to your development server.
 
 | HTML route | Markdown route |
 | --- | --- |
@@ -162,6 +171,12 @@ OpenAPI links.
 The index has no snapshot ID or timestamp. `documentation-finalize` never
 updates it or general plugin-owned companions; post-processing rebasing by
 that command applies only to documentation-owned artifacts.
+
+Upgrading a documentation-enabled site requires adding
+`jigyll-llms-txt` to its existing `plugins` list; documentation configuration no
+longer implicitly enables discovery. Consumers must stop expecting an index
+snapshot hash or asking the documentation finalizer to refresh the index. See
+the [breaking migration](/docs/static-documentation/#breaking-discovery-migration).
 
 ### Builds and preview refreshes
 

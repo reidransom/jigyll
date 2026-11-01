@@ -91,6 +91,19 @@ Documentation article routes stay stable through asset revision, so index
 links remain valid without rewriting the index. Do not assume this command
 rebases general plugin companions after CDN processing.
 
+For a local-only pipeline check, an asset map can revise a local asset to another
+local destination instead of a CDN URL:
+
+```json
+{"/assets/logo.svg": "/assets/logo.rev.svg"}
+```
+
+Place the revised asset in the output, apply the corresponding revision to final
+article HTML, and run the same `documentation-finalize --asset-map` command.
+Inspect the revised Markdown destinations and matching manifest/corpus identity;
+the discovery index remains byte-for-byte unchanged. No deployment or network
+fetch is needed for this check.
+
 ## Breaking discovery migration
 
 Sites that previously relied on `documentation:` to create `/llms.txt` must

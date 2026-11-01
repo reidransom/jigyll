@@ -35,6 +35,10 @@
   preview startup/reloads, publish actual staged files with relative CLI source
   paths, and keep destination-specific staging/backup events out of source
   watches without hiding unrelated authored includes.
+* Document the complete standalone/localized discovery contract, publication
+  exclusions, literal translated-slug curation, canonical preview paths, and
+  the documentation-only asset finalizer boundary, with a local revision-map
+  example requiring no CDN or external theme.
 
 ### Breaking
 * Documentation configuration no longer generates or reserves `/llms.txt`.
