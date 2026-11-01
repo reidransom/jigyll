@@ -38,6 +38,8 @@ type LocalizedProject struct {
 	project         *localizationProject
 	routes          map[string]localizedRoute
 	servedDocuments map[string]LocalizedServedDocument
+	servingURL      string
+	hasServingURL   bool
 }
 
 // LocalizedServedDocument is one immutable response from a completed
@@ -133,13 +135,22 @@ func (p *LocalizedProject) rebuild(build func(*Site) (*LocalizedProject, int, er
 	if err != nil {
 		return nil, 0, err
 	}
-	fresh.SetAbsoluteURL(p.project.base.cfg.AbsoluteURL)
-	return build(fresh)
+	replacement, count, err := build(fresh)
+	if err != nil {
+		return nil, count, err
+	}
+	// Canonical exports are completed from fresh source configuration before
+	// carrying a preview-only serving override into the accepted generation.
+	if p.hasServingURL {
+		replacement.SetAbsoluteURL(p.servingURL)
+	}
+	return replacement, count, nil
 }
 
 // SetAbsoluteURL applies the serving URL to every locale before pages are
 // served. Rebuild carries this value into the next project generation.
 func (p *LocalizedProject) SetAbsoluteURL(url string) {
+	p.servingURL, p.hasServingURL = url, true
 	p.project.base.SetAbsoluteURL(url)
 	for _, localeSite := range p.project.prepared {
 		localeSite.SetAbsoluteURL(url)
@@ -433,11 +444,21 @@ func (p *localizationProject) build(publication localizedPublication) (int, map[
 	return count, publication.servedDocuments(), nil
 }
 
+func localizedStagePrefix(destination string) string {
+	return "." + filepath.Base(destination) + ".jigyll-localized-stage-"
+}
+
 func (p *localizationProject) localizedBuildStage() (string, func(), error) {
 	if p.base.cfg.DryRun {
 		return "", func() {}, nil
 	}
-	stage, err := os.MkdirTemp(filepath.Dir(p.base.DestDir()), ".jigyll-localized-")
+	// A locale destination is source-relative unless absolute. Keep the shared
+	// stage absolute even when the CLI source was supplied as a relative path.
+	destination, err := filepath.Abs(p.base.DestDir())
+	if err != nil {
+		return "", nil, err
+	}
+	stage, err := os.MkdirTemp(filepath.Dir(destination), localizedStagePrefix(destination))
 	if err != nil {
 		return "", nil, err
 	}
@@ -475,13 +496,20 @@ func (p *localizationProject) prepareLocalizedGeneration(stage string) error {
 	if err := p.prepareLocaleSites(stage, p.localizedInputs()); err != nil {
 		return err
 	}
+	if err := p.bindLocalizationContexts(); err != nil {
+		return err
+	}
 	if err := p.prepareAggregateDocuments(); err != nil {
+		return err
+	}
+	completeArtifacts, err := p.prepareLocalizedArtifacts()
+	if err != nil {
 		return err
 	}
 	if err := p.validateRoutes(); err != nil {
 		return err
 	}
-	return p.bindLocalizationContexts()
+	return completeArtifacts()
 }
 
 func (p *localizationProject) prepareLocaleSite(stage string, sources map[string]struct{}, locale config.Locale, includeStatic bool) (*Site, error) {
@@ -1047,14 +1075,20 @@ func destinationCollisionProblems(candidates []routeCandidate) []string {
 		}
 		destinations[candidate.destination] = candidate
 	}
+	for _, candidate := range candidates {
+		for parent := path.Dir(candidate.destination); parent != "." && parent != "/"; parent = path.Dir(parent) {
+			if previous, exists := destinations[parent]; exists {
+				problems = append(problems, fmt.Sprintf("destination ancestor collision at %q between %s and %s", parent, previous.owner, candidate.owner))
+			}
+		}
+	}
 	return problems
 }
 
 func localizedDestinationPath(document Document) string {
-	if document.IsStatic() {
-		return localizedRouteDestination(document.URL())
-	}
-	return localizedRouteDestination(destinationRelativePath(document))
+	// Use the same physical path as WriteDoc. In particular, an extensionless
+	// static file is a file, not an HTML directory with an index descendant.
+	return filepath.ToSlash(filepath.Clean(strings.TrimPrefix(destinationRelativePath(document), "/")))
 }
 
 func localizedRouteDestination(route string) string {

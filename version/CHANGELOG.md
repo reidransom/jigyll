@@ -8,11 +8,16 @@
   directories, including linked collections and localized content. Watch mode
   tracks external edits and mount changes; directory links are rejected by
   default.
-* Add opt-in `jigyll-llms-txt` for non-localized builds and preview:
-  automatic public Markdown discovery or ordered curated sections, external and
-  HTML entries, canonical base-path URLs, and optional Markdown companions.
-  Settings support title/description overrides and `markdown` (default true).
-  Localized discovery is not included yet.
+* Add opt-in `jigyll-llms-txt` for builds and preview: automatic public Markdown
+  discovery or ordered curated sections, external and HTML entries, canonical
+  base-path URLs, and optional Markdown companions. Settings support
+  title/description overrides and `markdown` (default true).
+* Support standalone localized discovery with one project aggregate index,
+  ordered locale/section H2 groups, actual locale-owned companions, and literal
+  route curation for differing translated slugs. Honor optional/required edition
+  policy without fallback article content, root/subdirectory default locales,
+  deployment base paths, and Markdown-disabled output. Localized documentation
+  snapshots remain explicitly unsupported.
 
 ### Improved
 * Scope Liquid-resolved source capture to selected export pages while preserving
@@ -25,6 +30,11 @@
   conversions, and collisions retain the last good index/companions without a
   successful refresh notification. Keep configured canonical origin/base-path
   destinations across serving overrides and subsequent refreshes.
+* Validate localized aggregate/companion routes, aliases, and physical ancestor
+  destinations before staged promotion. Preserve canonical exports through
+  preview startup/reloads, publish actual staged files with relative CLI source
+  paths, and keep destination-specific staging/backup events out of source
+  watches without hiding unrelated authored includes.
 
 ### Breaking
 * Documentation configuration no longer generates or reserves `/llms.txt`.

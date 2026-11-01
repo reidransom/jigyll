@@ -16,6 +16,19 @@ type ArtifactContext struct {
 	Documentation *DocumentationArtifacts
 }
 
+// LocalizedArtifactContext supplies a prepared locale's actual output pages.
+// Prefix is its routing prefix without slashes; page URLs already include it.
+// Context order determines locale order in the aggregate discovery document.
+type LocalizedArtifactContext struct {
+	Site   Site
+	Label  string
+	Prefix string
+	Pages  []Page
+	// ExcludedRoutes contains actual prefixed URLs of known non-output pages.
+	// They are not articles, but curated references must still reject them.
+	ExcludedRoutes []string
+}
+
 // DocumentationArtifacts describes the independently owned documentation outputs.
 type DocumentationArtifacts struct {
 	Project  docexport.Project

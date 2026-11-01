@@ -160,6 +160,46 @@ internal routes rather than guessing a locale prefix.
 ```
 {% endraw %}
 
+## Discovery exports
+
+Add `jigyll-llms-txt` to `plugins` for a single project-level discovery index:
+
+```yaml
+plugins: [jigyll-llms-txt]
+llms_txt:
+  sections:
+    - title: Guides
+      entries:
+        - url: /getting-started/
+        - url: /erste-schritte/
+```
+
+At `baseurl: /guide`, the index is `/guide/llms.txt`. It groups actual editions
+in configured locale order, using H2 labels such as `English — Guides`.
+Companions belong to each prepared locale: English `/getting-started/` exports
+`/guide/getting-started/index.md`; German `/erste-schritte/` exports
+`/guide/de/erste-schritte/index.md`. Prefixing the default language moves the
+English companion under `/guide/en/`, but does not move or duplicate the index.
+`llms_txt.markdown: false` generates only the index and links to canonical HTML.
+
+Curated URLs name literal routes, not translation identities. Different
+translated slugs must be listed separately. A slug missing from one locale
+is omitted there only when it exists elsewhere; everywhere-missing or matching
+excluded routes fail. Automatic discovery includes actual eligible editions.
+Neither selection mode substitutes fallback article content for a missing
+edition, and required-translation errors still reject the entire generation.
+External curated entries keep their authored destinations in each locale group.
+
+Build/watch stages all locale HTML and discovery artifacts together; preview
+serves a completed immutable generation. Failed validation or rendering retains
+the previous complete output and index/companion bytes until a valid change
+recovers. The separate documentation manifest/corpus snapshot feature remains
+unsupported for localized projects, including combined docs/plugin settings.
+See [plugin discovery](/docs/plugins/#localized-discovery) for metadata,
+curation, and companion rules.
+
+## Publication
+
 Localized builds validate every route before publishing. Output is rendered to
 a sibling staging directory and promoted only after the complete generation
 succeeds; a failed localized build leaves the previous destination intact.

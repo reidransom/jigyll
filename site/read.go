@@ -69,6 +69,11 @@ func (s *Site) Read() error {
 	if err := s.prepareDocumentation(); err != nil {
 		return err
 	}
+	// Locale sites are prepared together: their aggregate discovery owner must
+	// register every locale's exports before project validation and rendering.
+	if s.localeKey != "" {
+		return nil
+	}
 	return s.prepareArtifacts()
 }
 

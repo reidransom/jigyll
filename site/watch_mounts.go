@@ -98,6 +98,9 @@ func (s *Site) scanWatchInventory() (*watchInventory, error) {
 // Theme templates are read outside ordinary page discovery. Keep their existing
 // source tree observable even when the plugin is enabled after watching starts.
 func (s *Site) excludeWatchPath(rel string) bool {
+	if s.watchProtected(filepath.Join(s.SourceDir(), rel)) {
+		return true
+	}
 	if s.themeDir != "" {
 		themeRel, err := filepath.Rel(s.themeDir, filepath.Join(s.SourceDir(), rel))
 		if err == nil && themeRel != ".." && !filepath.IsAbs(themeRel) && !strings.HasPrefix(themeRel, ".."+string(filepath.Separator)) {
@@ -120,6 +123,20 @@ func (s *Site) watchProtected(path string) bool {
 		rel, err := filepath.Rel(root, canonical)
 		if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel) {
 			return true
+		}
+	}
+	if s.cfg.Enabled() {
+		destination, err := utils.CanonicalPath(s.DestDir())
+		if err == nil {
+			relative, err := filepath.Rel(filepath.Dir(destination), canonical)
+			if err == nil {
+				first := strings.SplitN(relative, string(filepath.Separator), 2)[0]
+				// Stages and the promotion backup are siblings of the exact
+				// configured destination, not authored hidden/include trees.
+				if first == filepath.Base(destination)+".jigyll-localized-backup" || strings.HasPrefix(first, localizedStagePrefix(destination)) {
+					return true
+				}
+			}
 		}
 	}
 	return false

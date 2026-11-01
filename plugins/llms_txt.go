@@ -37,32 +37,153 @@ type llmsCompanion struct {
 	route, canonical string
 }
 
-func (p *llmsTxtPlugin) PrepareArtifacts(ctx ArtifactContext) (*ArtifactPlan, error) {
-	cfg := p.site.Config()
+type llmsCanonical struct {
+	origin *url.URL
+	base   string
+}
+
+func prepareLLMsCanonical(site Site) (llmsCanonical, error) {
+	cfg := site.Config()
 	origin, err := url.Parse(cfg.AbsoluteURL)
 	if err != nil || (origin.Scheme != "http" && origin.Scheme != "https") || origin.Host == "" || origin.User != nil || origin.RawQuery != "" || origin.Fragment != "" || (origin.Path != "" && origin.Path != "/") {
-		return nil, fmt.Errorf("llms_txt requires an absolute HTTP(S) canonical site url without a path")
+		return llmsCanonical{}, fmt.Errorf("llms_txt requires an absolute HTTP(S) canonical site url without a path")
 	}
 	base := strings.TrimSuffix(cfg.BaseURL, "/")
 	if base != "" && (!strings.HasPrefix(base, "/") || path.Clean(base) != base || strings.ContainsAny(base, "?#%\\")) {
-		return nil, fmt.Errorf("llms_txt requires a clean baseurl path")
+		return llmsCanonical{}, fmt.Errorf("llms_txt requires a clean baseurl path")
+	}
+	return llmsCanonical{origin: origin, base: base}, nil
+}
+
+func (c llmsCanonical) url(route string) string {
+	return c.origin.ResolveReference(&url.URL{Path: c.base + route}).String()
+}
+
+type llmsRouteInventory struct {
+	pages    map[string]Page
+	prefixes []string
+	// available is shared only during preparation. False means at least one
+	// actual matching edition is excluded; nil keeps standalone missing errors.
+	available map[string]bool
+}
+
+func stripLLMsPrefix(route, prefix string) string {
+	if prefix == "" {
+		return route
+	}
+	if route == "/"+prefix {
+		return "/"
+	}
+	if strings.HasPrefix(route, "/"+prefix+"/") {
+		return strings.TrimPrefix(route, "/"+prefix)
+	}
+	return route
+}
+
+func (r llmsRouteInventory) literal(route string) string {
+	for _, prefix := range r.prefixes {
+		if route == "/"+prefix || strings.HasPrefix(route, "/"+prefix+"/") {
+			return stripLLMsPrefix(route, prefix)
+		}
+	}
+	return route
+}
+
+func (p *llmsTxtPlugin) PrepareArtifacts(ctx ArtifactContext) (*ArtifactPlan, error) {
+	canonical, err := prepareLLMsCanonical(p.site)
+	if err != nil {
+		return nil, err
 	}
 	settings, err := p.settings(ctx.Documentation)
 	if err != nil {
 		return nil, err
 	}
-	canonical := func(route string) string { return origin.ResolveReference(&url.URL{Path: base + route}).String() }
-	routes := make(map[string]Page, len(ctx.Pages))
+	inventory := llmsRouteInventory{pages: make(map[string]Page, len(ctx.Pages))}
 	for _, page := range ctx.Pages {
-		routes[page.URL()] = page
+		inventory.pages[page.URL()] = page
 	}
+	plan, sections, err := p.prepareSelection(ctx.Documentation, settings, canonical, inventory)
+	if err != nil {
+		return nil, err
+	}
+	addLLMsIndex(plan, settings.project, sections)
+	return plan, nil
+}
+
+// PrepareLocalizedLLMsArtifacts prepares one aggregate index and one companion
+// plan per locale, in input order. All routes are project-relative and already
+// include routing prefixes. It selects only actual supplied editions, never
+// translated identities or fallback article bodies.
+func PrepareLocalizedLLMsArtifacts(project Site, locales []LocalizedArtifactContext) (*ArtifactPlan, []*ArtifactPlan, error) {
+	canonical, err := prepareLLMsCanonical(project)
+	if err != nil {
+		return nil, nil, err
+	}
+	projectSettings, err := (&llmsTxtPlugin{site: project}).settings(nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	var prefixes []string
+	for _, locale := range locales {
+		if locale.Prefix != "" {
+			prefixes = append(prefixes, locale.Prefix)
+		}
+	}
+	// A nested routing prefix must win over its ancestor.
+	sort.SliceStable(prefixes, func(i, j int) bool { return len(prefixes[i]) > len(prefixes[j]) })
+	available := map[string]bool{}
+	inventories := make([]llmsRouteInventory, len(locales))
+	for i, locale := range locales {
+		p := &llmsTxtPlugin{site: locale.Site}
+		inventory := llmsRouteInventory{pages: make(map[string]Page, len(locale.Pages)), prefixes: prefixes, available: available}
+		for _, page := range locale.Pages {
+			route := stripLLMsPrefix(page.URL(), locale.Prefix)
+			inventory.pages[route] = page
+			eligible := p.eligible(page, route)
+			if previous, exists := available[route]; !exists || previous {
+				available[route] = eligible
+			}
+		}
+		for _, route := range locale.ExcludedRoutes {
+			available[stripLLMsPrefix(route, locale.Prefix)] = false
+		}
+		inventories[i] = inventory
+	}
+	plans := make([]*ArtifactPlan, len(locales))
+	var sections []llmstxt.Section
+	for i, locale := range locales {
+		p := &llmsTxtPlugin{site: locale.Site}
+		settings, err := p.settings(nil)
+		if err != nil {
+			return nil, nil, err
+		}
+		plan, selected, err := p.prepareSelection(nil, settings, canonical, inventories[i])
+		if err != nil {
+			return nil, nil, err
+		}
+		plans[i] = plan
+		for _, section := range selected {
+			if len(section.Entries) != 0 {
+				section.Title = locale.Label + " — " + section.Title
+				sections = append(sections, section)
+			}
+		}
+	}
+	aggregate := &ArtifactPlan{Build: func() (map[string][]byte, error) { return map[string][]byte{}, nil }}
+	addLLMsIndex(aggregate, projectSettings.project, sections)
+	return aggregate, plans, nil
+}
+
+func (p *llmsTxtPlugin) prepareSelection(docs *DocumentationArtifacts, settings llmsSettings, canonical llmsCanonical, inventory llmsRouteInventory) (*ArtifactPlan, []llmstxt.Section, error) {
+	cfg := p.site.Config()
+	routes := inventory.pages
 	sections := settings.sections
 	if !settings.curated {
-		if ctx.Documentation != nil {
-			for _, group := range ctx.Documentation.Groups {
+		if docs != nil {
+			for _, group := range docs.Groups {
 				section := llmstxt.Section{Title: group.Title, Description: group.Description}
-				for _, article := range ctx.Documentation.Articles {
-					if page, exists := routes[article.URL]; article.NavSection == group.Slug && exists && p.eligible(page) {
+				for _, article := range docs.Articles {
+					if page, exists := routes[article.URL]; article.NavSection == group.Slug && exists && p.eligible(page, article.URL) {
 						section.Entries = append(section.Entries, llmstxt.Entry{URL: article.URL, Title: article.Title, Description: article.Description})
 					}
 				}
@@ -71,7 +192,7 @@ func (p *llmsTxtPlugin) PrepareArtifacts(ctx ArtifactContext) (*ArtifactPlan, er
 		} else {
 			var sorted []string
 			for route, page := range routes {
-				if p.eligible(page) && cfg.IsMarkdown(page.Source()) {
+				if p.eligible(page, route) && cfg.IsMarkdown(page.Source()) {
 					sorted = append(sorted, route)
 				}
 			}
@@ -86,83 +207,99 @@ func (p *llmsTxtPlugin) PrepareArtifacts(ctx ArtifactContext) (*ArtifactPlan, er
 		}
 	}
 	owned := map[string]docexport.Article{}
-	if ctx.Documentation != nil {
-		for _, article := range ctx.Documentation.Articles {
+	if docs != nil {
+		for _, article := range docs.Articles {
 			owned[article.URL] = article
 		}
 	}
-	plan := &ArtifactPlan{Routes: []string{"/llms.txt"}}
+	plan := &ArtifactPlan{}
 	var companions []llmsCompanion
 	seen := map[string]bool{}
 	for i := range sections {
-		for j := range sections[i].Entries {
-			entry := &sections[i].Entries[j]
-			route, local, err := localLLMsRoute(entry.URL, origin, base)
+		selected := sections[i].Entries[:0]
+		for _, entry := range sections[i].Entries {
+			route, local, err := localLLMsRoute(entry.URL, canonical.origin, canonical.base)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			identity := entry.URL
 			if local {
+				if settings.curated {
+					route = inventory.literal(route)
+				}
 				identity = route
 			}
 			if seen[identity] {
-				return nil, fmt.Errorf("duplicate llms_txt entry %q", entry.URL)
+				return nil, nil, fmt.Errorf("duplicate llms_txt entry %q", entry.URL)
 			}
 			seen[identity] = true
 			if !local {
 				if strings.TrimSpace(entry.Title) == "" {
-					return nil, fmt.Errorf("external llms_txt entry %q requires title", entry.URL)
+					return nil, nil, fmt.Errorf("external llms_txt entry %q requires title", entry.URL)
 				}
+				selected = append(selected, entry)
 				continue
 			}
+			if eligible, exists := inventory.available[route]; exists && !eligible && settings.curated {
+				return nil, nil, fmt.Errorf("llms_txt local route %q is missing or excluded", entry.URL)
+			}
 			page, found := routes[route]
-			if !found || !p.eligible(page) {
-				return nil, fmt.Errorf("llms_txt local route %q is missing or excluded", entry.URL)
+			if !found {
+				if _, exists := inventory.available[route]; exists {
+					continue
+				}
+				return nil, nil, fmt.Errorf("llms_txt local route %q is missing or excluded", entry.URL)
+			}
+			if !p.eligible(page, route) {
+				return nil, nil, fmt.Errorf("llms_txt local route %q is missing or excluded", entry.URL)
 			}
 			overrides := settings.overrides[entry.URL]
 			if entry.Title == "" && !overrides.title {
 				entry.Title, err = optionalLLMsString(page.FrontMatter(), "title")
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 			}
 			if entry.Description == "" && !overrides.description {
 				entry.Description, err = optionalLLMsString(page.FrontMatter(), "description")
 				if err != nil {
-					return nil, err
+					return nil, nil, err
 				}
 			}
 			if strings.TrimSpace(entry.Title) == "" {
-				return nil, fmt.Errorf("llms_txt route %s requires title", route)
+				return nil, nil, fmt.Errorf("llms_txt route %s requires title", route)
 			}
-			entry.URL = canonical(route)
+			actual := page.URL()
+			entry.URL = canonical.url(actual)
 			if settings.markdown && cfg.IsMarkdown(page.Source()) {
-				md := markdownCompanionRoute(route)
-				if article, exists := owned[route]; exists {
-					if ctx.Documentation.Sources[route] != page.Source() || article.CanonicalURL != canonical(route) || article.MarkdownURL != canonical(md) || article.URL+"index.md" != md {
-						return nil, fmt.Errorf("llms_txt documentation ownership mismatch at %s", route)
+				md := markdownCompanionRoute(actual)
+				if article, exists := owned[actual]; exists {
+					if docs.Sources[actual] != page.Source() || article.CanonicalURL != canonical.url(actual) || article.MarkdownURL != canonical.url(md) || article.URL+"index.md" != md {
+						return nil, nil, fmt.Errorf("llms_txt documentation ownership mismatch at %s", actual)
 					}
 				} else {
 					plan.Routes = append(plan.Routes, md)
 					plan.Capture = append(plan.Capture, page)
-					companions = append(companions, llmsCompanion{page: page, route: md, canonical: canonical(route)})
+					companions = append(companions, llmsCompanion{page: page, route: md, canonical: canonical.url(actual)})
 				}
-				entry.URL = canonical(md)
+				entry.URL = canonical.url(md)
 			}
+			selected = append(selected, entry)
 		}
+		sections[i].Entries = selected
 	}
-	if ctx.Documentation != nil {
+	if docs != nil {
 		downloads := llmstxt.Section{Title: "Downloads", Entries: []llmstxt.Entry{
-			{Title: "Article manifest", URL: canonical("/docs/manifest.json"), Description: "Canonical URLs, Markdown URLs, and section metadata."},
-			{Title: "Section corpus", URL: canonical("/docs/search.json"), Description: "Downloadable source text for local search."},
+			{Title: "Article manifest", URL: canonical.url("/docs/manifest.json"), Description: "Canonical URLs, Markdown URLs, and section metadata."},
+			{Title: "Section corpus", URL: canonical.url("/docs/search.json"), Description: "Downloadable source text for local search."},
 		}}
 		sections = append([]llmstxt.Section{downloads}, sections...)
-		if api := ctx.Documentation.Project.OpenAPI; api != "" {
+		if api := docs.Project.OpenAPI; api != "" {
 			sections = append(sections, llmstxt.Section{Title: "API specification", Entries: []llmstxt.Entry{{Title: "OpenAPI", URL: api, Description: "Canonical API specification."}}})
 		}
 	}
 	plan.Build = func() (map[string][]byte, error) {
-		artifacts := make(map[string][]byte, len(plan.Routes))
+		artifacts := make(map[string][]byte, len(companions))
 		for _, companion := range companions {
 			body, err := companion.page.Article()
 			if err != nil {
@@ -177,13 +314,25 @@ func (p *llmsTxtPlugin) PrepareArtifacts(ctx ArtifactContext) (*ArtifactPlan, er
 			}
 			artifacts[companion.route] = markdown
 		}
+		return artifacts, nil
+	}
+	return plan, sections, nil
+}
+
+func addLLMsIndex(plan *ArtifactPlan, project llmstxt.Project, sections []llmstxt.Section) {
+	plan.Routes = append([]string{"/llms.txt"}, plan.Routes...)
+	build := plan.Build
+	plan.Build = func() (map[string][]byte, error) {
+		artifacts, err := build()
+		if err != nil {
+			return nil, err
+		}
 		var out strings.Builder
-		llmstxt.WriteHeader(&out, settings.project)
+		llmstxt.WriteHeader(&out, project)
 		llmstxt.WriteSections(&out, sections)
 		artifacts["/llms.txt"] = []byte(out.String())
 		return artifacts, nil
 	}
-	return plan, nil
 }
 
 func (p *llmsTxtPlugin) settings(docs *DocumentationArtifacts) (llmsSettings, error) {
@@ -325,7 +474,7 @@ func llmsMap(raw interface{}) (map[string]interface{}, bool) {
 	}
 }
 
-func (p *llmsTxtPlugin) eligible(page Page) bool {
+func (p *llmsTxtPlugin) eligible(page Page, route string) bool {
 	provenance, ok := page.(interface{ SourceBacked() bool })
 	if !ok || !provenance.SourceBacked() || page.Source() == "" || page.IsStatic() || !page.Published() {
 		return false
@@ -337,7 +486,7 @@ func (p *llmsTxtPlugin) eligible(page Page) bool {
 	if page.OutputExt() != ".html" && page.OutputExt() != ".htm" && page.OutputExt() != ".xhtml" {
 		return false
 	}
-	if page.URL() == "/404.html" || page.URL() == "/404/" || page.URL() == "/404" {
+	if route == "/404.html" || route == "/404/" || route == "/404" {
 		return false
 	}
 	if (page.IsPost() || fm.Get("date", nil) != nil) && page.PostDate().After(time.Now()) {

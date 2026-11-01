@@ -181,8 +181,45 @@ changes or plugin disablement, using the normal authored-output and `keep_files`
 rules. Export validation runs before destination cleaning; ordinary disk builds
 are not filesystem-wide transactions.
 
-Localized discovery is not yet supported. Documentation integration retains its
-own empty-baseurl, non-localized, non-incremental restrictions.
+### Localized discovery
+
+Standalone [localized projects](/docs/localization/) publish one aggregate
+`llms.txt` at the project base path, not one index per locale. Locales follow
+their configured weight/key order, then sections follow their configured order
+(or automatic route order). The aggregate uses H2 labels such as
+`English — Guides` and `Deutsch — Guides`. Its title/summary use project plugin
+or site settings; entry metadata comes from each actual locale page and
+explicit overrides. Jigyll does not invent translated descriptions.
+
+Curated routes are literal in each locale's route space. If English publishes
+`/getting-started/` and German publishes `/erste-schritte/`, list both to select
+both editions. Listing only `/getting-started/` selects only the English page;
+it does not select a translation set. Routing prefixes such as `/de` are
+stripped for lookup, not translated slugs. An entry absent in one locale can
+be omitted there if it exists elsewhere. An everywhere-missing route or a
+matching excluded page is an error, including same-site absolute references.
+True external entries retain their authored destinations in each locale group.
+
+Companions use the owning locale's rendered source and canonical route.
+Missing optional editions are absent, never default-language article fallbacks;
+required editions still follow the catalog's translation policy. A `/project`
+deployment with the default language at root publishes
+`/project/getting-started/index.md` and
+`/project/de/erste-schritte/index.md`. With
+`default_language_in_subdir: true`, the English companion moves to
+`/project/en/getting-started/index.md`; the aggregate stays at
+`/project/llms.txt`. Root/file/extensionless companion rules and
+`markdown: false` work with either layout.
+
+Build/watch validates aggregate, shared, HTML, companion, alias, and physical
+file/directory destinations together before staged promotion. Preview serves
+one completed immutable generation. A rejected locale or export candidate keeps
+the previous complete disk output and preview artifacts; a corrected change
+refreshes them through the existing watcher.
+
+Localized documentation snapshots remain explicitly unsupported, including
+when combined with this plugin. Documentation integration retains its own
+empty-baseurl, non-localized, non-incremental restrictions.
 
 
 [jekyll-avatar]: https://github.com/benbalter/jekyll-avatar

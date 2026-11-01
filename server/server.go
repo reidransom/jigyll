@@ -35,10 +35,10 @@ func (s *Server) Run(open bool, logger func(label, value string)) error {
 	if s.Site == nil {
 		return errors.New("serve requires a site")
 	}
-	s.setServingURL()
 	if err := s.ensureLocalizedProject(); err != nil {
 		return err
 	}
+	s.setServingURL()
 	cfg := s.currentConfig()
 	address := net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port))
 	listener, err := net.Listen("tcp", address)
@@ -191,13 +191,7 @@ type siteResponseSource struct {
 func (source siteResponseSource) response(urlpath string) (responseDocument, bool) {
 	// Ordinary site inventories are deployment-relative, just like disk output.
 	// Accept the configured deployment prefix on preview requests as well.
-	if base := strings.TrimSuffix(source.site.Config().BaseURL, "/"); base != "" {
-		if urlpath == base {
-			urlpath = "/"
-		} else if strings.HasPrefix(urlpath, base+"/") {
-			urlpath = strings.TrimPrefix(urlpath, base)
-		}
-	}
+	urlpath = deploymentRelativeRoute(urlpath, source.site.Config().BaseURL)
 	document, found := source.site.URLPage(urlpath)
 	if !found {
 		return nil, false
@@ -214,11 +208,26 @@ type localizedResponseSource struct {
 }
 
 func (source localizedResponseSource) response(urlpath string) (responseDocument, bool) {
-	document, found := source.project.ServedDocument(urlpath)
+	// Like locale HTML, aggregate and companion inventories are relative to
+	// the deployment root; the project base path is not a locale prefix.
+	document, found := source.project.ServedDocument(deploymentRelativeRoute(urlpath, source.project.Config().BaseURL))
 	if !found {
 		return nil, false
 	}
 	return document, true
+}
+
+func deploymentRelativeRoute(route, base string) string {
+	base = strings.TrimSuffix(base, "/")
+	if base != "" {
+		if route == base {
+			return "/"
+		}
+		if strings.HasPrefix(route, base+"/") {
+			return strings.TrimPrefix(route, base)
+		}
+	}
+	return route
 }
 
 func (localizedResponseSource) handleContentError(s *Server, r *http.Request, _ string, _ *site.Site, _ io.Writer, err error) {
