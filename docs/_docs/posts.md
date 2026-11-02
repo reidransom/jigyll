@@ -1,7 +1,5 @@
 ---
 title: Posts
-parent: Content
-nav_order: 2
 permalink: /docs/posts/
 description: Blogging with the _posts folder — creating posts, tags and categories, excerpts, and drafts.
 ---

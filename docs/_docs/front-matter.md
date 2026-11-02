@@ -1,7 +1,5 @@
 ---
 title: Front Matter
-parent: Content
-nav_order: 3
 permalink: /docs/front-matter/
 description: The YAML front matter block — predefined variables, custom variables, and Jigyll's strict parsing.
 ---

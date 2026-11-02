@@ -1,7 +1,5 @@
 ---
 title: Pages
-parent: Content
-nav_order: 1
 permalink: /docs/pages/
 description: Standalone pages — the most basic building block for content.
 ---

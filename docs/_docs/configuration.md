@@ -1,7 +1,5 @@
 ---
 title: Configuration
-parent: Build
-nav_order: 2
 permalink: /docs/configuration/
 description: Jigyll's _config.yml options, defaults, and how they differ from Jekyll's.
 ---

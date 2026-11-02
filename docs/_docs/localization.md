@@ -1,7 +1,5 @@
 ---
 title: Localization
-parent: Build
-nav_order: 3
 permalink: /docs/localization/
 description: Build one Jigyll project into coherent locale-specific sites.
 ---

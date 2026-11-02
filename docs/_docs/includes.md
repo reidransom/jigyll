@@ -1,7 +1,5 @@
 ---
 title: Includes
-parent: Site Structure
-nav_order: 4
 permalink: /docs/includes/
 description: Reusing partials from the _includes folder with the include and include_relative tags.
 ---

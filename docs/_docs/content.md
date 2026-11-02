@@ -1,7 +1,5 @@
 ---
 title: Content
-has_children: true
-nav_order: 3
 ---
 
 Create authored content, enrich it with metadata, and manage the files Jigyll publishes.

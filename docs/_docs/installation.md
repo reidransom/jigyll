@@ -1,7 +1,5 @@
 ---
 title: Installation
-parent: Getting Started
-nav_order: 2
 permalink: /docs/installation/
 description: Install the Jigyll binary via mise, Homebrew, Scoop, Docker, or the install script.
 ---

@@ -1,7 +1,5 @@
 ---
 title: Start a New Site
-parent: Getting Started
-nav_order: 3
 permalink: /docs/new/
 description: Create a blank Jigyll site or start with a vendored Git theme.
 ---

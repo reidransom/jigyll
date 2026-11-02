@@ -1,7 +1,5 @@
 ---
 title: Getting Started
-has_children: true
-nav_order: 1
 ---
 
 Get oriented, install Jigyll, and create your first site.

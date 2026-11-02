@@ -1,7 +1,5 @@
 ---
 title: Site Structure
-has_children: true
-nav_order: 4
 ---
 
 Understand Jigyll's filesystem conventions, templates, data model, and URL behavior.

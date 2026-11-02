@@ -1,7 +1,5 @@
 ---
 title: Compatibility
-has_children: true
-nav_order: 6
 ---
 
 Track where Jigyll differs from Ruby Jekyll and how GitHub Pages compatibility is verified.

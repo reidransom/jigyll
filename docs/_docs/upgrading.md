@@ -1,7 +1,5 @@
 ---
 title: Upgrading
-parent: Guides
-nav_order: 2
 permalink: /docs/upgrading/
 description: How to upgrade the Jigyll binary.
 ---

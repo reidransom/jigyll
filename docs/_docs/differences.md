@@ -1,7 +1,5 @@
 ---
 title: Differences from Jekyll
-parent: Compatibility
-nav_order: 1
 permalink: /docs/differences/
 description: Where Jigyll's behavior diverges from Ruby Jekyll.
 ---

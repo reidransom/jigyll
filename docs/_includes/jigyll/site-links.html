@@ -2,14 +2,14 @@
 <!-- docifly-search-exclude:start -->
 <footer class="jigyll-site-links" aria-label="Site links">
   <div class="jigyll-site-links-actions not-content">
-  {% for link in site.aux_links %}<a href="{{ link[1] | first | escape }}">{{ link[0] | escape }}</a>{% endfor %}
-  {% if site.gh_edit_link and page.path %}
-  {% capture edit_url %}{{ site.gh_edit_repository }}/{{ site.gh_edit_view_mode }}/{{ site.gh_edit_branch }}/{{ site.gh_edit_source }}/{{ page.path }}{% endcapture %}
-  <a href="{{ edit_url | escape }}">{{ site.gh_edit_link_text | escape }}</a>
+  <a href="https://github.com/{{ site.repository | escape }}">{{ site.title | escape }} on GitHub</a>
+  {% if page.path %}
+  {% capture edit_url %}{{ site.site_links.edit_base_url }}{{ page.path }}{% endcapture %}
+  <a href="{{ edit_url | escape }}">Edit this page on GitHub</a>
   {% endif %}
-  {% if site.back_to_top %}<a href="#page-title">{{ site.back_to_top_text | escape }}</a>{% endif %}
+  <a href="#page-title">Back to top</a>
   </div>
-  <p>{{ site.footer_content }}</p>
+  <p>{{ site.site_links.attribution }}</p>
 </footer>
 <!-- docifly-search-exclude:end -->
 {% endcapture %}

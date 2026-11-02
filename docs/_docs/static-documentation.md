@@ -1,7 +1,5 @@
 ---
 title: Static Documentation Exports
-parent: Site Structure
-nav_order: 13
 permalink: /docs/static-documentation/
 description: Generate public Markdown articles and section data, with optional plugin-owned discovery links.
 ---

@@ -1,7 +1,5 @@
 ---
 title: Build
-has_children: true
-nav_order: 2
 ---
 
 Learn how Jigyll builds a site, from command-line invocation through rendering.

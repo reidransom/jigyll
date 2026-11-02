@@ -28,6 +28,9 @@
   default-layout coverage, search exclusions, and article heading data.
 * Adapt the homepage to Docifly controls and preserve repository, attribution,
   source-edit, and back-to-top links throughout the documentation site.
+* Complete the documentation theme cutover by removing obsolete Just the Docs
+  settings, navigation metadata, Sass, and search-focus workaround while keeping
+  the site's links and compatibility presentation.
 * Scope Liquid-resolved source capture to selected export pages while preserving
   documentation capture without the discovery plugin.
 * Refresh complete discovery generations in watch mode, including plugin-enabled

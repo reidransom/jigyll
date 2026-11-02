@@ -1,7 +1,5 @@
 ---
 title: Plugins
-parent: Guides
-nav_order: 1
 permalink: /docs/plugins/
 description: Enable compiled-in Jekyll-compatible plugins and Jigyll's opt-in llms.txt generator.
 ---

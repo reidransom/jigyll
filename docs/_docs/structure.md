@@ -1,7 +1,5 @@
 ---
 title: Directory Structure
-parent: Site Structure
-nav_order: 1
 permalink: /docs/structure/
 description: The layout of a Jigyll site's source directory, and where caches live.
 ---

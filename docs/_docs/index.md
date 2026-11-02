@@ -1,7 +1,5 @@
 ---
 title: Documentation
-parent: Getting Started
-nav_order: 1
 permalink: /docs/
 description: Get started with Jigyll, a fast Jekyll clone written in Go.
 ---

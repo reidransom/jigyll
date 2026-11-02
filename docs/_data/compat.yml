@@ -4,7 +4,7 @@
 #
 # Feeds three surfaces:
 #   1. the per-page callout   (_includes/compat_callout.html, via _layouts/docs.html)
-#   2. the sidebar badge      (_includes/docs_contents.html)
+#   2. the sidebar badge      (_includes/navigation.html)
 #   3. the aggregate page     (_docs/differences.md)
 #
 # status vocabulary:

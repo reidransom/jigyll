@@ -1,7 +1,5 @@
 ---
 title: Themes
-parent: Site Structure
-nav_order: 7
 permalink: /docs/themes/
 description: Using Jekyll themes with Jigyll — the _theme folder, Bundler fallback, and what's not supported.
 ---

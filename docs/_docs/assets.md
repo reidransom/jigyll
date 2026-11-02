@@ -1,7 +1,5 @@
 ---
 title: Assets
-parent: Content
-nav_order: 6
 permalink: /docs/assets/
 description: Sass and SCSS conversion in Jigyll — Liquid first, compressed CSS, limited options.
 ---

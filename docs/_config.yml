@@ -96,45 +96,14 @@ plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
 
-search_enabled: true
-enable_copy_code_button: true
-heading_anchors: true
-
-aux_links:
-  "Jigyll on GitHub":
-    - "https://github.com/reidransom/jigyll"
-
-back_to_top: true
-back_to_top_text: "Back to top"
-
-footer_content: 'Jigyll is a fork of <a href="https://github.com/osteele/gojekyll">gojekyll</a>. Documentation adapted from the <a href="https://github.com/jekyll/jekyll">Jekyll documentation</a>.'
-
-gh_edit_link: true
-gh_edit_link_text: "Edit this page on GitHub"
-gh_edit_repository: "https://github.com/reidransom/jigyll"
-gh_edit_branch: "main"
-gh_edit_source: "docs"
-gh_edit_view_mode: "edit"
-
-callouts:
-  important:
-    color: blue
-  new:
-    color: green
-  note:
-    color: yellow
-  warning:
-    color: red
+site_links:
+  edit_base_url: https://github.com/reidransom/jigyll/edit/main/docs/
+  attribution: 'Jigyll is a fork of <a href="https://github.com/osteele/gojekyll">gojekyll</a>. Documentation adapted from the <a href="https://github.com/jekyll/jekyll">Jekyll documentation</a>.'
 
 collections:
   docs:
     output: true
     permalink: /docs/:path/
-
-just_the_docs:
-  collections:
-    docs:
-      name: Documentation
 
 defaults:
   - scope:

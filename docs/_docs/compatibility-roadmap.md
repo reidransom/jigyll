@@ -1,7 +1,5 @@
 ---
 title: GitHub Pages Compatibility Roadmap
-parent: Compatibility
-nav_order: 2
 permalink: /docs/compatibility-roadmap/
 description: A phased plan for verifying Jigyll against GitHub Pages, Jekyll 3.10, Jekyll 4.4, and the supported Pages plugins.
 ---

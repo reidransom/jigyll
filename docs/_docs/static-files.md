@@ -1,7 +1,5 @@
 ---
 title: Static Files
-parent: Content
-nav_order: 7
 permalink: /docs/static-files/
 description: Files without front matter — copied verbatim and listed in site.static_files.
 ---

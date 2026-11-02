@@ -25,23 +25,21 @@ func TestDocsEditPageDestinations(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, tc := range []struct {
-		name       string
-		repository string
-		branch     string
-		source     string
-		path       string
-		want       string
+		name     string
+		editBase string
+		path     string
+		want     string
 	}{
 		{
-			name: "homepage", repository: "https://github.com/example/manual", branch: "main", source: "docs", path: "index.md",
+			name: "homepage", editBase: "https://github.com/example/manual/edit/main/docs/", path: "index.md",
 			want: "https://github.com/example/manual/edit/main/docs/index.md",
 		},
 		{
-			name: "collection article", repository: "https://github.com/example/manual", branch: "main", source: "docs", path: "_docs/foo.md",
+			name: "collection article", editBase: "https://github.com/example/manual/edit/main/docs/", path: "_docs/foo.md",
 			want: "https://github.com/example/manual/edit/main/docs/_docs/foo.md",
 		},
 		{
-			name: "configured repository branch and source", repository: "https://github.com/another/project", branch: "release", source: "website/content", path: "_docs/nested/topic.md",
+			name: "configured repository branch and source", editBase: "https://github.com/another/project/edit/release/website/content/", path: "_docs/nested/topic.md",
 			want: "https://github.com/another/project/edit/release/website/content/_docs/nested/topic.md",
 		},
 	} {
@@ -50,14 +48,20 @@ func TestDocsEditPageDestinations(t *testing.T) {
 			err := renderer.Render(&rendered, []byte(`{% include jigyll/site-links.html %}`), liquid.Bindings{
 				"page": map[string]interface{}{"path": tc.path},
 				"site": map[string]interface{}{
-					"gh_edit_link": true, "gh_edit_repository": tc.repository, "gh_edit_branch": tc.branch,
-					"gh_edit_source": tc.source, "gh_edit_view_mode": "edit",
+					"title": "Jigyll", "repository": "example/manual",
+					"site_links": map[string]interface{}{
+						"edit_base_url": tc.editBase,
+						"attribution":   `Adapted from <a href="https://example.org/original">Original</a>.`,
+					},
 				},
 			}, tc.path, 1)
 			require.NoError(t, err)
 			links := compatElements(t, rendered.Bytes(), func(n *html.Node) bool { return n.Data == "a" })
-			require.Len(t, links, 1)
-			require.Equal(t, tc.want, compatAttr(links[0], "href"))
+			require.Len(t, links, 4)
+			require.Equal(t, "https://github.com/example/manual", compatAttr(links[0], "href"))
+			require.Equal(t, tc.want, compatAttr(links[1], "href"))
+			require.Equal(t, "#page-title", compatAttr(links[2], "href"))
+			require.Equal(t, "https://example.org/original", compatAttr(links[3], "href"))
 		})
 	}
 }
