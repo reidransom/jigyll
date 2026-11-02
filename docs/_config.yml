@@ -4,7 +4,90 @@ url: https://jigyll.r2ware.app
 baseurl: ""
 repository: reidransom/jigyll
 
-remote_theme: just-the-docs/just-the-docs@394d6c0ec33852f8e593145d21344a955e908acb
+theme: docifly
+navigation:
+  - label: Jigyll
+    link: /
+  - label: Getting Started
+    items:
+      - label: Getting Started
+        link: /docs/getting-started/
+      - label: Documentation
+        link: /docs/
+      - label: Installation
+        link: /docs/installation/
+      - label: Start a New Site
+        link: /docs/new/
+  - label: Build
+    items:
+      - label: Build
+        link: /docs/build/
+      - label: Command-Line Usage
+        link: /docs/usage/
+      - label: Configuration
+        link: /docs/configuration/
+      - label: Localization
+        link: /docs/localization/
+      - label: Rendering Process
+        link: /docs/rendering-process/
+      - label: Benchmarks
+        link: /docs/benchmarks/
+  - label: Content
+    items:
+      - label: Content
+        link: /docs/content/
+      - label: Pages
+        link: /docs/pages/
+      - label: Posts
+        link: /docs/posts/
+      - label: Front Matter
+        link: /docs/front-matter/
+      - label: Collections
+        link: /docs/collections/
+      - label: Data Files
+        link: /docs/datafiles/
+      - label: Assets
+        link: /docs/assets/
+      - label: Static Files
+        link: /docs/static-files/
+  - label: Site Structure
+    items:
+      - label: Site Structure
+        link: /docs/site-structure/
+      - label: Directory Structure
+        link: /docs/structure/
+      - label: Liquid
+        link: /docs/liquid/
+      - label: Variables
+        link: /docs/variables/
+      - label: Includes
+        link: /docs/includes/
+      - label: Layouts
+        link: /docs/layouts/
+      - label: Permalinks
+        link: /docs/permalinks/
+      - label: Themes
+        link: /docs/themes/
+      - label: Pagination
+        link: /docs/pagination/
+      - label: Static Documentation Exports
+        link: /docs/static-documentation/
+  - label: Guides
+    items:
+      - label: Guides
+        link: /docs/guides/
+      - label: Plugins
+        link: /docs/plugins/
+      - label: Upgrading
+        link: /docs/upgrading/
+  - label: Compatibility
+    items:
+      - label: Compatibility
+        link: /docs/compatibility/
+      - label: Differences from Jekyll
+        link: /docs/differences/
+      - label: GitHub Pages Compatibility Roadmap
+        link: /docs/compatibility-roadmap/
 permalink: pretty
 
 plugins:
