@@ -49,3 +49,21 @@
   padding-inline: 0;
   color: var(--sl-color-text-accent);
 }
+
+.jigyll-site-links {
+  margin-block-start: 2rem;
+  padding-block-start: 1rem;
+  border-top: 1px solid var(--sl-color-hairline-light);
+  color: var(--sl-color-gray-2);
+  font-size: var(--sl-text-sm);
+}
+
+.jigyll-site-links > :first-child {
+  margin-top: 0;
+}
+
+.jigyll-site-links-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}

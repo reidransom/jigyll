@@ -26,6 +26,8 @@
   legend in Docifly, with a single article title in light and dark modes.
 * Include documentation-wrapper articles in Docifly search while preserving
   default-layout coverage, search exclusions, and article heading data.
+* Adapt the homepage to Docifly controls and preserve repository, attribution,
+  source-edit, and back-to-top links throughout the documentation site.
 * Scope Liquid-resolved source capture to selected export pages while preserving
   documentation capture without the discovery plugin.
 * Refresh complete discovery generations in watch mode, including plugin-enabled
