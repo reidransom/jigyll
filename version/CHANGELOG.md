@@ -20,17 +20,14 @@
   snapshots remain explicitly unsupported.
 
 ### Improved
-* Connect the documentation site to the local sibling Docifly theme checkout,
-  preserving its public routes and section navigation.
-* Preserve documentation compatibility notices, navigation indicators, and their
-  legend in Docifly, with a single article title in light and dark modes.
-* Include documentation-wrapper articles in Docifly search while preserving
-  default-layout coverage, search exclusions, and article heading data.
-* Adapt the homepage to Docifly controls and preserve repository, attribution,
-  source-edit, and back-to-top links throughout the documentation site.
-* Complete the documentation theme cutover by removing obsolete Just the Docs
-  settings, navigation metadata, Sass, and search-focus workaround while keeping
-  the site's links and compatibility presentation.
+* Migrate the documentation site from Just the Docs to Docifly, preserving all
+  35 public pages, authored content, six-section navigation, homepage actions,
+  and compatibility notices, indicators, and legend. Include documentation
+  articles in search while retaining search exclusions and heading data.
+  Preserve repository, attribution, source-edit, and back-to-top links alongside
+  Docifly's responsive menu, table of contents, heading links, code copying, and
+  light/dark controls. Remove the obsolete theme settings, navigation metadata,
+  Sass, and search-focus workaround; local builds use the linked sibling theme.
 * Scope Liquid-resolved source capture to selected export pages while preserving
   documentation capture without the discovery plugin.
 * Refresh complete discovery generations in watch mode, including plugin-enabled
