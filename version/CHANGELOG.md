@@ -24,6 +24,8 @@
   preserving its public routes and section navigation.
 * Preserve documentation compatibility notices, navigation indicators, and their
   legend in Docifly, with a single article title in light and dark modes.
+* Include documentation-wrapper articles in Docifly search while preserving
+  default-layout coverage, search exclusions, and article heading data.
 * Scope Liquid-resolved source capture to selected export pages while preserving
   documentation capture without the discovery plugin.
 * Refresh complete discovery generations in watch mode, including plugin-enabled
