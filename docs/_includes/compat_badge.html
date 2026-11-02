@@ -1,14 +1,19 @@
 {%- assign compat_glyph = nil -%}
+{%- assign compat_variant = nil -%}
 {%- case include.status -%}
   {%- when "modified" -%}
     {%- assign compat_glyph = "●" -%}
+    {%- assign compat_variant = "note" -%}
   {%- when "replaced" -%}
     {%- assign compat_glyph = "◆" -%}
+    {%- assign compat_variant = "tip" -%}
   {%- when "unsupported" -%}
     {%- assign compat_glyph = "✕" -%}
+    {%- assign compat_variant = "caution" -%}
   {%- when "jigyll-only" -%}
     {%- assign compat_glyph = "＋" -%}
+    {%- assign compat_variant = "success" -%}
 {%- endcase -%}
 {%- if compat_glyph -%}
-<span class="compat-badge compat-{{ include.status }}" aria-hidden="true">{{ compat_glyph }}</span>
+<span class="sl-badge {{ compat_variant }} small compat-badge" data-compat-status="{{ include.status | escape }}"><span aria-hidden="true">{{ compat_glyph }}</span><span class="sr-only">{{ include.status | capitalize }}</span></span>
 {%- endif -%}

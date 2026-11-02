@@ -22,6 +22,8 @@
 ### Improved
 * Connect the documentation site to the local sibling Docifly theme checkout,
   preserving its public routes and section navigation.
+* Preserve documentation compatibility notices, navigation indicators, and their
+  legend in Docifly, with a single article title in light and dark modes.
 * Scope Liquid-resolved source capture to selected export pages while preserving
   documentation capture without the discovery plugin.
 * Refresh complete discovery generations in watch mode, including plugin-enabled

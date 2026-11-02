@@ -7,13 +7,13 @@
 {%- assign compat = site.data.compat[compat_key] -%}
 {%- if compat and compat.status != "same" -%}
   {%- case compat.status -%}
-    {%- when "modified" -%}{%- assign callout_class = "note" -%}
-    {%- when "replaced" -%}{%- assign callout_class = "important" -%}
-    {%- when "unsupported" -%}{%- assign callout_class = "warning" -%}
-    {%- when "jigyll-only" -%}{%- assign callout_class = "new" -%}
+    {%- when "modified" -%}{%- assign callout_type = "note" -%}
+    {%- when "replaced" -%}{%- assign callout_type = "tip" -%}
+    {%- when "unsupported" -%}{%- assign callout_type = "caution" -%}
+    {%- when "jigyll-only" -%}{%- assign callout_type = "tip" -%}
   {%- endcase -%}
-<div class="{{ callout_class }}">
-  <p>
+<aside class="starlight-aside starlight-aside--{{ callout_type }} compat-notice" data-compat-status="{{ compat.status | escape }}" aria-labelledby="compat-notice-title">
+  <p class="starlight-aside__title" id="compat-notice-title">
     {%- case compat.status -%}
       {%- when "modified" -%}<strong>Differs from Ruby Jekyll — <em>modified</em></strong>
       {%- when "replaced" -%}<strong>Differs from Ruby Jekyll — <em>replaced</em></strong>
@@ -21,9 +21,10 @@
       {%- when "jigyll-only" -%}<strong>Jigyll-only — not in Ruby Jekyll</strong>
     {%- endcase -%}
   </p>
-  {{ compat.summary | markdownify }}
+  <div class="starlight-aside__content">{{ compat.summary | markdownify }}
   {%- if compat.details and compat.details != page.url %}
   <p><a href="{{ compat.details | relative_url }}">All differences →</a></p>
   {%- endif %}
-</div>
+  </div>
+</aside>
 {%- endif -%}
