@@ -20,6 +20,9 @@
   snapshots remain explicitly unsupported.
 
 ### Improved
+* Add install-time GitHub and Forgejo repository-reference resolution for latest
+  published releases, exact tags, and full commit SHAs. Resolve tags to immutable
+  archive sources with bounded HTTP requests, separately from pinned remote themes.
 * Share bounded theme archive downloads and extraction with streaming SHA-256
   observation. Reject incomplete gzip/tar streams, duplicate files, and `.git`
   metadata; failures clean only newly created working paths. Pinned GitHub
