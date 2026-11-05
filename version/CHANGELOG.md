@@ -20,6 +20,10 @@
   snapshots remain explicitly unsupported.
 
 ### Improved
+* Share bounded theme archive downloads and extraction with streaming SHA-256
+  observation. Reject incomplete gzip/tar streams, duplicate files, and `.git`
+  metadata; failures clean only newly created working paths. Pinned GitHub
+  remote themes retain their existing codeload-only source and cache policy.
 * Migrate the documentation site from Just the Docs to Docifly, preserving all
   35 public pages, authored content, six-section navigation, homepage actions,
   and compatibility notices, indicators, and legend. Include documentation

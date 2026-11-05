@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/reidransom/jigyll/internal/themearchive"
 )
 
 func (r *remoteThemeResolver) resolve(ctx context.Context, spec remoteThemeSpec) (string, error) {
@@ -72,28 +74,17 @@ func validRemoteThemeCache(cachePath string) bool {
 }
 
 func (r *remoteThemeResolver) materializeRemoteTheme(ctx context.Context, spec remoteThemeSpec, cacheRoot, cachePath string) error {
-	archive, err := os.CreateTemp(cacheRoot, ".remote-theme-*.tar.gz")
+	work, err := os.MkdirTemp(cacheRoot, ".remote-theme-*")
 	if err != nil {
-		return fmt.Errorf("create temporary archive: %w", err)
+		return fmt.Errorf("create temporary theme workspace: %w", err)
 	}
-	archivePath := archive.Name()
-	defer func() { _ = os.Remove(archivePath) }()
-	if err := archive.Close(); err != nil {
-		return fmt.Errorf("close temporary archive: %w", err)
-	}
-	if err := os.Remove(archivePath); err != nil {
-		return fmt.Errorf("prepare temporary archive: %w", err)
-	}
-	if err := r.downloadArchive(ctx, spec, archivePath); err != nil {
+	defer os.RemoveAll(work)
+	archivePath := filepath.Join(work, "archive.tar.gz")
+	if _, err := themearchive.Download(ctx, r.client, r.archiveURL(spec), archivePath, r.limits); err != nil {
 		return fmt.Errorf("download remote theme: %w", err)
 	}
-
-	temporaryTheme, err := os.MkdirTemp(cacheRoot, ".remote-theme-*")
-	if err != nil {
-		return fmt.Errorf("create temporary theme directory: %w", err)
-	}
-	defer os.RemoveAll(temporaryTheme)
-	if err := extractRemoteThemeArchive(archivePath, temporaryTheme, r.limits); err != nil {
+	temporaryTheme := filepath.Join(work, "theme")
+	if err := themearchive.Extract(archivePath, temporaryTheme, r.limits); err != nil {
 		return fmt.Errorf("extract remote theme: %w", err)
 	}
 	if !validRemoteThemeCache(temporaryTheme) {

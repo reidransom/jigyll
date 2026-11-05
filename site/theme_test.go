@@ -1,7 +1,6 @@
 package site
 
 import (
-	"archive/tar"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -198,16 +197,13 @@ func TestFindThemeRejectsMalformedRemoteThemeBeforeDownload(t *testing.T) {
 
 func TestRemoteThemeBuildAndSiteOverrides(t *testing.T) {
 	const sha = "0123456789012345678901234567890123456789"
-	archivePath := writeRemoteThemeArchive(t, []remoteThemeArchiveEntry{
-		{name: "theme/", typeflag: tar.TypeDir},
-		{name: "theme/_layouts/default.html", typeflag: tar.TypeReg, body: "THEME LAYOUT {% include shared.html %}<main>{{ content }}</main>"},
-		{name: "theme/_includes/shared.html", typeflag: tar.TypeReg, body: "THEME INCLUDE"},
-		{name: "theme/_sass/_colors.scss", typeflag: tar.TypeReg, body: "$color: red;"},
-		{name: "theme/assets/style.scss", typeflag: tar.TypeReg, body: "---\n---\n@import \"colors\";\nbody { color: $color; }"},
-		{name: "theme/assets/theme.txt", typeflag: tar.TypeReg, body: "THEME ASSET"},
+	archive := remoteThemeArchiveWithFiles(t, map[string]string{
+		"_layouts/default.html": "THEME LAYOUT {% include shared.html %}<main>{{ content }}</main>",
+		"_includes/shared.html": "THEME INCLUDE",
+		"_sass/_colors.scss":    "$color: red;",
+		"assets/style.scss":     "---\n---\n@import \"colors\";\nbody { color: $color; }",
+		"assets/theme.txt":      "THEME ASSET",
 	})
-	archive, err := os.ReadFile(archivePath)
-	require.NoError(t, err)
 	var requests atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		requests.Add(1)
