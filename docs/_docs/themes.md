@@ -52,18 +52,54 @@ git clone https://github.com/jekyll/minima.git _theme/minima
 
 Then set `theme: minima` in your site's `_config.yml`.
 
-### Scaffolding with a local theme
+### Scaffolding from a repository reference
 
-`jigyll new` can clone and select a theme in one step:
+Install and select an archive theme without Git:
+
+```sh
+jigyll new my-docs --theme owner/docifly@latest
+jigyll new my-docs --theme https://src.r2ware.dev/owner/project@v1.2.3
+```
+
+These owner/repository/tag values illustrate syntax, not available releases.
+`owner/repository@version` defaults to GitHub; Forgejo requires an explicit
+instance URL. `latest` means the provider's latest published release. Exact
+tags and full 40-character commit SHAs are also accepted.
+
+Jigyll resolves a commit, downloads its `.tar.gz` source archive internally,
+and installs `_theme/<repository-name>/`, without a version/SHA wrapper or
+Git metadata. It writes `theme: <repository-name>` to the new configuration.
+The theme must supply a regular `_layouts/default.html`; the scaffold does
+not override it. No separate name, checksum, or arbitrary archive URL is
+required or accepted. See [Start a new site](/docs/new/) for destination
+safety and archive requirements.
+
+The adjacent `_theme/<repository-name>.source.json` records the source,
+repository URL, resolved tag when applicable, resolved commit, archive URL,
+and observed SHA-256. Tags and `latest` are mutable. Reinstall the recorded
+source revision in a new destination with
+`owner/repository@FULL_COMMIT_SHA` (or the explicit Forgejo URL with that
+commit). The digest records downloaded bytes, not a trusted expected-checksum
+verification or publisher authentication; future provider-generated archives
+of the same commit need not be byte-identical.
+
+Installed themes use the ordinary local `theme` lookup above, not the
+`remote_theme` cache. Builds need neither Git nor a network connection.
+Precompiled assets also avoid Node, npm, and Sass; themes requiring Sass
+compilation still need their compiler.
+
+### Scaffolding from a Git URL
+
+The existing Git URL installer is separate:
 
 ```sh
 jigyll new my-site --theme GIT_URL
 ```
 
-This clones the repository to `_theme/<theme-name>/` and writes
-`theme: <theme-name>` to `my-site/_config.yml`. The generated site has no local
-`_layouts/default.html`, so the selected theme's layout is used. The URL must
-resolve to a theme directory name and the repository must provide that layout.
+It clones into `_theme/<theme-name>/` and selects `theme: <theme-name>`.
+The URL must resolve to a safe theme directory name and the repository must
+provide `_layouts/default.html`. Git is required for this legacy installer
+only, not for builds consuming an installed local theme.
 
 ## Pinned GitHub remote themes
 

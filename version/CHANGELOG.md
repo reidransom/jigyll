@@ -4,6 +4,12 @@
 ## Unreleased
 
 ### New
+* Install themes with `jigyll new PATH --theme owner/repository@latest`,
+  exact tags, or full commit SHAs without Git. GitHub shorthand and explicit
+  Forgejo instance URLs resolve source archives into local `_theme/` files,
+  with transactional destination safety and recorded commit/archive-digest
+  provenance. Existing Git URL installation and pinned GitHub `remote_theme`
+  behavior remain separate.
 * Add `--follow-directory-symlinks` for explicitly publishing linked source
   directories, including linked collections and localized content. Watch mode
   tracks external edits and mount changes; directory links are rejected by

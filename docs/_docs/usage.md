@@ -43,10 +43,22 @@ without writing.
 
 ## `new`
 
-Creates a minimal, runnable blank site at `PATH`. Use
-`jigyll new PATH --theme GIT_URL` to clone a theme into `_theme/` and use it
-for the new site. See [Start a new site](/docs/new/) for the generated files
-and theme requirements.
+Creates a minimal, runnable blank site at `PATH`, or installs a theme:
+
+```sh
+jigyll new PATH
+jigyll new PATH --theme owner/repository@latest
+jigyll new PATH --theme https://src.r2ware.dev/owner/repository@v1.2.3
+jigyll new PATH --theme GIT_URL
+```
+
+Repository/tag examples are syntax placeholders. Shorthand uses GitHub;
+explicit instance URLs use Forgejo. Archive references accept `latest`
+(the latest published release), exact tags, or full commit SHAs, without
+Git. Git URLs retain the existing cloning workflow. Both select a local
+theme under `_theme/`. See [Start a new site](/docs/new/) for generated files,
+provenance, integrity limits, and theme requirements, and
+[Themes](/docs/themes/) for the separate pinned GitHub `remote_theme` setting.
 
 ## `serve`
 
