@@ -1,7 +1,9 @@
 package commands
 
 import (
+	"context"
 	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -11,12 +13,14 @@ import (
 	"path/filepath"
 	"strings"
 	"unicode"
+
+	"github.com/reidransom/jigyll/internal/themearchive"
 )
 
 var (
 	new      = app.Command("new", "Create a new Jigyll site")
 	newPath  = new.Arg("PATH", "Directory for the new site").Required().String()
-	newTheme = new.Flag("theme", "Git URL of a theme to install").String()
+	newTheme = new.Flag("theme", "Theme repository reference (owner/repository@latest, URL@tag, or @full-commit-SHA) or Git URL/local repository").String()
 )
 
 //go:embed all:starter
@@ -26,14 +30,31 @@ func newCommand() error {
 	return scaffoldNewSite(*newPath, *newTheme)
 }
 
+// newSiteOperations keeps filesystem failure injection local to the scaffold
+// transaction; production always uses the ordinary filesystem operations.
+type newSiteOperations struct {
+	rename    func(string, string) error
+	writeFile func(string, []byte, fs.FileMode) error
+}
+
 func scaffoldNewSite(path, themeURL string) error {
-	target, existed, err := resolveNewSiteTarget(path)
+	return scaffoldNewSiteWithOperations(path, themeURL, newSiteOperations{
+		rename: renameNewSite, writeFile: os.WriteFile,
+	})
+}
+
+func scaffoldNewSiteWithOperations(path, themeURL string, operations newSiteOperations) error {
+	target, _, err := resolveNewSiteTarget(path)
 	if err != nil {
 		return err
 	}
 
-	themeName := ""
-	if themeURL != "" {
+	reference, isReference, err := parseThemeReference(themeURL)
+	if err != nil {
+		return err
+	}
+	themeName := reference.Name
+	if themeURL != "" && !isReference {
 		themeName, err = themeDirectoryName(themeURL)
 		if err != nil {
 			return err
@@ -54,19 +75,67 @@ func scaffoldNewSite(path, themeURL string) error {
 	if err := writeStarterSite(staging, themeName); err != nil {
 		return err
 	}
-	if themeURL != "" {
+	if isReference {
+		if err := installThemeReference(staging, reference, operations.writeFile); err != nil {
+			return err
+		}
+	} else if themeURL != "" {
 		if err := cloneTheme(staging, themeURL, themeName); err != nil {
 			return err
 		}
 	}
 
-	if existed {
-		if err := os.Remove(target); err != nil {
-			return fmt.Errorf("replace empty target directory %q: %w", target, err)
-		}
+	// Recheck after network/filesystem work. Publication must not remove an
+	// originally empty target before it can safely replace or restore it.
+	// A non-empty directory (including a concurrent installation) is refused.
+	if _, _, err := resolveNewSiteTarget(target); err != nil {
+		return err
 	}
-	if err := os.Rename(staging, target); err != nil {
+	if err := operations.rename(staging, target); err != nil {
 		return fmt.Errorf("publish new site at %q: %w", target, err)
+	}
+	return nil
+}
+
+func installThemeReference(root string, reference themeReference, writeFile func(string, []byte, fs.FileMode) error) error {
+	client := themearchive.NewHTTPClient(nil)
+	resolved, err := resolveThemeReference(context.Background(), client, reference)
+	if err != nil {
+		return err
+	}
+	downloadDir, err := os.MkdirTemp(root, ".jigyll-theme-download-*")
+	if err != nil {
+		return fmt.Errorf("create theme download directory: %w", err)
+	}
+	defer os.RemoveAll(downloadDir)
+	archive := filepath.Join(downloadDir, "theme.tar.gz")
+	digest, err := themearchive.Download(context.Background(), client, resolved.ArchiveURL, archive, themearchive.DefaultLimits())
+	if err != nil {
+		return fmt.Errorf("download theme %q: %w", reference.Source, err)
+	}
+	themeRoot := filepath.Join(root, "_theme")
+	if err := os.MkdirAll(themeRoot, 0o755); err != nil {
+		return fmt.Errorf("create theme directory: %w", err)
+	}
+	if err := themearchive.Extract(archive, filepath.Join(themeRoot, resolved.Name), themearchive.DefaultLimits()); err != nil {
+		return fmt.Errorf("extract theme %q: %w", reference.Source, err)
+	}
+	// This is an observed digest of the downloaded bytes, not independent
+	// publisher verification or an expected-checksum comparison.
+	provenance := struct {
+		resolvedThemeSource
+		SHA256 string `json:"sha256"`
+	}{resolved, digest}
+	content, err := json.MarshalIndent(provenance, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode theme provenance: %w", err)
+	}
+	content = append(content, '\n')
+	if err := writeFile(filepath.Join(themeRoot, resolved.Name+".source.json"), content, 0o644); err != nil {
+		return fmt.Errorf("write theme provenance: %w", err)
+	}
+	if err := os.RemoveAll(downloadDir); err != nil {
+		return fmt.Errorf("remove theme download: %w", err)
 	}
 	return nil
 }
