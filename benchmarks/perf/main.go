@@ -46,6 +46,12 @@ func run(a []string) error {
 	if len(a) == 3 && a[0] == "compare" {
 		return compare(a[1], a[2])
 	}
+	if len(a) == 3 && a[0] == "capture" {
+		return captureMetadata(a[1], a[2])
+	}
+	if len(a) == 2 && a[0] == "report" {
+		return writeReport(a[1])
+	}
 	return fmt.Errorf("invalid helper invocation")
 }
 

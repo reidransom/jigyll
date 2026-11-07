@@ -50,6 +50,11 @@ finish() {
                 mv -- "$workspace/hyperfine.$format" "$workspace/failed-hyperfine.$format"
             fi
         done
+        for artifact in report.md statistics.json; do
+            if [[ -f "$workspace/$artifact" ]]; then
+                mv -- "$workspace/$artifact" "$workspace/failed-$artifact"
+            fi
+        done
         printf 'perf: Comparison INVALID (%s); diagnostics: %s\n' "$phase" "$workspace" >&2
     fi
 }
@@ -114,6 +119,8 @@ make_roots() {
     done
 }
 make_roots
+phase=provenance
+"$helper" capture "$workspace" "$PERF_ROOT"
 phase=preflight
 for engine in "${engines[@]}"; do
     if ! "$workspace/commands/$engine"; then
@@ -142,8 +149,12 @@ for engine in "${engines[@]}"; do
     printf -v quoted '%q' "$workspace/commands/$engine"
     hyperfine_args+=(--command-name "$engine" "$quoted")
 done
+printf '%q ' hyperfine "${hyperfine_args[@]}" > "$workspace/hyperfine-command"
+printf '\n' >> "$workspace/hyperfine-command"
 # pipefail is essential: tee must never turn an engine/Hyperfine failure into success.
 hyperfine "${hyperfine_args[@]}" 2>&1 | tee "$workspace/hyperfine.log"
+phase=reporting
+"$helper" report "$workspace"
 printf 'success\n' > "$workspace/status"
 phase=complete
-printf 'Raw native comparison artifacts: %s\n' "$workspace"
+printf 'Native comparison report and artifacts: %s\n' "$workspace"
