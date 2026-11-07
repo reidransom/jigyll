@@ -10,6 +10,8 @@
   destinations/caches, raw samples and reproducibility reports.
 
 ### Improved
+* Make documentation inline code more distinct with theme-aware accent text,
+  tinted backgrounds, and subtle rounded borders without changing fenced blocks.
 * Document benchmark installation, real Sass-site preparation, measurement
   boundaries and artifact interpretation. Attribute inherited benchmark tables
   to historical upstream Gojekyll rather than current Jigyll measurements.

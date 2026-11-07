@@ -1,4 +1,18 @@
 /* Consumer-only UI; loaded once by navigation.html on every themed page. */
+@media screen {
+  .sl-markdown-content code:not(pre code) {
+    color: var(--docifly-code-keyword);
+    background-color: color-mix(in srgb, var(--docifly-code-keyword) 9%, var(--background));
+    border: 1px solid color-mix(in srgb, var(--docifly-code-keyword) 25%, var(--border));
+    border-radius: 0.25rem;
+    font-weight: 500;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 3px;
+    padding-right: 3px;
+  }
+}
+
 .compat-notice .starlight-aside__title {
   display: block;
 }

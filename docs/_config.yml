@@ -86,7 +86,7 @@ plugins:
 
 site_links:
   edit_base_url: https://github.com/reidransom/jigyll/edit/main/docs/
-  attribution: 'Jigyll is a fork of <a href="https://github.com/osteele/gojekyll">gojekyll</a>. Documentation adapted from the <a href="https://github.com/jekyll/jekyll">Jekyll documentation</a>.'
+  attribution: ''
 
 collections:
   docs:
