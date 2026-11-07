@@ -3,6 +3,17 @@
 
 ## Unreleased
 
+### New
+* Add `just perf-setup` and `just perf` for pinned native Jigyll/Jekyll full-build
+  comparisons, with a deterministic generated workload, locked local bundles,
+  diagnostic concurrency/cache profiles, semantic output preflight, isolated
+  destinations/caches, raw samples and reproducibility reports.
+
+### Improved
+* Document benchmark installation, real Sass-site preparation, measurement
+  boundaries and artifact interpretation. Attribute inherited benchmark tables
+  to historical upstream Gojekyll rather than current Jigyll measurements.
+
 ## 1.15.0 (Nov 6, 2026)
 
 ### New
