@@ -2,6 +2,43 @@
 title: Start a New Site
 permalink: /docs/new/
 description: Create a Jigyll site with a repository-reference theme or a blank scaffold.
+blank_site_tree:
+  - name: _config.yml
+    type: file
+  - name: _data
+    type: directory
+    open: true
+    children: []
+  - name: _drafts
+    type: directory
+    open: true
+    children: []
+  - name: _includes
+    type: directory
+    open: true
+    children: []
+  - name: _layouts
+    type: directory
+    open: true
+    children:
+      - name: default.html
+        type: file
+  - name: _posts
+    type: directory
+    open: true
+    children: []
+  - name: _sass
+    type: directory
+    open: true
+    children: []
+  - name: assets
+    type: directory
+    open: true
+    children: []
+  - name: index.md
+    type: file
+  - name: .gitignore
+    type: file
 ---
 
 Install a theme from a repository reference without Git:
@@ -78,19 +115,7 @@ static output instead with `jigyll build`.
 
 The new site contains:
 
-```text
-my-site/
-├── _config.yml
-├── _data/
-├── _drafts/
-├── _includes/
-├── _layouts/default.html
-├── _posts/
-├── _sass/
-├── assets/
-├── index.md
-└── .gitignore
-```
+{% include components/file-tree.html items=page.blank_site_tree %}
 
 The blank scaffold's `index.md` uses the included `default` layout, so it
 builds immediately. Blank is the only default: Jigyll has no `--blank` flag,

@@ -1,0 +1,43 @@
+{% assign site_title_href = '/' | relative_url %}{% if page.language %}{% assign site_title_href = '/' | localized_url | relative_url %}{% endif %}
+<a class="site-title" href="{{ site_title_href | escape }}">{{ site.title | escape }}</a>
+<div id="site-search"{% unless page.language %} data-corpus="{{ '/assets/search-data.json' | relative_url | escape }}"{% endunless %} data-search-retry="{% include private/ui-message.html key='docifly.search.retry' default='Retry' %}" data-search-empty="{% include private/ui-message.html key='docifly.search.empty' default='Enter words to search this documentation.' %}" data-search-loading="{% include private/ui-message.html key='docifly.search.loading' default='Loading search…' %}" data-search-error="{% include private/ui-message.html key='docifly.search.error' default='Search could not load. Check your connection and retry.' %}" data-search-no-results="{% include private/ui-message.html key='docifly.search.no_results' default='No results found. Check spelling or try fewer words.' %}" data-search-one-result="{% include private/ui-message.html key='docifly.search.one_result' default='{count} result' %}" data-search-results="{% include private/ui-message.html key='docifly.search.results' default='{count} results' %}">
+  <button class="btn" data-variant="outline" id="search-toggle" type="button" disabled aria-label="{% include private/ui-message.html key='docifly.search.label' default='Search' %}" aria-keyshortcuts="Control+K">
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+    <span aria-hidden="true">{% include private/ui-message.html key='docifly.search.label' default='Search' %}</span>
+    <kbd aria-hidden="true"><kbd data-search-key>Ctrl</kbd><kbd>K</kbd></kbd>
+  </button>
+  <dialog class="dialog" id="search-dialog" aria-label="{% include private/ui-message.html key='docifly.search.dialog_label' default='Search documentation' %}">
+    <div class="search-dialog-frame">
+      <header>
+        <label for="search-input" class="sr-only">{% include private/ui-message.html key='docifly.search.input_label' default='Search documentation' %}</label>
+        <input class="input" id="search-input" type="search" dir="auto" autocomplete="off" placeholder="{% include private/ui-message.html key='docifly.search.placeholder' default='Search documentation' %}">
+        <button class="btn" data-variant="ghost" id="search-close" type="button">{% include private/ui-message.html key='docifly.search.cancel' default='Cancel' %}</button>
+      </header>
+      <section>
+        <div id="search-status" role="status"></div>
+        <div id="search-results"></div>
+      </section>
+    </div>
+  </dialog>
+  {% if page.language %}<script id="search-corpus" type="application/json">{% include private/search-corpus.html %}</script>{% endif %}
+</div>
+<div id="global-controls">
+  {% include private/language-picker.html %}
+  {% include private/version-picker.html %}
+  <a class="btn" data-variant="ghost" data-size="icon" style="width: 44px; height: 44px;" href="https://github.com/{{ site.repository | escape }}" aria-label="Jigyll on GitHub" title="Jigyll on GitHub">
+    <svg style="width: 28px; height: 28px;" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 .297a12 12 0 0 0-3.793 23.385c.6.11.82-.26.82-.577v-2.234c-3.338.726-4.043-1.416-4.043-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.085 1.838 1.237 1.838 1.237 1.07 1.835 2.807 1.305 3.492.998.108-.776.418-1.305.762-1.605-2.665-.303-5.467-1.334-5.467-5.931 0-1.31.469-2.381 1.236-3.221-.124-.303-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23a11.52 11.52 0 0 1 6.006 0c2.291-1.552 3.297-1.23 3.297-1.23.655 1.652.243 2.873.119 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.625-5.479 5.922.431.372.815 1.102.815 2.222v3.293c0 .32.216.694.825.576A12.001 12.001 0 0 0 12 .297Z"/></svg>
+  </a>
+  <div id="mode-picker" data-global-control hidden>
+    <label>
+      <span class="sr-only">{% include private/ui-message.html key='docifly.color_mode.label' default='Select theme' %}</span>
+      <svg class="mode-icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      <select class="select" id="color-mode" autocomplete="off"
+        {% if page.language %}data-label-dark="{% include private/ui-message.html key='docifly.color_mode.dark' default='Dark' %}"
+        data-label-light="{% include private/ui-message.html key='docifly.color_mode.light' default='Light' %}"
+        data-label-punk="{% include private/ui-message.html key='docifly.color_mode.punk' default='Punk' %}"
+        data-label-ice="{% include private/ui-message.html key='docifly.color_mode.ice' default='Ice' %}"{% endif %}>
+        <option value="auto" selected>{% include private/ui-message.html key='docifly.color_mode.auto' default='Auto' %}</option>
+      </select>
+    </label>
+  </div>
+</div>
