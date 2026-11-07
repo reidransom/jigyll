@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname -- "${BASH_SOURCE[0]}")/perf-env"
+
+# Optional site argument explicitly prepares a real site's locked bundle, never
+# changing its Gemfile, lockfile, .bundle configuration, or source content.
+if (( $# > 1 )); then
+    perf_error 'Usage: scripts/perf-setup [site-directory]'
+    exit 1
+fi
+for tool in mise cargo cc pkg-config go; do
+    command -v "$tool" >/dev/null || {
+        perf_error "Missing prerequisite '$tool'; install it on PATH, then run just perf-setup. Ruby uses a managed precompiled build; native gems and Hyperfine need a C/Rust toolchain."
+        exit 1
+    }
+done
+mkdir -p "$PERF_TOOLS"
+# Scope mise isolation to installers so existing mise-managed cargo/go shims
+# still resolve through the user's normal toolchain. RubyGems' mise hook also
+# stays local when it reshims after installation.
+managed_install() {
+    env MISE_DATA_DIR="$PERF_TOOLS/mise" \
+        MISE_CACHE_DIR="$PERF_TOOLS/mise-cache" \
+        MISE_STATE_DIR="$PERF_TOOLS/mise-state" \
+        MISE_CONFIG_DIR="$PERF_TOOLS/mise-config" "$@"
+}
+# Isolate all mise writes from the user's tool installation and configuration.
+if [[ ! -x "$PERF_RUBY_BIN/ruby" ]]; then
+    managed_install env MISE_RUBY_DEFAULT_PACKAGES_FILE=/dev/null MISE_RUBY_COMPILE=false \
+        mise --cd "$PERF_TOOLS" install "ruby@$PERF_RUBY_VERSION" || {
+        perf_error "Could not install managed Ruby $PERF_RUBY_VERSION. Ensure mise supports precompiled Ruby on this platform and package sources are reachable; no system Ruby was replaced."
+        exit 1
+    }
+fi
+[[ "$(ruby -e 'print RUBY_VERSION')" == "$PERF_RUBY_VERSION" ]] || {
+    perf_error "Expected managed Ruby $PERF_RUBY_VERSION at $PERF_RUBY_BIN; inspect that installation."
+    exit 1
+}
+if [[ ! -f "$GEM_HOME/specifications/bundler-$PERF_BUNDLER_VERSION.gemspec" || ! -x "$GEM_HOME/bin/bundle" ]]; then
+    managed_install gem install bundler --version "$PERF_BUNDLER_VERSION" --no-document || {
+        perf_error 'Bundler installation failed; check RubyGems connectivity and native prerequisites.'
+        exit 1
+    }
+fi
+if [[ ! -x "$PERF_HYPERFINE_BIN/hyperfine" ]]; then
+    # A released crate plus its published Cargo.lock, not a mutable Git revision.
+    CARGO_HOME="$PERF_TOOLS/cargo" cargo install hyperfine \
+        --version "=$PERF_HYPERFINE_VERSION" --locked \
+        --root "$PERF_TOOLS/hyperfine/$PERF_HYPERFINE_VERSION" || {
+        perf_error 'Hyperfine installation failed; check Cargo registry access and the Rust/C toolchain.'
+        exit 1
+    }
+fi
+[[ "$(hyperfine --version)" == "hyperfine $PERF_HYPERFINE_VERSION" ]] || {
+    perf_error "Expected Hyperfine $PERF_HYPERFINE_VERSION at $PERF_HYPERFINE_BIN; inspect that installation."
+    exit 1
+}
+
+install_bundle() {
+    perf_use_bundle "$1"
+    managed_install bundle "_${PERF_BUNDLER_VERSION}_" install || {
+        perf_error "Locked bundle installation failed for $1. Resolve dependencies outside timing with Ruby $PERF_RUBY_VERSION and Bundler $PERF_BUNDLER_VERSION; setup never rewrites lockfiles."
+        return 1
+    }
+    bundle "_${PERF_BUNDLER_VERSION}_" check
+}
+install_bundle "$PERF_ROOT/benchmarks/Gemfile"
+[[ "$(bundle "_${PERF_BUNDLER_VERSION}_" exec jekyll --version)" == 'jekyll 4.4.1' ]] || {
+    perf_error 'The generated-site locked bundle did not provide Jekyll 4.4.1.'
+    exit 1
+}
+
+mkdir -p "$PERF_HOME/generated"
+if [[ -e "$PERF_GENERATED_SOURCE" || -L "$PERF_GENERATED_SOURCE" ]]; then
+    ruby -rjson -e '
+        manifest = JSON.parse(File.read(File.join(ARGV.fetch(0), "_benchmark/manifest.json")))
+        expected = {"posts" => 2000, "pages" => 20, "includes" => 10, "layouts" => 4}
+        abort "Existing fixture is not the default generated workload" unless manifest["schema_version"] == 1 && manifest["parameters"] == expected
+    ' "$PERF_GENERATED_SOURCE" || {
+        perf_error "Preserving existing $PERF_GENERATED_SOURCE. Move it aside explicitly before setup if it is not the default fixture."
+        exit 1
+    }
+else
+    (cd "$PERF_ROOT" && go run ./benchmarks/generate -output "$PERF_GENERATED_SOURCE")
+fi
+if (( $# == 1 )); then
+    [[ -d "$1" ]] || { perf_error "Site directory does not exist: $1"; exit 1; }
+    site="$(cd -- "$1" && pwd -P)"
+    install_bundle "$site/Gemfile"
+fi
+printf 'Benchmark setup complete.\nRuby: %s\nBundler gems: %s\nHyperfine: %s\nFixture: %s\n' \
+    "$PERF_RUBY_BIN" "$GEM_HOME" "$PERF_HYPERFINE_BIN" "$PERF_GENERATED_SOURCE"

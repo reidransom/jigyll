@@ -18,6 +18,10 @@ test:
 setup:
     go get -t ./...
 
+# install pinned native benchmark tools, locked gems, and the default fixture
+perf-setup:
+    ./scripts/perf-setup
+
 # list external direct imports
 imports:
     go list -f '{{ "{{" }}join .Imports "\n"{{ "}}" }}' ./... | grep -v `go list -f '{{ "{{" }}.ImportPath{{ "}}" }}'` | grep '\.' | sort | uniq

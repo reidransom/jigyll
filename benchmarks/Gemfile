@@ -1,0 +1,6 @@
+source "https://rubygems.org"
+
+ruby "3.4.7"
+gem "jekyll", "4.4.1"
+# Match the existing project Dart Sass pin for the Ruby Sass compiler as well.
+gem "sass-embedded", "1.102.0"

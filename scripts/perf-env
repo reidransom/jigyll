@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Shared setup/runtime paths. Sourcing this file never installs or downloads tools.
+PERF_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+PERF_HOME="$PERF_ROOT/.scratch/performance-comparison"
+PERF_TOOLS="$PERF_HOME/tools"
+PERF_RUBY_VERSION=3.4.7
+PERF_BUNDLER_VERSION=2.6.9
+PERF_HYPERFINE_VERSION=1.19.0
+PERF_RUBY_BIN="$PERF_TOOLS/mise/installs/ruby/$PERF_RUBY_VERSION/bin"
+PERF_HYPERFINE_BIN="$PERF_TOOLS/hyperfine/$PERF_HYPERFINE_VERSION/bin"
+PERF_GENERATED_SOURCE="$PERF_HOME/generated/source"
+
+perf_error() {
+    printf 'perf: %s\n' "$*" >&2
+    return 1
+}
+
+# Do not inherit application-specific gem paths or Bundler configuration.
+for perf_variable in ${!BUNDLE_@}; do
+    unset "$perf_variable"
+done
+unset perf_variable RUBYOPT RUBYLIB
+export GEM_HOME="$PERF_TOOLS/gems/ruby-$PERF_RUBY_VERSION"
+export GEM_PATH="$GEM_HOME"
+export PATH="$PERF_RUBY_BIN:$GEM_HOME/bin:$PERF_HYPERFINE_BIN:$PATH"
+export BUNDLE_IGNORE_CONFIG=1
+export BUNDLE_USER_HOME="$PERF_TOOLS/bundle-user"
+export BUNDLE_FROZEN=true
+# Keep the explicitly invoked pinned Bundler; never auto-download a site's
+# BUNDLED WITH version when checking or executing its already locked bundle.
+export BUNDLE_VERSION=system
+
+# Real sites keep their own locked dependency graph and a separate install path.
+# Call this with the original site's absolute Gemfile before copying its source;
+# timing may use a copied Gemfile with the same contents and BUNDLE_PATH.
+perf_use_bundle() {
+    local gemfile="$1" key
+    [[ -f "$gemfile" && -f "$gemfile.lock" ]] || {
+        perf_error "Need both $gemfile and $gemfile.lock; resolve and lock site dependencies outside timing."
+        return 1
+    }
+    [[ -x "$PERF_RUBY_BIN/ruby" ]] || {
+        perf_error 'Managed Ruby is missing; run just perf-setup.'
+        return 1
+    }
+    key=$("$PERF_RUBY_BIN/ruby" -rdigest -e 'ARGV.each { |p| print Digest::SHA256.file(p).hexdigest }' "$gemfile" "$gemfile.lock") || return
+    export BUNDLE_GEMFILE="$gemfile"
+    export BUNDLE_PATH="$PERF_TOOLS/bundles/sites/$key"
+    if [[ "$gemfile" == "$PERF_ROOT/benchmarks/Gemfile" ]]; then
+        export BUNDLE_PATH="$PERF_TOOLS/bundles/generated"
+    fi
+}
