@@ -45,7 +45,7 @@ import (
 const (
 	defaultPosts      = 2000
 	defaultPages      = 20
-	generatorRevision = "1"
+	generatorRevision = "2"
 	upstreamRevision  = "4d08286474a1d218387808d7d7c695b2cc01843a"
 	manifestPath      = "_benchmark/manifest.json"
 )
@@ -537,6 +537,7 @@ Post {{ .N }} is part of the {{ .Category }} category and is tagged with
 const pageTemplate = `---
 layout: page
 title: "Page {{ . }}"
+permalink: /page-{{ printf "%03d" . }}.html
 toc:
   - title: First Section
   - title: Second Section

@@ -75,7 +75,7 @@ if [[ -e "$PERF_GENERATED_SOURCE" || -L "$PERF_GENERATED_SOURCE" ]]; then
     ruby -rjson -e '
         manifest = JSON.parse(File.read(File.join(ARGV.fetch(0), "_benchmark/manifest.json")))
         expected = {"posts" => 2000, "pages" => 20, "includes" => 10, "layouts" => 4}
-        abort "Existing fixture is not the default generated workload" unless manifest["schema_version"] == 1 && manifest["parameters"] == expected
+        abort "Existing fixture is not the current default generated workload (generator revision 2)" unless manifest["schema_version"] == 1 && manifest["generator_revision"] == "2" && manifest["parameters"] == expected
     ' "$PERF_GENERATED_SOURCE" || {
         perf_error "Preserving existing $PERF_GENERATED_SOURCE. Move it aside explicitly before setup if it is not the default fixture."
         exit 1

@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+# Fresh native full builds; setup and reporting are deliberately outside timing.
+set -euo pipefail
+source "$(dirname -- "${BASH_SOURCE[0]}")/perf-env"
+
+[[ $# -le 4 ]] || { perf_error 'Usage: just perf [site] [runs] [warmup] [profile]'; exit 1; }
+site="${1-generated}" runs="${2-10}" warmup="${3-2}" profile="${4-default}"
+[[ "$runs" =~ ^[0-9]+$ && "$runs" =~ [1-9] && "$warmup" =~ ^[0-9]+$ ]] || {
+    perf_error 'runs must be a positive decimal integer; warmup must be nonnegative.'; exit 1;
+}
+case "$profile" in default|single|no-cache|single-no-cache|all) ;; *) perf_error "Invalid profile '$profile'; choose default, single, no-cache, single-no-cache, all."; exit 1 ;; esac
+for tool in go ruby bundle hyperfine git; do
+    command -v "$tool" >/dev/null || { perf_error "Missing prerequisite '$tool'; run just perf-setup (Go and Git must be on PATH)."; exit 1; }
+done
+[[ "$(hyperfine --version)" == "hyperfine $PERF_HYPERFINE_VERSION" ]] || { perf_error "Need Hyperfine $PERF_HYPERFINE_VERSION; run just perf-setup."; exit 1; }
+[[ "$(ruby -e 'print RUBY_VERSION')" == "$PERF_RUBY_VERSION" ]] || { perf_error "Need managed Ruby $PERF_RUBY_VERSION; run just perf-setup."; exit 1; }
+if [[ "$site" == generated ]]; then
+    original="$PERF_GENERATED_SOURCE"
+else
+    [[ -d "$site" ]] || { perf_error "Site directory does not exist: $site"; exit 1; }
+    original="$(cd -- "$site" && pwd -P)"
+fi
+[[ -d "$original" ]] || { perf_error 'Generated fixture is missing; run just perf-setup.'; exit 1; }
+if [[ -e "$original/Gemfile" || -e "$original/Gemfile.lock" ]]; then
+    perf_use_bundle "$original/Gemfile"
+else
+    perf_use_bundle "$PERF_ROOT/benchmarks/Gemfile"
+fi
+bundle "_${PERF_BUNDLER_VERSION}_" check || { perf_error "Locked bundle unavailable; run scripts/perf-setup '$original' outside timing (just perf-setup for generated)."; exit 1; }
+
+# Neither compilation nor engine children inherit diagnostic overrides.
+unset GOFLAGS GOOS GOARCH GOEXPERIMENT GOMAXPROCS GOGC GOMEMLIMIT GODEBUG GOTRACEBACK JIGYLL_DISABLE_CACHE GOJEKYLL_DISABLE_CACHE
+unset JEKYLL_CONFIG JEKYLL_URL RUBYOPT RUBYLIB
+if [[ "$site" == generated && ! -f "$original/_benchmark/manifest.json" ]]; then
+    perf_error 'Generated fixture manifest is missing; run just perf-setup after explicitly moving the incomplete fixture aside.'
+    exit 1
+fi
+export LC_ALL=C LANG=C TZ=Etc/UTC JEKYLL_ENV=production
+mkdir -p "$PERF_HOME/runs"
+workspace="$(mktemp -d "$PERF_HOME/runs/run-XXXXXXXX")"
+printf 'native-comparison-workspace-v1\n' > "$workspace/.perf-owned"
+phase=preparation
+finish() {
+    local status=$?
+    if (( status != 0 )); then
+        printf 'failed: %s (exit %s)\n' "$phase" "$status" > "$workspace/status"
+        # Failed Hyperfine exports are diagnostics, never successful results.
+        for format in json md; do
+            if [[ -f "$workspace/hyperfine.$format" ]]; then
+                mv -- "$workspace/hyperfine.$format" "$workspace/failed-hyperfine.$format"
+            fi
+        done
+        printf 'perf: Comparison INVALID (%s); diagnostics: %s\n' "$phase" "$workspace" >&2
+    fi
+}
+trap finish EXIT
+printf 'Workspace: %s\n' "$workspace"
+cd -- "$PERF_ROOT"
+go build -o "$workspace/perf-helper" ./benchmarks/perf
+helper="$workspace/perf-helper"
+"$helper" validate "$runs" "$warmup" "$profile"
+"$helper" copy "$original" "$workspace"
+source_dir="$workspace/source"
+if [[ "$BUNDLE_GEMFILE" == "$original/Gemfile" ]]; then export BUNDLE_GEMFILE="$source_dir/Gemfile"; fi
+version="$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)"
+build_date="$(date +%FT%T%z)"
+go build -ldflags "-X github.com/reidransom/jigyll/version.Version=$version -X github.com/reidransom/jigyll/version.BuildDate=$build_date" -o "$workspace/jigyll" .
+[[ -f "$source_dir/_config.yml" ]] || printf '{}\n' > "$source_dir/_config.yml"
+printf 'future: true\ntimezone: Etc/UTC\nincremental: false\nwatch: false\nprofile: false\n' > "$workspace/common.yml"
+mkdir -p "$workspace/commands" "$workspace/logs" "$workspace/config"
+profiles=("$profile")
+if [[ "$profile" == all ]]; then profiles=(default single no-cache single-no-cache); fi
+engines=(jekyll)
+for variant in "${profiles[@]}"; do engines+=("jigyll-$variant"); done
+
+# A machine-readable handoff records commands and operational locations. Full
+# provenance/statistical reporting consumes these files after successful timing.
+printf 'schema_version\t1\nsource_original\t%s\nsource\t%s\nsite_argument\t%s\nruns\t%s\nwarmup\t%s\nprofile\t%s\nversion\t%s\nbuild_date\t%s\nbundle_gemfile\t%s\nbundle_path\t%s\n' \
+    "$original" "$source_dir" "$site" "$runs" "$warmup" "$profile" "$version" "$build_date" "$BUNDLE_GEMFILE" "$BUNDLE_PATH" > "$workspace/run.tsv"
+printf 'jekyll_disk_cache\t%s\n' "$source_dir/.jekyll-cache" >> "$workspace/run.tsv"
+printf 'name\tcommand\tdestination\ttmpdir\txdg_cache_home\tGOMAXPROCS\tJIGYLL_DISABLE_CACHE\n' > "$workspace/commands.tsv"
+for engine in "${engines[@]}"; do
+    dest="$workspace/output/$engine" cache="$workspace/cache/$engine"
+    # Location-only overlays differ; rendering settings and source are shared.
+    ruby -rjson -e 'puts({"destination"=>ARGV[0], "cache_dir"=>ARGV[1], "sass"=>{"cache_location"=>ARGV[2]}}.to_json)' \
+        "$dest" ".jekyll-cache" "$cache/sass" > "$workspace/config/$engine.yml"
+    config="$source_dir/_config.yml,$workspace/common.yml,$workspace/config/$engine.yml"
+    if [[ "$engine" == jekyll ]]; then
+        command=(bundle "_${PERF_BUNDLER_VERSION}_" exec jekyll build --source "$source_dir" --destination "$dest" --config "$config" --future --trace)
+    else
+        command=("$workspace/jigyll" build --source "$source_dir" --destination "$dest" --config "$config" --future)
+    fi
+    maxprocs=default disabled=0
+    [[ "$engine" != jigyll-single && "$engine" != jigyll-single-no-cache ]] || maxprocs=1
+    [[ "$engine" != jigyll-no-cache && "$engine" != jigyll-single-no-cache ]] || disabled=1
+    wrapper="$workspace/commands/$engine"
+    {
+        printf '#!/usr/bin/env bash\nset -euo pipefail\n'
+        printf 'cd -- %q\n' "$source_dir"
+        printf 'unset GOFLAGS GOOS GOARCH GOEXPERIMENT GOMAXPROCS GOGC GOMEMLIMIT GODEBUG GOTRACEBACK JIGYLL_DISABLE_CACHE GOJEKYLL_DISABLE_CACHE JEKYLL_CONFIG JEKYLL_URL RUBYOPT RUBYLIB\n'
+        printf 'export LC_ALL=C LANG=C TZ=Etc/UTC JEKYLL_ENV=production\n'
+        printf 'export TMPDIR=%q XDG_CACHE_HOME=%q HOME=%q XDG_CONFIG_HOME=%q BUNDLE_USER_HOME=%q\n' "$cache/tmp" "$cache/xdg" "$cache/home" "$cache/config" "$cache/bundle-user"
+        [[ "$maxprocs" == default ]] || printf 'export GOMAXPROCS=1\n'
+        [[ "$disabled" == 0 ]] || printf 'export JIGYLL_DISABLE_CACHE=1\n'
+        printf 'exec '; printf '%q ' "${command[@]}"; printf '>> %q 2>&1\n' "$workspace/logs/$engine.log"
+    } > "$wrapper"
+    chmod +x "$wrapper"
+    printf -v quoted '%q' "$wrapper"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$engine" "$quoted" "$dest" "$cache/tmp" "$cache/xdg" "$maxprocs" "$disabled" >> "$workspace/commands.tsv"
+done
+make_roots() {
+    for engine in "${engines[@]}"; do
+        mkdir -p "$workspace/cache/$engine/"{tmp,xdg,home,config,bundle-user} "$workspace/output/$engine"
+    done
+}
+make_roots
+phase=preflight
+for engine in "${engines[@]}"; do
+    if ! "$workspace/commands/$engine"; then
+        cat "$workspace/logs/$engine.log" >&2
+        perf_error "Native preflight failed for $engine; unsupported plugins/themes/templates must be resolved, not disabled for only one engine."
+        exit 1
+    fi
+    if [[ -f "$source_dir/_benchmark/manifest.json" ]]; then
+        "$helper" manifest "$source_dir" "$workspace/output/$engine" >> "$workspace/verification.log" 2>&1 || { cat "$workspace/verification.log" >&2; exit 1; }
+    fi
+done
+if [[ ! -f "$source_dir/_benchmark/manifest.json" ]]; then
+    for variant in "${profiles[@]}"; do
+        "$helper" compare "$workspace/output/jigyll-$variant" "$workspace/output/jekyll" >> "$workspace/verification.log" 2>&1 || { cat "$workspace/verification.log" >&2; exit 1; }
+    done
+fi
+# Native output and application caches start empty before warmups, even with 0
+# warmups. Within Hyperfine they remain intact: no prepare/cleanup hook.
+"$helper" reset "$workspace"
+make_roots
+printf 'preflight-reset-complete\n' > "$workspace/preflight-reset"
+cat "$workspace/verification.log"
+phase=hyperfine
+hyperfine_args=(--shell '/bin/bash --noprofile --norc' --runs "$runs" --warmup "$warmup" --export-json "$workspace/hyperfine.json" --export-markdown "$workspace/hyperfine.md")
+for engine in "${engines[@]}"; do
+    printf -v quoted '%q' "$workspace/commands/$engine"
+    hyperfine_args+=(--command-name "$engine" "$quoted")
+done
+# pipefail is essential: tee must never turn an engine/Hyperfine failure into success.
+hyperfine "${hyperfine_args[@]}" 2>&1 | tee "$workspace/hyperfine.log"
+printf 'success\n' > "$workspace/status"
+phase=complete
+printf 'Raw native comparison artifacts: %s\n' "$workspace"

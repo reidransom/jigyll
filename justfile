@@ -22,6 +22,10 @@ setup:
 perf-setup:
     ./scripts/perf-setup
 
+# compare fresh native full builds (setup is explicit and outside timing)
+perf site="generated" runs="10" warmup="2" profile="default":
+    ./scripts/perf {{quote(site)}} {{quote(runs)}} {{quote(warmup)}} {{quote(profile)}}
+
 # list external direct imports
 imports:
     go list -f '{{ "{{" }}join .Imports "\n"{{ "}}" }}' ./... | grep -v `go list -f '{{ "{{" }}.ImportPath{{ "}}" }}'` | grep '\.' | sort | uniq

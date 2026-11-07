@@ -154,6 +154,7 @@ func TestNestedWorkloadAndSharedConfiguration(t *testing.T) {
 	require.Contains(t, files["_posts/2020-01-01-post-0000.md"], "{{ page.title }}")
 	require.Contains(t, files["_posts/2020-01-01-post-0000.md"], "{% for tag in page.tags %}")
 	require.Contains(t, files["page-000.md"], "toc:")
+	require.Contains(t, files["page-000.md"], "permalink: /page-000.html\n")
 	require.Contains(t, files["_includes/header.html"], "{{ p.url }}")
 	require.Contains(t, files["index.html"], "{% for post in site.posts %}")
 	manifest := readManifest(t, dir)
