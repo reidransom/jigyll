@@ -18,23 +18,7 @@ type watchInventory struct {
 
 func (s *Site) scanWatchInventory() (*watchInventory, error) {
 	inv := &watchInventory{dirs: make(map[string][]string), targets: make(map[string]bool)}
-	addTarget := func(path string) {
-		path, err := filepath.Abs(path)
-		if err != nil {
-			return
-		}
-		for {
-			parent := filepath.Dir(path)
-			if parent == path {
-				break
-			}
-			if resolved, err := filepath.EvalSymlinks(parent); err == nil {
-				inv.targets[filepath.Join(resolved, filepath.Base(path))] = true
-			}
-			path = parent
-		}
-	}
-	addTarget(s.SourceDir())
+	inv.addTarget(s.SourceDir())
 	opts := utils.SourceWalkOptions{FollowDirectorySymlinks: s.cfg.FollowDirectorySymlinks, Protected: append([]string{s.DestDir()}, s.cfg.ProtectedSourcePaths...), Prune: func(path string, info os.FileInfo) bool {
 		rel := utils.MustRel(s.SourceDir(), path)
 		return rel != "." && s.excludeWatchPath(rel)
@@ -61,31 +45,7 @@ func (s *Site) scanWatchInventory() (*watchInventory, error) {
 			return err
 		}
 		if linkInfo.Mode()&os.ModeSymlink != 0 {
-			link, err := filepath.Abs(path)
-			if err != nil {
-				return err
-			}
-			addTarget(link)
-			// Follow each link in the chain and watch the parent of each target.
-			for {
-				info, err := os.Lstat(link)
-				if err != nil {
-					return err
-				}
-				if info.Mode()&os.ModeSymlink == 0 {
-					addTarget(link)
-					break
-				}
-				target, err := os.Readlink(link)
-				if err != nil {
-					return err
-				}
-				if !filepath.IsAbs(target) {
-					target = filepath.Join(filepath.Dir(link), target)
-				}
-				link = filepath.Clean(target)
-				addTarget(link)
-			}
+			return inv.addLinkTargets(path)
 		}
 		return nil
 	})
@@ -93,6 +53,52 @@ func (s *Site) scanWatchInventory() (*watchInventory, error) {
 		return nil, err
 	}
 	return inv, nil
+}
+
+func (inv *watchInventory) addTarget(path string) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return
+	}
+	for {
+		parent := filepath.Dir(path)
+		if parent == path {
+			break
+		}
+		if resolved, err := filepath.EvalSymlinks(parent); err == nil {
+			inv.targets[filepath.Join(resolved, filepath.Base(path))] = true
+		}
+		path = parent
+	}
+}
+
+func (inv *watchInventory) addLinkTargets(path string) error {
+	link, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+	inv.addTarget(link)
+	// Follow each link in the chain and watch the parent of each target.
+	for {
+		info, err := os.Lstat(link)
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink == 0 {
+			inv.addTarget(link)
+			break
+		}
+		target, err := os.Readlink(link)
+		if err != nil {
+			return err
+		}
+		if !filepath.IsAbs(target) {
+			target = filepath.Join(filepath.Dir(link), target)
+		}
+		link = filepath.Clean(target)
+		inv.addTarget(link)
+	}
+	return nil
 }
 
 // Theme templates are read outside ordinary page discovery. Keep their existing

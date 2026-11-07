@@ -71,7 +71,7 @@ func TestDownloadPreservesCompressedBytes(t *testing.T) {
 }
 
 func TestDownloadFailuresCleanOwnedFiles(t *testing.T) {
-	for _, kind := range []string{"HTTP error", "partial response", "interrupted transfer", "timeout", "cancelled request"} {
+	for _, kind := range []string{"HTTP error", "partial response", "interrupted transfer", "timeout", "canceled request"} {
 		t.Run(kind, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch kind {
@@ -98,7 +98,7 @@ func TestDownloadFailuresCleanOwnedFiles(t *testing.T) {
 			if kind == "timeout" {
 				client.Timeout = 50 * time.Millisecond
 			}
-			if kind == "cancelled request" {
+			if kind == "canceled request" {
 				var cancel context.CancelFunc
 				ctx, cancel = context.WithCancel(ctx)
 				cancel()

@@ -42,36 +42,9 @@ func Extract(archivePath, destination string, limits Limits) (err error) {
 	}
 	defer gzipReader.Close()
 
-	counted := &countingReader{reader: gzipReader}
-	reader := tar.NewReader(counted)
 	state := archiveState{}
-	for {
-		before := counted.bytes
-		header, readErr := reader.Next()
-		if readErr == io.EOF {
-			// archive/tar also accepts EOF without the required two zero
-			// blocks. A complete terminator consumes 1024 bytes, plus at
-			// most 511 bytes of padding from the previous file.
-			if counted.bytes-before < 1024 {
-				return fmt.Errorf("archive is missing its tar terminator")
-			}
-			break
-		}
-		if readErr != nil {
-			return fmt.Errorf("read archive: %w", readErr)
-		}
-		state.entries++
-		if state.entries > limits.Entries {
-			return fmt.Errorf("archive exceeds %d entries", limits.Entries)
-		}
-		// GitHub emits a global PAX header; it describes archive metadata,
-		// not a destination. Local PAX headers are handled by archive/tar.
-		if header.Typeflag == tar.TypeXGlobalHeader {
-			continue
-		}
-		if err := state.extractEntry(reader, header, destination, limits); err != nil {
-			return err
-		}
+	if err := state.extractEntries(gzipReader, destination, limits); err != nil {
+		return err
 	}
 	// tar EOF precedes gzip EOF. Read through all padding and gzip members
 	// to validate trailers, while rejecting hidden payloads and bounding
@@ -90,6 +63,39 @@ func Extract(archivePath, destination string, limits Limits) (err error) {
 		return fmt.Errorf("theme _layouts/default.html is not a regular file")
 	}
 	return nil
+}
+
+func (state *archiveState) extractEntries(source io.Reader, destination string, limits Limits) error {
+	counted := &countingReader{reader: source}
+	reader := tar.NewReader(counted)
+	for {
+		before := counted.bytes
+		header, readErr := reader.Next()
+		if readErr == io.EOF {
+			// archive/tar also accepts EOF without the required two zero
+			// blocks. A complete terminator consumes 1024 bytes, plus at
+			// most 511 bytes of padding from the previous file.
+			if counted.bytes-before < 1024 {
+				return fmt.Errorf("archive is missing its tar terminator")
+			}
+			return nil
+		}
+		if readErr != nil {
+			return fmt.Errorf("read archive: %w", readErr)
+		}
+		state.entries++
+		if state.entries > limits.Entries {
+			return fmt.Errorf("archive exceeds %d entries", limits.Entries)
+		}
+		// GitHub emits a global PAX header; it describes archive metadata,
+		// not a destination. Local PAX headers are handled by archive/tar.
+		if header.Typeflag == tar.TypeXGlobalHeader {
+			continue
+		}
+		if err := state.extractEntry(reader, header, destination, limits); err != nil {
+			return err
+		}
+	}
 }
 
 type countingReader struct {
@@ -148,7 +154,7 @@ func (state *archiveState) extractEntry(reader *tar.Reader, header *tar.Header, 
 	switch header.Typeflag {
 	case tar.TypeDir:
 		return os.MkdirAll(target, 0o755)
-	case tar.TypeReg, tar.TypeRegA:
+	case tar.TypeReg, '\x00': // NUL is the historical tar regular-file type.
 		if header.Size < 0 || header.Size > limits.FileBytes {
 			return fmt.Errorf("archive file %q exceeds %d bytes", header.Name, limits.FileBytes)
 		}

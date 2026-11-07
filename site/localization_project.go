@@ -835,13 +835,7 @@ func discoverLocalizedPages(site *Site, discover func(string, string, string, st
 	opts := utils.SourceWalkOptions{
 		FollowDirectorySymlinks: site.cfg.FollowDirectorySymlinks,
 		Protected:               append([]string{site.DestDir()}, site.cfg.ProtectedSourcePaths...),
-		Prune: func(filename string, info os.FileInfo) bool {
-			if !info.IsDir() && info.Mode()&os.ModeSymlink == 0 {
-				return false
-			}
-			rel := filepath.ToSlash(utils.MustRel(site.SourceDir(), filename))
-			return rel != "." && (site.Exclude(rel) || site.isConfiguredCollectionDirectory(rel) || (strings.HasPrefix(rel, "_") && !site.isIncludedPath(rel)))
-		},
+		Prune:                   site.pruneLocalizedPagePath,
 	}
 	err := utils.WalkSource(site.SourceDir(), opts, func(filename string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -873,6 +867,14 @@ func discoverLocalizedPages(site *Site, discover func(string, string, string, st
 		return fmt.Errorf("discovering localized pages: %w", err)
 	}
 	return nil
+}
+
+func (s *Site) pruneLocalizedPagePath(filename string, info os.FileInfo) bool {
+	if !info.IsDir() && info.Mode()&os.ModeSymlink == 0 {
+		return false
+	}
+	rel := filepath.ToSlash(utils.MustRel(s.SourceDir(), filename))
+	return rel != "." && (s.Exclude(rel) || s.isConfiguredCollectionDirectory(rel) || (strings.HasPrefix(rel, "_") && !s.isIncludedPath(rel)))
 }
 
 func discoverLocalizedCollections(site *Site, discover func(string, string, string, string) error) error {

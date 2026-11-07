@@ -26,20 +26,8 @@ func FromDirectory(dir string, flags config.Flags) (*Site, error) {
 
 // Read loads the site data and files.
 func (s *Site) Read() error {
-	if err := s.installPlugins(); err != nil {
-		return utils.WrapError(err, "initializing plugins")
-	}
-	s.Routes = make(map[string]Document)
-	if err := s.findTheme(); err != nil {
-		return utils.WrapError(err, "finding theme")
-	}
-	if s.data == nil {
-		if err := s.readDataFiles(); err != nil {
-			return utils.WrapError(err, "reading data files")
-		}
-	}
-	if err := s.readThemeAssets(); err != nil {
-		return utils.WrapError(err, "reading theme assets")
+	if err := s.initializeRead(); err != nil {
+		return err
 	}
 	// Exclude the destination directory from source reading, matching Ruby Jekyll behavior.
 	// Without this, rebuilds can read prior output files as source documents.
@@ -75,6 +63,25 @@ func (s *Site) Read() error {
 		return nil
 	}
 	return s.prepareArtifacts()
+}
+
+func (s *Site) initializeRead() error {
+	if err := s.installPlugins(); err != nil {
+		return utils.WrapError(err, "initializing plugins")
+	}
+	s.Routes = make(map[string]Document)
+	if err := s.findTheme(); err != nil {
+		return utils.WrapError(err, "finding theme")
+	}
+	if s.data == nil {
+		if err := s.readDataFiles(); err != nil {
+			return utils.WrapError(err, "reading data files")
+		}
+	}
+	if err := s.readThemeAssets(); err != nil {
+		return utils.WrapError(err, "reading theme assets")
+	}
+	return nil
 }
 
 // isIncludedPath checks if a path or its parent directory is explicitly in the include list

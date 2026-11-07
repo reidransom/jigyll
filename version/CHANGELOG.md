@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+## 1.15.0 (Nov 6, 2026)
+
 ### New
 * Install themes with `jigyll new PATH --theme owner/repository@latest`,
   exact tags, or full commit SHAs without Git. GitHub shorthand and explicit
@@ -60,6 +62,10 @@
   exclusions, literal translated-slug curation, canonical preview paths, and
   the documentation-only asset finalizer boundary, with a local revision-map
   example requiring no CDN or external theme.
+
+### Fixed
+* Restore configured static-analysis checks for theme installation, `llms.txt`
+  discovery, and symlink-aware build/watch paths without relaxing lint rules.
 
 ### Breaking
 * Documentation configuration no longer generates or reserves `/llms.txt`.

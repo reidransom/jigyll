@@ -170,9 +170,10 @@ func TestLocalizedLLMsCuratedErrors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			english := newLLMsTestPage("/guide/", "guide.en.md", "English")
 			german := newLLMsTestPage("/de/guide/", "guide.de.md", "Deutsch")
-			if test.excluded == "llms" {
+			switch test.excluded {
+			case "llms":
 				german.fm["llms"] = false
-			} else if test.excluded == "robots" {
+			case "robots":
 				german.fm["robots"] = "noindex"
 			}
 			locales := []LocalizedArtifactContext{

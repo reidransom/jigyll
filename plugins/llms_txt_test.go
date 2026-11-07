@@ -258,7 +258,7 @@ func TestLLMsTxtCuratedDestinationErrors(t *testing.T) {
 		"guide/", "/a/../guide/", "/guide//", "/guide/?q=1", "/guide/#part", "/%67uide/",
 		"https://example.test/manual/guide/?q=1", "https://example.test/manual/guide/#part",
 		"//external.invalid/guide/", "ftp://external.invalid/file", "mailto:help@example.test",
-		"javascript:alert(1)", "https://user:password@external.invalid/", "https://external.invalid/\nextra", "/guide\\other/",
+		"javascript:alert(1)", "https://user:password@external.invalid/", "https://external.invalid/\nextra", "/guide\\path/",
 	} {
 		t.Run(destination, func(t *testing.T) {
 			cfg := newLLMsTestConfig()

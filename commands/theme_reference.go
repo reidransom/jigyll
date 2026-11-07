@@ -43,70 +43,95 @@ var themeCommitSHA = regexp.MustCompile(`^[0-9a-fA-F]{40}$`)
 // shorthand; ambiguous new relative paths can be made explicit with ./.
 func parseThemeReference(raw string) (themeReference, bool, error) {
 	var result themeReference
-	invalid := func(reason string) (themeReference, bool, error) {
-		return result, true, fmt.Errorf("invalid theme repository reference %q: %s", raw, reason)
-	}
-	if raw == "" || strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "./") || strings.HasPrefix(raw, "../") || strings.HasPrefix(raw, "~") || (strings.Contains(raw, `\`) && !strings.Contains(raw, "/")) {
+	if isLocalThemeReference(raw) {
 		return result, false, nil
 	}
-	if _, err := os.Stat(raw); err == nil {
-		return result, false, nil
+	selection, recognized, err := parseThemeRepositorySelection(raw)
+	if err != nil || !recognized {
+		return result, recognized, err
 	}
-
-	repository, reference := "", ""
-	origin := "https://github.com"
-	github := true
-	if strings.Contains(raw, "://") || strings.HasPrefix(raw, "file:") || strings.HasPrefix(raw, "http:") || strings.HasPrefix(raw, "https:") {
-		u, err := url.Parse(raw)
-		if err != nil {
-			if strings.HasPrefix(raw, "http:") || strings.HasPrefix(raw, "https:") {
-				return invalid("malformed HTTP(S) URL")
-			}
-			return result, false, nil
-		}
-		if u.Scheme != "http" && u.Scheme != "https" {
-			return result, false, nil
-		}
-		if u.Opaque != "" && strings.Contains(raw, "@") {
-			return invalid("repository URL must use HTTP(S) hierarchical syntax")
-		}
-		if !strings.Contains(u.Path, "@") {
-			return result, false, nil
-		}
-		if u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.Opaque != "" {
-			return invalid("repository URL must have a host and no credentials, query, or fragment")
-		}
-		repository, reference, _ = strings.Cut(strings.TrimPrefix(u.Path, "/"), "@")
-		origin = u.Scheme + "://" + u.Host
-		github = strings.EqualFold(u.Hostname(), "github.com")
-	} else {
-		// scp-style Git URLs (with or without an SSH username) retain their
-		// transport semantics; their @ is not a revision separator.
-		if colon := strings.IndexByte(raw, ':'); colon >= 0 && !strings.Contains(raw[:colon], "/") {
-			return result, false, nil
-		}
-		repository, reference, _ = strings.Cut(raw, "@")
-		if !strings.Contains(raw, "@") && (strings.HasSuffix(raw, ".git") || strings.Count(raw, "/") != 1) {
-			return result, false, nil
-		}
+	if strings.Count(selection.repository, "/") != 1 {
+		return result, true, invalidThemeReference(raw, "repository must be owner/repository")
 	}
-	if strings.Count(repository, "/") != 1 {
-		return invalid("repository must be owner/repository")
-	}
-	owner, repo, _ := strings.Cut(repository, "/")
+	owner, repo, _ := strings.Cut(selection.repository, "/")
 	repo = strings.TrimSuffix(repo, ".git")
 	if !safeRepositoryComponent(owner) || !safeRepositoryComponent(repo) {
-		return invalid("owner and repository must be safe path components")
+		return result, true, invalidThemeReference(raw, "owner and repository must be safe path components")
 	}
-	if !validThemeTag(reference) {
-		return invalid("an exact tag, latest, or a full commit SHA is required")
+	if !validThemeTag(selection.reference) {
+		return result, true, invalidThemeReference(raw, "an exact tag, latest, or a full commit SHA is required")
 	}
 	result = themeReference{
-		Source: raw, RepositoryURL: origin + "/" + url.PathEscape(owner) + "/" + url.PathEscape(repo),
-		Owner: owner, Repository: repo, Reference: reference, Name: repo,
-		GitHub: github,
+		Source: raw, RepositoryURL: selection.origin + "/" + url.PathEscape(owner) + "/" + url.PathEscape(repo),
+		Owner: owner, Repository: repo, Reference: selection.reference, Name: repo,
+		GitHub: selection.github,
 	}
 	return result, true, nil
+}
+
+func isLocalThemeReference(raw string) bool {
+	if raw == "" || strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "./") || strings.HasPrefix(raw, "../") || strings.HasPrefix(raw, "~") || (strings.Contains(raw, `\`) && !strings.Contains(raw, "/")) {
+		return true
+	}
+	_, err := os.Stat(raw)
+	return err == nil
+}
+
+type themeRepositorySelection struct {
+	repository string
+	reference  string
+	origin     string
+	github     bool
+}
+
+func parseThemeRepositorySelection(raw string) (themeRepositorySelection, bool, error) {
+	if strings.Contains(raw, "://") || strings.HasPrefix(raw, "file:") || strings.HasPrefix(raw, "http:") || strings.HasPrefix(raw, "https:") {
+		return parseThemeURLSelection(raw)
+	}
+	var result themeRepositorySelection
+	// scp-style Git URLs (with or without an SSH username) retain their
+	// transport semantics; their @ is not a revision separator.
+	if colon := strings.IndexByte(raw, ':'); colon >= 0 && !strings.Contains(raw[:colon], "/") {
+		return result, false, nil
+	}
+	result.repository, result.reference, _ = strings.Cut(raw, "@")
+	if !strings.Contains(raw, "@") && (strings.HasSuffix(raw, ".git") || strings.Count(raw, "/") != 1) {
+		return result, false, nil
+	}
+	result.origin = "https://github.com"
+	result.github = true
+	return result, true, nil
+}
+
+func parseThemeURLSelection(raw string) (themeRepositorySelection, bool, error) {
+	var result themeRepositorySelection
+	u, err := url.Parse(raw)
+	if err != nil {
+		if strings.HasPrefix(raw, "http:") || strings.HasPrefix(raw, "https:") {
+			return result, true, invalidThemeReference(raw, "malformed HTTP(S) URL")
+		}
+		return result, false, nil
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return result, false, nil
+	}
+	if u.Opaque != "" && strings.Contains(raw, "@") {
+		return result, true, invalidThemeReference(raw, "repository URL must use HTTP(S) hierarchical syntax")
+	}
+	if !strings.Contains(u.Path, "@") {
+		return result, false, nil
+	}
+	if u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.Opaque != "" {
+		return result, true, invalidThemeReference(raw, "repository URL must have a host and no credentials, query, or fragment")
+	}
+	result.repository, result.reference, _ = strings.Cut(strings.TrimPrefix(u.Path, "/"), "@")
+	result.origin = u.Scheme + "://" + u.Host
+	result.github = strings.EqualFold(u.Hostname(), "github.com")
+	return result, true, nil
+}
+
+func invalidThemeReference(raw, reason string) error {
+	return fmt.Errorf("invalid theme repository reference %q: %s", raw, reason)
 }
 
 func safeRepositoryComponent(value string) bool {
@@ -160,64 +185,20 @@ func resolveThemeReference(ctx context.Context, client *http.Client, ref themeRe
 		result.ResolvedTag = selection
 	}
 
-	var commit string
-	if result.ResolvedTag == "" {
-		var object struct {
-			SHA string `json:"sha"`
-		}
-		if err := themeMetadata(ctx, client, base+"/git/commits/"+selection, &object); err != nil {
-			return result, fmt.Errorf("resolve theme commit %q: %w", selection, err)
-		}
-		if !strings.EqualFold(object.SHA, selection) {
-			return result, fmt.Errorf("theme commit response does not match requested full SHA")
-		}
-		commit = object.SHA
-	} else if ref.GitHub {
-		var gitRef struct {
-			Ref    string         `json:"ref"`
-			Object themeGitObject `json:"object"`
-		}
-		if err := themeMetadata(ctx, client, base+"/git/ref/tags/"+url.PathEscape(selection), &gitRef); err != nil {
-			return result, fmt.Errorf("resolve exact theme tag %q: %w", selection, err)
-		}
-		if gitRef.Ref != "refs/tags/"+selection {
-			return result, fmt.Errorf("theme tag response is not the requested exact tag %q", selection)
-		}
-		object := gitRef.Object
-		seen := make(map[string]bool)
-		for object.Type == "tag" {
-			if !themeCommitSHA.MatchString(object.SHA) || seen[object.SHA] || len(seen) >= 16 {
-				return result, fmt.Errorf("invalid or cyclic annotated theme tag")
-			}
-			seen[object.SHA] = true
-			var tag struct {
-				Object themeGitObject `json:"object"`
-			}
-			if err := themeMetadata(ctx, client, base+"/git/tags/"+object.SHA, &tag); err != nil {
-				return result, fmt.Errorf("resolve annotated theme tag: %w", err)
-			}
-			object = tag.Object
-		}
-		if object.Type != "commit" {
-			return result, fmt.Errorf("theme tag does not resolve to a commit")
-		}
-		commit = object.SHA
-	} else {
-		// Forgejo's exact-tag endpoint returns the peeled commit for both
-		// lightweight and annotated tags, not the tag object's own id.
-		var tag struct {
-			Name   string `json:"name"`
-			Commit struct {
-				SHA string `json:"sha"`
-			} `json:"commit"`
-		}
-		if err := themeMetadata(ctx, client, base+"/tags/"+url.PathEscape(selection), &tag); err != nil {
-			return result, fmt.Errorf("resolve exact theme tag %q: %w", selection, err)
-		}
-		if tag.Name != selection {
-			return result, fmt.Errorf("theme tag response is not the requested exact tag %q", selection)
-		}
-		commit = tag.Commit.SHA
+	var (
+		commit string
+		err    error
+	)
+	switch {
+	case result.ResolvedTag == "":
+		commit, err = resolveThemeCommit(ctx, client, base, selection)
+	case ref.GitHub:
+		commit, err = resolveGitHubThemeTag(ctx, client, base, selection)
+	default:
+		commit, err = resolveForgejoThemeTag(ctx, client, base, selection)
+	}
+	if err != nil {
+		return result, err
 	}
 	if !themeCommitSHA.MatchString(commit) {
 		return result, fmt.Errorf("theme provider returned an invalid full commit SHA")
@@ -228,6 +209,69 @@ func resolveThemeReference(ctx context.Context, client *http.Client, ref themeRe
 		result.ArchiveURL = "https://codeload.github.com/" + url.PathEscape(ref.Owner) + "/" + url.PathEscape(ref.Repository) + "/tar.gz/" + result.ResolvedCommit
 	}
 	return result, nil
+}
+
+func resolveThemeCommit(ctx context.Context, client *http.Client, base, selection string) (string, error) {
+	var object struct {
+		SHA string `json:"sha"`
+	}
+	if err := themeMetadata(ctx, client, base+"/git/commits/"+selection, &object); err != nil {
+		return "", fmt.Errorf("resolve theme commit %q: %w", selection, err)
+	}
+	if !strings.EqualFold(object.SHA, selection) {
+		return "", fmt.Errorf("theme commit response does not match requested full SHA")
+	}
+	return object.SHA, nil
+}
+
+func resolveGitHubThemeTag(ctx context.Context, client *http.Client, base, selection string) (string, error) {
+	var gitRef struct {
+		Ref    string         `json:"ref"`
+		Object themeGitObject `json:"object"`
+	}
+	if err := themeMetadata(ctx, client, base+"/git/ref/tags/"+url.PathEscape(selection), &gitRef); err != nil {
+		return "", fmt.Errorf("resolve exact theme tag %q: %w", selection, err)
+	}
+	if gitRef.Ref != "refs/tags/"+selection {
+		return "", fmt.Errorf("theme tag response is not the requested exact tag %q", selection)
+	}
+	object := gitRef.Object
+	seen := make(map[string]bool)
+	for object.Type == "tag" {
+		if !themeCommitSHA.MatchString(object.SHA) || seen[object.SHA] || len(seen) >= 16 {
+			return "", fmt.Errorf("invalid or cyclic annotated theme tag")
+		}
+		seen[object.SHA] = true
+		var tag struct {
+			Object themeGitObject `json:"object"`
+		}
+		if err := themeMetadata(ctx, client, base+"/git/tags/"+object.SHA, &tag); err != nil {
+			return "", fmt.Errorf("resolve annotated theme tag: %w", err)
+		}
+		object = tag.Object
+	}
+	if object.Type != "commit" {
+		return "", fmt.Errorf("theme tag does not resolve to a commit")
+	}
+	return object.SHA, nil
+}
+
+func resolveForgejoThemeTag(ctx context.Context, client *http.Client, base, selection string) (string, error) {
+	// Forgejo's exact-tag endpoint returns the peeled commit for both
+	// lightweight and annotated tags, not the tag object's own id.
+	var tag struct {
+		Name   string `json:"name"`
+		Commit struct {
+			SHA string `json:"sha"`
+		} `json:"commit"`
+	}
+	if err := themeMetadata(ctx, client, base+"/tags/"+url.PathEscape(selection), &tag); err != nil {
+		return "", fmt.Errorf("resolve exact theme tag %q: %w", selection, err)
+	}
+	if tag.Name != selection {
+		return "", fmt.Errorf("theme tag response is not the requested exact tag %q", selection)
+	}
+	return tag.Commit.SHA, nil
 }
 
 type themeGitObject struct {

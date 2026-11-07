@@ -19,6 +19,55 @@ type artifactDocument struct {
 func (d *artifactDocument) Write(w io.Writer) error { _, err := w.Write(d.body); return err }
 
 func (s *Site) prepareArtifacts() error {
+	context, plans := s.artifactPlans()
+	if err := s.runHooks(func(plugin plugins.Plugin) error {
+		if preparer, ok := plugin.(plugins.ArtifactPreparer); ok {
+			plan, err := preparer.PrepareArtifacts(context)
+			if err != nil {
+				return err
+			}
+			if plan != nil {
+				plans = append(plans, plan)
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	if len(plans) == 0 {
+		return nil
+	}
+	if err := s.validateArtifactRoutes(plans); err != nil {
+		return err
+	}
+	for _, plan := range plans {
+		if err := captureArtifactSources(plan); err != nil {
+			return err
+		}
+	}
+	if err := s.ensureRendered(); err != nil {
+		return err
+	}
+	// Materialize every plan before registering any exports. Conversion failures
+	// therefore cannot clean prior output or publish a partial generation.
+	var artifacts []*artifactDocument
+	for _, plan := range plans {
+		bodies, err := buildArtifactBodies(plan)
+		if err != nil {
+			return err
+		}
+		for _, route := range plan.Routes {
+			artifacts = append(artifacts, &artifactDocument{PageEmbed: pages.PageEmbed{Path: route}, body: bodies[route]})
+		}
+	}
+	for _, artifact := range artifacts {
+		s.Routes[artifact.URL()] = artifact
+		s.outputCandidates = append(s.outputCandidates, artifact)
+	}
+	return nil
+}
+
+func (s *Site) artifactPlans() (plugins.ArtifactContext, []*plugins.ArtifactPlan) {
 	context := plugins.ArtifactContext{}
 	for _, document := range s.OutputDocs() {
 		if page, ok := document.(Page); ok {
@@ -38,23 +87,10 @@ func (s *Site) prepareArtifacts() error {
 		}
 		plans = append(plans, plan)
 	}
-	if err := s.runHooks(func(plugin plugins.Plugin) error {
-		if preparer, ok := plugin.(plugins.ArtifactPreparer); ok {
-			plan, err := preparer.PrepareArtifacts(context)
-			if err != nil {
-				return err
-			}
-			if plan != nil {
-				plans = append(plans, plan)
-			}
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-	if len(plans) == 0 {
-		return nil
-	}
+	return context, plans
+}
+
+func (s *Site) validateArtifactRoutes(plans []*plugins.ArtifactPlan) error {
 	paths := make([]string, 0, len(s.outputCandidates))
 	for _, document := range s.outputCandidates {
 		if _, removed := s.removedRoutes[document.URL()]; !removed {
@@ -83,34 +119,7 @@ func (s *Site) prepareArtifacts() error {
 			paths = append(paths, route)
 		}
 	}
-	if err := docexport.ValidateOutputPaths(paths); err != nil {
-		return err
-	}
-	for _, plan := range plans {
-		if err := captureArtifactSources(plan); err != nil {
-			return err
-		}
-	}
-	if err := s.ensureRendered(); err != nil {
-		return err
-	}
-	// Materialize every plan before registering any exports. Conversion failures
-	// therefore cannot clean prior output or publish a partial generation.
-	var artifacts []*artifactDocument
-	for _, plan := range plans {
-		bodies, err := buildArtifactBodies(plan)
-		if err != nil {
-			return err
-		}
-		for _, route := range plan.Routes {
-			artifacts = append(artifacts, &artifactDocument{PageEmbed: pages.PageEmbed{Path: route}, body: bodies[route]})
-		}
-	}
-	for _, artifact := range artifacts {
-		s.Routes[artifact.URL()] = artifact
-		s.outputCandidates = append(s.outputCandidates, artifact)
-	}
-	return nil
+	return docexport.ValidateOutputPaths(paths)
 }
 
 func captureArtifactSources(plan *plugins.ArtifactPlan) error {
@@ -143,27 +152,7 @@ func buildArtifactBodies(plan *plugins.ArtifactPlan) (map[string][]byte, error) 
 // prepareLocalizedArtifacts declares all exports before project validation.
 // Its completion barrier runs only after every route and destination is valid.
 func (p *localizationProject) prepareLocalizedArtifacts() (func() error, error) {
-	enabled := false
-	contexts := make([]plugins.LocalizedArtifactContext, 0, len(p.prepared))
-	for i, localeSite := range p.prepared {
-		if _, found := localeSite.pluginInstances["jigyll-llms-txt"]; found {
-			enabled = true
-		}
-		context := plugins.LocalizedArtifactContext{Site: localeSite, Label: p.locales[i].Label, Prefix: localeSite.localePrefix}
-		output := make(map[Page]bool)
-		for _, document := range localeSite.OutputDocs() {
-			if page, ok := document.(Page); ok {
-				context.Pages = append(context.Pages, page)
-				output[page] = true
-			}
-		}
-		for _, page := range localeSite.Pages() {
-			if !output[page] {
-				context.ExcludedRoutes = append(context.ExcludedRoutes, page.URL())
-			}
-		}
-		contexts = append(contexts, context)
-	}
+	enabled, contexts := p.localizedArtifactContexts()
 	if !enabled {
 		return func() error { return nil }, nil
 	}
@@ -220,4 +209,29 @@ func (p *localizationProject) prepareLocalizedArtifacts() (func() error, error) 
 		}
 		return nil
 	}, nil
+}
+
+func (p *localizationProject) localizedArtifactContexts() (bool, []plugins.LocalizedArtifactContext) {
+	enabled := false
+	contexts := make([]plugins.LocalizedArtifactContext, 0, len(p.prepared))
+	for i, localeSite := range p.prepared {
+		if _, found := localeSite.pluginInstances["jigyll-llms-txt"]; found {
+			enabled = true
+		}
+		context := plugins.LocalizedArtifactContext{Site: localeSite, Label: p.locales[i].Label, Prefix: localeSite.localePrefix}
+		output := make(map[Page]bool)
+		for _, document := range localeSite.OutputDocs() {
+			if page, ok := document.(Page); ok {
+				context.Pages = append(context.Pages, page)
+				output[page] = true
+			}
+		}
+		for _, page := range localeSite.Pages() {
+			if !output[page] {
+				context.ExcludedRoutes = append(context.ExcludedRoutes, page.URL())
+			}
+		}
+		contexts = append(contexts, context)
+	}
+	return enabled, contexts
 }

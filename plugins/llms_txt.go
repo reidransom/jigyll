@@ -174,149 +174,209 @@ func PrepareLocalizedLLMsArtifacts(project Site, locales []LocalizedArtifactCont
 	return aggregate, plans, nil
 }
 
+type llmsSelection struct {
+	plugin     *llmsTxtPlugin
+	settings   llmsSettings
+	canonical  llmsCanonical
+	inventory  llmsRouteInventory
+	docs       *DocumentationArtifacts
+	owned      map[string]docexport.Article
+	seen       map[string]bool
+	plan       *ArtifactPlan
+	companions []llmsCompanion
+}
+
 func (p *llmsTxtPlugin) prepareSelection(docs *DocumentationArtifacts, settings llmsSettings, canonical llmsCanonical, inventory llmsRouteInventory) (*ArtifactPlan, []llmstxt.Section, error) {
-	cfg := p.site.Config()
-	routes := inventory.pages
 	sections := settings.sections
 	if !settings.curated {
-		if docs != nil {
-			for _, group := range docs.Groups {
-				section := llmstxt.Section{Title: group.Title, Description: group.Description}
-				for _, article := range docs.Articles {
-					if page, exists := routes[article.URL]; article.NavSection == group.Slug && exists && p.eligible(page, article.URL) {
-						section.Entries = append(section.Entries, llmstxt.Entry{URL: article.URL, Title: article.Title, Description: article.Description})
-					}
-				}
-				sections = append(sections, section)
-			}
-		} else {
-			var sorted []string
-			for route, page := range routes {
-				if p.eligible(page, route) && cfg.IsMarkdown(page.Source()) {
-					sorted = append(sorted, route)
-				}
-			}
-			sort.Strings(sorted)
-			if len(sorted) > 0 {
-				section := llmstxt.Section{Title: "Pages"}
-				for _, route := range sorted {
-					section.Entries = append(section.Entries, llmstxt.Entry{URL: route})
-				}
-				sections = append(sections, section)
-			}
-		}
+		sections = p.defaultLLMsSections(sections, docs, inventory.pages)
 	}
-	owned := map[string]docexport.Article{}
+	selection := llmsSelection{
+		plugin: p, settings: settings, canonical: canonical, inventory: inventory, docs: docs,
+		owned: map[string]docexport.Article{}, seen: map[string]bool{}, plan: &ArtifactPlan{},
+	}
 	if docs != nil {
 		for _, article := range docs.Articles {
-			owned[article.URL] = article
+			selection.owned[article.URL] = article
 		}
 	}
-	plan := &ArtifactPlan{}
-	var companions []llmsCompanion
-	seen := map[string]bool{}
 	for i := range sections {
 		selected := sections[i].Entries[:0]
 		for _, entry := range sections[i].Entries {
-			route, local, err := localLLMsRoute(entry.URL, canonical.origin, canonical.base)
+			entry, include, err := selection.prepareEntry(entry)
 			if err != nil {
 				return nil, nil, err
 			}
-			identity := entry.URL
-			if local {
-				if settings.curated {
-					route = inventory.literal(route)
-				}
-				identity = route
-			}
-			if seen[identity] {
-				return nil, nil, fmt.Errorf("duplicate llms_txt entry %q", entry.URL)
-			}
-			seen[identity] = true
-			if !local {
-				if strings.TrimSpace(entry.Title) == "" {
-					return nil, nil, fmt.Errorf("external llms_txt entry %q requires title", entry.URL)
-				}
+			if include {
 				selected = append(selected, entry)
-				continue
 			}
-			if eligible, exists := inventory.available[route]; exists && !eligible && settings.curated {
-				return nil, nil, fmt.Errorf("llms_txt local route %q is missing or excluded", entry.URL)
-			}
-			page, found := routes[route]
-			if !found {
-				if _, exists := inventory.available[route]; exists {
-					continue
-				}
-				return nil, nil, fmt.Errorf("llms_txt local route %q is missing or excluded", entry.URL)
-			}
-			if !p.eligible(page, route) {
-				return nil, nil, fmt.Errorf("llms_txt local route %q is missing or excluded", entry.URL)
-			}
-			overrides := settings.overrides[entry.URL]
-			if entry.Title == "" && !overrides.title {
-				entry.Title, err = optionalLLMsString(page.FrontMatter(), "title")
-				if err != nil {
-					return nil, nil, err
-				}
-			}
-			if entry.Description == "" && !overrides.description {
-				entry.Description, err = optionalLLMsString(page.FrontMatter(), "description")
-				if err != nil {
-					return nil, nil, err
-				}
-			}
-			if strings.TrimSpace(entry.Title) == "" {
-				return nil, nil, fmt.Errorf("llms_txt route %s requires title", route)
-			}
-			actual := page.URL()
-			entry.URL = canonical.url(actual)
-			if settings.markdown && cfg.IsMarkdown(page.Source()) {
-				md := markdownCompanionRoute(actual)
-				if article, exists := owned[actual]; exists {
-					if docs.Sources[actual] != page.Source() || article.CanonicalURL != canonical.url(actual) || article.MarkdownURL != canonical.url(md) || article.URL+"index.md" != md {
-						return nil, nil, fmt.Errorf("llms_txt documentation ownership mismatch at %s", actual)
-					}
-				} else {
-					plan.Routes = append(plan.Routes, md)
-					plan.Capture = append(plan.Capture, page)
-					companions = append(companions, llmsCompanion{page: page, route: md, canonical: canonical.url(actual)})
-				}
-				entry.URL = canonical.url(md)
-			}
-			selected = append(selected, entry)
 		}
 		sections[i].Entries = selected
 	}
 	if docs != nil {
-		downloads := llmstxt.Section{Title: "Downloads", Entries: []llmstxt.Entry{
-			{Title: "Article manifest", URL: canonical.url("/docs/manifest.json"), Description: "Canonical URLs, Markdown URLs, and section metadata."},
-			{Title: "Section corpus", URL: canonical.url("/docs/search.json"), Description: "Downloadable source text for local search."},
-		}}
-		sections = append([]llmstxt.Section{downloads}, sections...)
-		if api := docs.Project.OpenAPI; api != "" {
-			sections = append(sections, llmstxt.Section{Title: "API specification", Entries: []llmstxt.Entry{{Title: "OpenAPI", URL: api, Description: "Canonical API specification."}}})
+		sections = addLLMsDocumentationSections(sections, docs, canonical)
+	}
+	companions := selection.companions
+	selection.plan.Build = func() (map[string][]byte, error) {
+		return buildLLMsCompanions(companions)
+	}
+	return selection.plan, sections, nil
+}
+
+func (p *llmsTxtPlugin) defaultLLMsSections(sections []llmstxt.Section, docs *DocumentationArtifacts, routes map[string]Page) []llmstxt.Section {
+	if docs != nil {
+		return p.documentationLLMsSections(sections, docs, routes)
+	}
+	cfg := p.site.Config()
+	var sorted []string
+	for route, page := range routes {
+		if p.eligible(page, route) && cfg.IsMarkdown(page.Source()) {
+			sorted = append(sorted, route)
 		}
 	}
-	plan.Build = func() (map[string][]byte, error) {
-		artifacts := make(map[string][]byte, len(companions))
-		for _, companion := range companions {
-			body, err := companion.page.Article()
-			if err != nil {
-				return nil, err
-			}
-			if body.Source == nil {
-				return nil, fmt.Errorf("llms_txt source capture unavailable for %s", companion.page.Source())
-			}
-			markdown, err := docexport.Markdown(body.Source, companion.canonical, nil)
-			if err != nil {
-				return nil, fmt.Errorf("llms_txt %s: %w", companion.route, err)
-			}
-			artifacts[companion.route] = markdown
-		}
-		return artifacts, nil
+	sort.Strings(sorted)
+	if len(sorted) == 0 {
+		return sections
 	}
-	return plan, sections, nil
+	section := llmstxt.Section{Title: "Pages"}
+	for _, route := range sorted {
+		section.Entries = append(section.Entries, llmstxt.Entry{URL: route})
+	}
+	return append(sections, section)
+}
+
+func (p *llmsTxtPlugin) documentationLLMsSections(sections []llmstxt.Section, docs *DocumentationArtifacts, routes map[string]Page) []llmstxt.Section {
+	for _, group := range docs.Groups {
+		section := llmstxt.Section{Title: group.Title, Description: group.Description}
+		for _, article := range docs.Articles {
+			if page, exists := routes[article.URL]; article.NavSection == group.Slug && exists && p.eligible(page, article.URL) {
+				section.Entries = append(section.Entries, llmstxt.Entry{URL: article.URL, Title: article.Title, Description: article.Description})
+			}
+		}
+		sections = append(sections, section)
+	}
+	return sections
+}
+
+func (s *llmsSelection) prepareEntry(entry llmstxt.Entry) (llmstxt.Entry, bool, error) {
+	route, local, err := localLLMsRoute(entry.URL, s.canonical.origin, s.canonical.base)
+	if err != nil {
+		return entry, false, err
+	}
+	identity := entry.URL
+	if local {
+		if s.settings.curated {
+			route = s.inventory.literal(route)
+		}
+		identity = route
+	}
+	if s.seen[identity] {
+		return entry, false, fmt.Errorf("duplicate llms_txt entry %q", entry.URL)
+	}
+	s.seen[identity] = true
+	if !local {
+		if strings.TrimSpace(entry.Title) == "" {
+			return entry, false, fmt.Errorf("external llms_txt entry %q requires title", entry.URL)
+		}
+		return entry, true, nil
+	}
+	page, err := s.localPage(route, entry.URL)
+	if err != nil || page == nil {
+		return entry, false, err
+	}
+	entry, err = inheritLLMsEntry(entry, page, route, s.settings.overrides[entry.URL])
+	if err != nil {
+		return entry, false, err
+	}
+	entry.URL, err = s.prepareCompanion(page)
+	return entry, err == nil, err
+}
+
+func (s *llmsSelection) localPage(route, destination string) (Page, error) {
+	if eligible, exists := s.inventory.available[route]; exists && !eligible && s.settings.curated {
+		return nil, fmt.Errorf("llms_txt local route %q is missing or excluded", destination)
+	}
+	page, found := s.inventory.pages[route]
+	if !found {
+		if _, exists := s.inventory.available[route]; exists {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("llms_txt local route %q is missing or excluded", destination)
+	}
+	if !s.plugin.eligible(page, route) {
+		return nil, fmt.Errorf("llms_txt local route %q is missing or excluded", destination)
+	}
+	return page, nil
+}
+
+func inheritLLMsEntry(entry llmstxt.Entry, page Page, route string, overrides llmsOverrides) (llmstxt.Entry, error) {
+	var err error
+	if entry.Title == "" && !overrides.title {
+		entry.Title, err = optionalLLMsString(page.FrontMatter(), "title")
+		if err != nil {
+			return entry, err
+		}
+	}
+	if entry.Description == "" && !overrides.description {
+		entry.Description, err = optionalLLMsString(page.FrontMatter(), "description")
+		if err != nil {
+			return entry, err
+		}
+	}
+	if strings.TrimSpace(entry.Title) == "" {
+		return entry, fmt.Errorf("llms_txt route %s requires title", route)
+	}
+	return entry, nil
+}
+
+func (s *llmsSelection) prepareCompanion(page Page) (string, error) {
+	actual := page.URL()
+	destination := s.canonical.url(actual)
+	if !s.settings.markdown || !s.plugin.site.Config().IsMarkdown(page.Source()) {
+		return destination, nil
+	}
+	md := markdownCompanionRoute(actual)
+	if article, exists := s.owned[actual]; exists {
+		if s.docs.Sources[actual] != page.Source() || article.CanonicalURL != destination || article.MarkdownURL != s.canonical.url(md) || article.URL+"index.md" != md {
+			return "", fmt.Errorf("llms_txt documentation ownership mismatch at %s", actual)
+		}
+	} else {
+		s.plan.Routes = append(s.plan.Routes, md)
+		s.plan.Capture = append(s.plan.Capture, page)
+		s.companions = append(s.companions, llmsCompanion{page: page, route: md, canonical: destination})
+	}
+	return s.canonical.url(md), nil
+}
+
+func addLLMsDocumentationSections(sections []llmstxt.Section, docs *DocumentationArtifacts, canonical llmsCanonical) []llmstxt.Section {
+	downloads := llmstxt.Section{Title: "Downloads", Entries: []llmstxt.Entry{
+		{Title: "Article manifest", URL: canonical.url("/docs/manifest.json"), Description: "Canonical URLs, Markdown URLs, and section metadata."},
+		{Title: "Section corpus", URL: canonical.url("/docs/search.json"), Description: "Downloadable source text for local search."},
+	}}
+	sections = append([]llmstxt.Section{downloads}, sections...)
+	if api := docs.Project.OpenAPI; api != "" {
+		sections = append(sections, llmstxt.Section{Title: "API specification", Entries: []llmstxt.Entry{{Title: "OpenAPI", URL: api, Description: "Canonical API specification."}}})
+	}
+	return sections
+}
+
+func buildLLMsCompanions(companions []llmsCompanion) (map[string][]byte, error) {
+	artifacts := make(map[string][]byte, len(companions))
+	for _, companion := range companions {
+		body, err := companion.page.Article()
+		if err != nil {
+			return nil, err
+		}
+		if body.Source == nil {
+			return nil, fmt.Errorf("llms_txt source capture unavailable for %s", companion.page.Source())
+		}
+		markdown, err := docexport.Markdown(body.Source, companion.canonical, nil)
+		if err != nil {
+			return nil, fmt.Errorf("llms_txt %s: %w", companion.route, err)
+		}
+		artifacts[companion.route] = markdown
+	}
+	return artifacts, nil
 }
 
 func addLLMsIndex(plan *ArtifactPlan, project llmstxt.Project, sections []llmstxt.Section) {
@@ -361,86 +421,109 @@ func (p *llmsTxtPlugin) settings(docs *DocumentationArtifacts) (llmsSettings, er
 		if !ok {
 			return result, fmt.Errorf("llms_txt must be a map")
 		}
-		for _, field := range []string{"title", "description"} {
-			if _, found := settings[field]; found {
-				value, err := optionalLLMsString(settings, field)
-				if err != nil {
-					return result, err
-				}
-				if field == "title" {
-					result.project.Title = value
-				} else {
-					result.project.Description = value
-				}
-			}
-		}
-		if raw, found := settings["markdown"]; found {
-			value, ok := raw.(bool)
-			if !ok {
-				return result, fmt.Errorf("llms_txt markdown must be a boolean")
-			}
-			result.markdown = value
-		}
-		if raw, found := settings["sections"]; found {
-			result.curated = true
-			list, ok := raw.([]interface{})
-			if !ok {
-				return result, fmt.Errorf("llms_txt sections must be a list")
-			}
-			for _, rawSection := range list {
-				section, ok := llmsMap(rawSection)
-				if !ok {
-					return result, fmt.Errorf("llms_txt section must be a map")
-				}
-				title, err := optionalLLMsString(section, "title")
-				if err != nil {
-					return result, err
-				}
-				if strings.TrimSpace(title) == "" {
-					return result, fmt.Errorf("llms_txt section requires title")
-				}
-				description, err := optionalLLMsString(section, "description")
-				if err != nil {
-					return result, err
-				}
-				output := llmstxt.Section{Title: title, Description: description}
-				entries, ok := section["entries"].([]interface{})
-				if !ok {
-					return result, fmt.Errorf("llms_txt section entries must be a list")
-				}
-				for _, rawEntry := range entries {
-					entry, ok := llmsMap(rawEntry)
-					if !ok {
-						return result, fmt.Errorf("llms_txt entry must be a map")
-					}
-					destination, err := optionalLLMsString(entry, "url")
-					if err != nil {
-						return result, err
-					}
-					if destination == "" {
-						return result, fmt.Errorf("llms_txt entry requires url")
-					}
-					title, err := optionalLLMsString(entry, "title")
-					if err != nil {
-						return result, err
-					}
-					description, err := optionalLLMsString(entry, "description")
-					if err != nil {
-						return result, err
-					}
-					_, titleSet := entry["title"]
-					_, descriptionSet := entry["description"]
-					result.overrides[destination] = llmsOverrides{title: titleSet, description: descriptionSet}
-					output.Entries = append(output.Entries, llmstxt.Entry{URL: destination, Title: title, Description: description})
-				}
-				result.sections = append(result.sections, output)
-			}
+		if err := result.applyLLMsSettings(settings); err != nil {
+			return result, err
 		}
 	}
 	if strings.TrimSpace(result.project.Title) == "" {
 		return result, fmt.Errorf("llms_txt requires a nonempty title")
 	}
 	return result, nil
+}
+
+func (s *llmsSettings) applyLLMsSettings(settings map[string]interface{}) error {
+	for _, field := range []string{"title", "description"} {
+		if _, found := settings[field]; found {
+			value, err := optionalLLMsString(settings, field)
+			if err != nil {
+				return err
+			}
+			if field == "title" {
+				s.project.Title = value
+			} else {
+				s.project.Description = value
+			}
+		}
+	}
+	if raw, found := settings["markdown"]; found {
+		value, ok := raw.(bool)
+		if !ok {
+			return fmt.Errorf("llms_txt markdown must be a boolean")
+		}
+		s.markdown = value
+	}
+	if raw, found := settings["sections"]; found {
+		s.curated = true
+		list, ok := raw.([]interface{})
+		if !ok {
+			return fmt.Errorf("llms_txt sections must be a list")
+		}
+		for _, rawSection := range list {
+			section, err := parseLLMsSection(rawSection, s.overrides)
+			if err != nil {
+				return err
+			}
+			s.sections = append(s.sections, section)
+		}
+	}
+	return nil
+}
+
+func parseLLMsSection(raw interface{}, overrides map[string]llmsOverrides) (llmstxt.Section, error) {
+	section, ok := llmsMap(raw)
+	if !ok {
+		return llmstxt.Section{}, fmt.Errorf("llms_txt section must be a map")
+	}
+	title, err := optionalLLMsString(section, "title")
+	if err != nil {
+		return llmstxt.Section{}, err
+	}
+	if strings.TrimSpace(title) == "" {
+		return llmstxt.Section{}, fmt.Errorf("llms_txt section requires title")
+	}
+	description, err := optionalLLMsString(section, "description")
+	if err != nil {
+		return llmstxt.Section{}, err
+	}
+	output := llmstxt.Section{Title: title, Description: description}
+	entries, ok := section["entries"].([]interface{})
+	if !ok {
+		return output, fmt.Errorf("llms_txt section entries must be a list")
+	}
+	for _, rawEntry := range entries {
+		entry, override, err := parseLLMsEntry(rawEntry)
+		if err != nil {
+			return output, err
+		}
+		overrides[entry.URL] = override
+		output.Entries = append(output.Entries, entry)
+	}
+	return output, nil
+}
+
+func parseLLMsEntry(raw interface{}) (llmstxt.Entry, llmsOverrides, error) {
+	entry, ok := llmsMap(raw)
+	if !ok {
+		return llmstxt.Entry{}, llmsOverrides{}, fmt.Errorf("llms_txt entry must be a map")
+	}
+	destination, err := optionalLLMsString(entry, "url")
+	if err != nil {
+		return llmstxt.Entry{}, llmsOverrides{}, err
+	}
+	if destination == "" {
+		return llmstxt.Entry{}, llmsOverrides{}, fmt.Errorf("llms_txt entry requires url")
+	}
+	title, err := optionalLLMsString(entry, "title")
+	if err != nil {
+		return llmstxt.Entry{}, llmsOverrides{}, err
+	}
+	description, err := optionalLLMsString(entry, "description")
+	if err != nil {
+		return llmstxt.Entry{}, llmsOverrides{}, err
+	}
+	_, titleSet := entry["title"]
+	_, descriptionSet := entry["description"]
+	return llmstxt.Entry{URL: destination, Title: title, Description: description}, llmsOverrides{title: titleSet, description: descriptionSet}, nil
 }
 
 func optionalLLMsString(values map[string]interface{}, name string) (string, error) {
@@ -475,24 +558,39 @@ func llmsMap(raw interface{}) (map[string]interface{}, bool) {
 }
 
 func (p *llmsTxtPlugin) eligible(page Page, route string) bool {
-	provenance, ok := page.(interface{ SourceBacked() bool })
-	if !ok || !provenance.SourceBacked() || page.Source() == "" || page.IsStatic() || !page.Published() {
+	if !llmsSourcePage(page) {
 		return false
 	}
 	fm := page.FrontMatter()
 	if fm.Get("llms", true) == false || fm.Get("draft", false) == true || fm.Get("redirect_to", nil) != nil {
 		return false
 	}
-	if page.OutputExt() != ".html" && page.OutputExt() != ".htm" && page.OutputExt() != ".xhtml" {
-		return false
-	}
-	if route == "/404.html" || route == "/404/" || route == "/404" {
+	if !llmsHTMLRoute(page, route) {
 		return false
 	}
 	if (page.IsPost() || fm.Get("date", nil) != nil) && page.PostDate().After(time.Now()) {
 		return false
 	}
-	rel, err := filepath.Rel(p.site.Config().Source, page.Source())
+	if !llmsVisibleSource(p.site.Config().Source, page.Source()) {
+		return false
+	}
+	return !llmsNoindex(fm.Get("robots", nil))
+}
+
+func llmsSourcePage(page Page) bool {
+	provenance, ok := page.(interface{ SourceBacked() bool })
+	return ok && provenance.SourceBacked() && page.Source() != "" && !page.IsStatic() && page.Published()
+}
+
+func llmsHTMLRoute(page Page, route string) bool {
+	if page.OutputExt() != ".html" && page.OutputExt() != ".htm" && page.OutputExt() != ".xhtml" {
+		return false
+	}
+	return route != "/404.html" && route != "/404/" && route != "/404"
+}
+
+func llmsVisibleSource(root, source string) bool {
+	rel, err := filepath.Rel(root, source)
 	if err != nil {
 		return false
 	}
@@ -501,21 +599,25 @@ func (p *llmsTxtPlugin) eligible(page Page, route string) bool {
 			return false
 		}
 	}
-	switch robots := fm.Get("robots", nil).(type) {
+	return true
+}
+
+func llmsNoindex(raw interface{}) bool {
+	switch robots := raw.(type) {
 	case string:
 		for _, directive := range strings.FieldsFunc(strings.ToLower(robots), func(r rune) bool { return r == ',' || r == ' ' || r == '\t' || r == '\n' }) {
 			if directive == "noindex" {
-				return false
+				return true
 			}
 		}
 	case []interface{}:
 		for _, directive := range robots {
 			if text, ok := directive.(string); ok && strings.EqualFold(strings.TrimSpace(text), "noindex") {
-				return false
+				return true
 			}
 		}
 	}
-	return true
+	return false
 }
 
 func markdownCompanionRoute(route string) string {
@@ -535,11 +637,26 @@ func localLLMsRoute(destination string, origin *url.URL, base string) (string, b
 		if (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
 			return "", false, fmt.Errorf("llms_txt destination must use HTTP(S): %q", destination)
 		}
-		local = strings.EqualFold(parsed.Scheme, origin.Scheme) && strings.EqualFold(parsed.Hostname(), origin.Hostname()) && llmsURLPort(parsed) == llmsURLPort(origin) && (base == "" || parsed.Path == base || strings.HasPrefix(parsed.Path, base+"/"))
+		local = sameLLMsDeployment(parsed, origin, base)
 		if !local {
 			return "", false, nil
 		}
 	}
+	route, clean := cleanLLMsRoute(parsed, base)
+	if !clean {
+		return "", false, fmt.Errorf("llms_txt local destination must be a clean canonical route: %q", destination)
+	}
+	return route, true, nil
+}
+
+func sameLLMsDeployment(destination, origin *url.URL, base string) bool {
+	return strings.EqualFold(destination.Scheme, origin.Scheme) &&
+		strings.EqualFold(destination.Hostname(), origin.Hostname()) &&
+		llmsURLPort(destination) == llmsURLPort(origin) &&
+		(base == "" || destination.Path == base || strings.HasPrefix(destination.Path, base+"/"))
+}
+
+func cleanLLMsRoute(parsed *url.URL, base string) (string, bool) {
 	route := parsed.Path
 	if parsed.IsAbs() && base != "" {
 		route = strings.TrimPrefix(route, base)
@@ -551,10 +668,7 @@ func localLLMsRoute(destination string, origin *url.URL, base string) (string, b
 	if strings.HasSuffix(route, "/") && clean != "/" {
 		clean += "/"
 	}
-	if !strings.HasPrefix(route, "/") || route != clean || parsed.RawQuery != "" || parsed.Fragment != "" || strings.ContainsAny(route, "%?#\\") || parsed.RawPath != "" {
-		return "", false, fmt.Errorf("llms_txt local destination must be a clean canonical route: %q", destination)
-	}
-	return route, true, nil
+	return route, strings.HasPrefix(route, "/") && route == clean && parsed.RawQuery == "" && parsed.Fragment == "" && !strings.ContainsAny(route, "%?#\\") && parsed.RawPath == ""
 }
 
 func llmsURLPort(destination *url.URL) string {

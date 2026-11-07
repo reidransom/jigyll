@@ -23,7 +23,7 @@ func TestExtract(t *testing.T) {
 		t.Run(wrapper, func(t *testing.T) {
 			entries := []archiveEntry{
 				{name: "theme-sha/_layouts/default.html", typeflag: tar.TypeReg, body: "theme layout"},
-				{name: "theme-sha/_includes/head.html", typeflag: tar.TypeRegA, body: "head"},
+				{name: "theme-sha/_includes/head.html", typeflag: '\x00', body: "head"}, // Historical tar regular-file type.
 				{name: "theme-sha/assets/empty/", typeflag: tar.TypeDir},
 			}
 			switch wrapper {

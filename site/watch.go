@@ -91,53 +91,14 @@ func (s *Site) makeEventWatcher() (<-chan FilesEvent, error) {
 				if !ok {
 					return
 				}
-				if !event.Has(fsnotify.Write) && !event.Has(fsnotify.Create) && !event.Has(fsnotify.Remove) && !event.Has(fsnotify.Rename) {
+				change, relevant := s.watchEventChange(inventory, event)
+				if !relevant {
 					continue
 				}
-				if s.watchProtected(event.Name) {
-					continue
+				if change.Topology {
+					dirs, inventory = s.refreshEventWatches(w, dirs, inventory)
 				}
-				paths, target := inventory.event(event.Name)
-				if len(paths) == 0 && !target {
-					continue
-				}
-				topology := target || event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename)
-				if topology {
-					next, scanErr := s.scanWatchInventory()
-					if scanErr != nil {
-						fmt.Fprintf(os.Stderr, "error refreshing source watches: %v\n", scanErr)
-					} else {
-						nextDirs := next.registrations()
-						if len(nextDirs) > 500 {
-							fmt.Fprintln(os.Stderr, watchLimitError(len(nextDirs)))
-						} else {
-							added := make([]string, 0)
-							for dir := range nextDirs {
-								if !dirs[dir] {
-									if addErr := w.Add(dir); addErr != nil {
-										scanErr = addErr
-										break
-									}
-									added = append(added, dir)
-								}
-							}
-							if scanErr != nil {
-								for _, dir := range added {
-									_ = w.Remove(dir)
-								}
-								fmt.Fprintf(os.Stderr, "error refreshing source watches: %v\n", scanErr)
-							} else {
-								for dir := range dirs {
-									if !nextDirs[dir] {
-										_ = w.Remove(dir)
-									}
-								}
-								dirs, inventory = nextDirs, next
-							}
-						}
-					}
-				}
-				changes <- FilesEvent{Paths: paths, Topology: topology}
+				changes <- change
 			case err, ok := <-w.Errors:
 				if !ok {
 					return
@@ -147,6 +108,57 @@ func (s *Site) makeEventWatcher() (<-chan FilesEvent, error) {
 		}
 	}()
 	return changes, nil
+}
+
+func (s *Site) watchEventChange(inventory *watchInventory, event fsnotify.Event) (FilesEvent, bool) {
+	if !event.Has(fsnotify.Write) && !event.Has(fsnotify.Create) && !event.Has(fsnotify.Remove) && !event.Has(fsnotify.Rename) {
+		return FilesEvent{}, false
+	}
+	if s.watchProtected(event.Name) {
+		return FilesEvent{}, false
+	}
+	paths, target := inventory.event(event.Name)
+	if len(paths) == 0 && !target {
+		return FilesEvent{}, false
+	}
+	topology := target || event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename)
+	return FilesEvent{Paths: paths, Topology: topology}, true
+}
+
+func (s *Site) refreshEventWatches(w *fsnotify.Watcher, dirs map[string]bool, inventory *watchInventory) (map[string]bool, *watchInventory) {
+	next, scanErr := s.scanWatchInventory()
+	if scanErr != nil {
+		fmt.Fprintf(os.Stderr, "error refreshing source watches: %v\n", scanErr)
+		return dirs, inventory
+	}
+	nextDirs := next.registrations()
+	if len(nextDirs) > 500 {
+		fmt.Fprintln(os.Stderr, watchLimitError(len(nextDirs)))
+		return dirs, inventory
+	}
+	added := make([]string, 0)
+	for dir := range nextDirs {
+		if !dirs[dir] {
+			if addErr := w.Add(dir); addErr != nil {
+				scanErr = addErr
+				break
+			}
+			added = append(added, dir)
+		}
+	}
+	if scanErr != nil {
+		for _, dir := range added {
+			_ = w.Remove(dir)
+		}
+		fmt.Fprintf(os.Stderr, "error refreshing source watches: %v\n", scanErr)
+		return dirs, inventory
+	}
+	for dir := range dirs {
+		if !nextDirs[dir] {
+			_ = w.Remove(dir)
+		}
+	}
+	return nextDirs, next
 }
 
 // debounceEvents preserves topology changes even when no file path survives.
