@@ -13,6 +13,11 @@
 * Document benchmark installation, real Sass-site preparation, measurement
   boundaries and artifact interpretation. Attribute inherited benchmark tables
   to historical upstream Gojekyll rather than current Jigyll measurements.
+* Present the documentation homepage as a responsive Docifly hero splash with
+  paper-dragon artwork, installation/docs actions, compatibility guidance, and
+  measured local Jigyll/Jekyll build-time visualizations. Keep zero-baseline
+  comparison bars and measurement caveats; place the full diagnostic table in
+  the linked benchmark documentation.
 
 ## 1.15.0 (Nov 6, 2026)
 

@@ -10,8 +10,6 @@ navigation:
     link: /
   - label: Getting Started
     items:
-      - label: Getting Started
-        link: /docs/getting-started/
       - label: Documentation
         link: /docs/
       - label: Installation
@@ -20,8 +18,6 @@ navigation:
         link: /docs/new/
   - label: Build
     items:
-      - label: Build
-        link: /docs/build/
       - label: Command-Line Usage
         link: /docs/usage/
       - label: Configuration
@@ -34,8 +30,6 @@ navigation:
         link: /docs/benchmarks/
   - label: Content
     items:
-      - label: Content
-        link: /docs/content/
       - label: Pages
         link: /docs/pages/
       - label: Posts
@@ -52,8 +46,6 @@ navigation:
         link: /docs/static-files/
   - label: Site Structure
     items:
-      - label: Site Structure
-        link: /docs/site-structure/
       - label: Directory Structure
         link: /docs/structure/
       - label: Liquid
@@ -74,16 +66,12 @@ navigation:
         link: /docs/static-documentation/
   - label: Guides
     items:
-      - label: Guides
-        link: /docs/guides/
       - label: Plugins
         link: /docs/plugins/
       - label: Upgrading
         link: /docs/upgrading/
   - label: Compatibility
     items:
-      - label: Compatibility
-        link: /docs/compatibility/
       - label: Differences from Jekyll
         link: /docs/differences/
       - label: GitHub Pages Compatibility Roadmap

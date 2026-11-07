@@ -20,11 +20,53 @@ verification logs, commands, statistics and provenance under
 The ratio is explicitly `mean(Jekyll) / mean(Jigyll)`; below one means Jigyll is
 slower. Diagnostic profiles change Jigyll only, not the Ruby baseline.
 
-Local functional verification exercised the full default and all diagnostic
-profiles, plus the prepared Sass site below. Those runs were not quiet-host,
-reversed-order publication experiments. This page makes **no current Jigyll
-speed claim**. Repeat both command orders on a quiet host and retain all artifacts
-before publishing timings; disclose noise and order sensitivity.
+## Local comparison: November 7, 2026
+
+The [landing page]({{ '/' | relative_url }}) shows observed build times from two
+local runs, not a general speed guarantee. Each command had 10 measured runs after
+two warmups. Both engines passed semantic output preflight. The generated fixture
+contains 2,000 posts and 20 standalone pages plus the index, 10 includes and four
+layouts; it has no Sass. The small Sass workload is the pinned, prepared
+`jekyll-theme-console` site described below, with 14 output files.
+
+The host was Linux x86-64 with an AMD Ryzen 7 255 and 16 logical processors.
+Jigyll was compiled from clean commit
+[`1c5e8ae`](https://github.com/reidransom/jigyll/commit/1c5e8ae1bd5ca95e249cc75a6de0bb8fd1c64d29)
+using Go 1.26.1. Tools: Ruby 3.4.7, Bundler 2.6.9, Jekyll 4.4.1,
+Hyperfine 1.19.0 and Dart Sass/sass-embedded 1.102.0.
+
+The generated run is `run-wBCAKx6m`; the Sass run is `run-eSEEEQP7`.
+Their raw samples and provenance are retained locally under the artifact root
+above, not served by this documentation site. The Sass diagnostic rows reuse one
+unchanged Ruby baseline; only Jigyll's cache/concurrency settings change.
+Default settings use warm persistent caches. Disabling cache reuse does not
+disable every cache or eliminate cache I/O.
+
+The measurement includes fresh process startup (including Bundler for Ruby) and
+native output cleanup/writes, while excluding setup and compilation. Startup and
+cache effects are especially relevant to the small Sass site: its default ratio
+was 35.17× in the displayed run and 31.73× in a separate rerun. The default
+generated-site ratio was 4.70×.
+
+These runs were not quiet-host, reversed-order experiments. The generated run's
+one-minute host load rose from 2.92 to 5.22. Ratios describe these samples, not
+statistical significance or performance on other machines. For more stable
+estimates, repeat both command orders on a quiet host and retain all artifacts;
+disclose noise and order sensitivity rather than choosing the fastest result.
+
+### Measured build times
+
+Mean ± sample standard deviation, **10 runs after two warmups**. Diagnostic
+settings change **Jigyll only**; all Sass rows reuse the same unchanged Ruby
+Jekyll measurement. “Faster” is the ratio of mean Jekyll time to mean Jigyll time.
+
+| Workload / Jigyll configuration | Ruby Jekyll | Jigyll | Jekyll time ÷ Jigyll time |
+| --- | ---: | ---: | ---: |
+| Generated: 2,000 posts, 20 pages; default | 4.308 ± 0.115 s | 0.918 ± 0.014 s | **4.70×** |
+| Small Sass site; default | 359.5 ± 13.1 ms | 10.22 ± 0.52 ms | **35.17×** |
+| Small Sass site; single processor | 359.5 ± 13.1 ms | 11.04 ± 0.67 ms | **32.56×** |
+| Small Sass site; cache reuse disabled | 359.5 ± 13.1 ms | 35.18 ± 3.09 ms | **10.22×** |
+| Small Sass site; single processor, cache reuse disabled | 359.5 ± 13.1 ms | 32.51 ± 1.55 ms | **11.06×** |
 
 ## Verified real-site preparation
 
