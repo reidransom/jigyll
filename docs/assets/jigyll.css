@@ -1,5 +1,11 @@
 /* Consumer-only UI; loaded once by navigation.html on every themed page. */
 @media screen {
+  #global-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .sl-markdown-content code:not(pre code) {
     color: var(--docifly-code-keyword);
     background-color: color-mix(in srgb, var(--docifly-code-keyword) 9%, var(--background));

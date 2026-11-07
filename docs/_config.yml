@@ -6,8 +6,6 @@ repository: reidransom/jigyll
 
 theme: docifly
 navigation:
-  - label: Jigyll
-    link: /
   - label: Getting Started
     items:
       - label: Documentation
