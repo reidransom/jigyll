@@ -10,6 +10,9 @@
   destinations/caches, raw samples and reproducibility reports.
 
 ### Improved
+* Rewrite the documentation landing page for developers: describe source formats,
+  CLI behavior, dependencies, and compatibility limits instead of promotional
+  slogans, with neutral framing for the existing benchmark results.
 * Make documentation inline code more distinct with theme-aware accent text,
   tinted backgrounds, and subtle rounded borders without changing fenced blocks.
 * Document benchmark installation, real Sass-site preparation, measurement

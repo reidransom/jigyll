@@ -1,21 +1,21 @@
 ---
 layout: splash
 title: Jigyll
-description: Build your Jekyll-style site with a native Go binary. Keep Liquid templates, preview changes live, and compare measured full-build times.
+description: Jigyll is a static site generator written in Go, with Markdown, Liquid templates, partial Jekyll compatibility, and live reload.
 nav_exclude: true
 hero:
-  title: Your Jekyll site. Built with Go.
-  tagline: Keep your Markdown and Liquid templates. Jigyll is a fast, partially-compatible Jekyll clone with native builds, directory watch, and live reload.
+  title: A static site generator in Go.
+  tagline: Jigyll builds sites from Markdown, Liquid templates, and YAML front matter. It implements part of Jekyll; Ruby plugins are not supported.
   image:
     src: /assets/paper-dragon-beaker.webp
     alt: A blue-and-white paper dragon wearing safety goggles and experimenting with a bubbling flask.
     width: 971
     height: 861
   actions:
-    - text: Install Jigyll
+    - text: Installation
       link: /docs/installation/
       variant: primary
-    - text: Read the docs
+    - text: Documentation
       link: /docs/
       variant: secondary
 ---
@@ -24,38 +24,38 @@ hero:
 
 <div class="splash-features not-content" aria-label="Working with Jigyll">
   <div>
-    <span class="splash-eyebrow">01 / Familiar source</span>
-    <h2>Liquid. Markdown. Front matter.</h2>
-    <p>Bring the files you already know. Check the compatibility guide before moving an existing site.</p>
-    <a href="{{ '/docs/differences/' | relative_url }}">Explore compatibility <span aria-hidden="true">→</span></a>
+    <span class="splash-eyebrow">01 / Compatibility</span>
+    <h2>Jekyll source conventions</h2>
+    <p>Use <code>_config.yml</code>, layouts, includes, and collections. Template behavior and built-in plugin support differ from Ruby Jekyll.</p>
+    <a href="{{ '/docs/differences/' | relative_url }}">Compatibility reference <span aria-hidden="true">→</span></a>
   </div>
   <div>
-    <span class="splash-eyebrow">02 / Native builds</span>
-    <h2>A binary, not a Ruby toolchain.</h2>
-    <p>Run Jigyll without Ruby or Bundler. Add Dart Sass when your site needs SCSS.</p>
-    <a href="{{ '/docs/installation/' | relative_url }}">Choose your install <span aria-hidden="true">→</span></a>
+    <span class="splash-eyebrow">02 / Dependencies</span>
+    <h2>No Ruby runtime</h2>
+    <p>Run the compiled binary without Ruby or Bundler. SCSS compilation requires the Dart Sass executable.</p>
+    <a href="{{ '/docs/installation/' | relative_url }}">Installation methods <span aria-hidden="true">→</span></a>
   </div>
   <div>
-    <span class="splash-eyebrow">03 / A shorter edit loop</span>
-    <h2>Save. Preview. Repeat.</h2>
-    <p>Use <code>jigyll serve</code> to watch your directory and reload the browser as your site changes.</p>
-    <a href="{{ '/docs/usage/' | relative_url }}">Meet the CLI <span aria-hidden="true">→</span></a>
+    <span class="splash-eyebrow">03 / Development</span>
+    <h2>Build and preview</h2>
+    <p><code>jigyll build</code> writes to <code>_site/</code>. <code>jigyll serve</code> previews locally, watches source files, and reloads the browser on changes.</p>
+    <a href="{{ '/docs/usage/' | relative_url }}">CLI reference <span aria-hidden="true">→</span></a>
   </div>
 </div>
 
 <section class="splash-performance not-content" aria-labelledby="performance-title">
   <div class="splash-performance-intro">
-    <p class="splash-eyebrow">Measured, not promised</p>
-    <h2 id="performance-title">Full builds.<br>Less waiting.</h2>
-    <p>The same content, built by both engines. Two local workloads, with output verified before timing.</p>
-    <a href="{{ '/docs/benchmarks/#local-comparison-november-7-2026' | relative_url }}">Read the benchmark notes <span aria-hidden="true">→</span></a>
+    <p class="splash-eyebrow">Benchmarks</p>
+    <h2 id="performance-title">Full-build timings</h2>
+    <p>Two local workloads built with Ruby Jekyll and Jigyll. Output was checked for equivalence before timing.</p>
+    <a href="{{ '/docs/benchmarks/#local-comparison-november-7-2026' | relative_url }}">Methodology and results <span aria-hidden="true">→</span></a>
   </div>
   <figure class="perf-chart" aria-labelledby="perf-chart-title" aria-describedby="perf-chart-note">
     <figcaption id="perf-chart-title">Full-build time <span>Lower is better</span></figcaption>
     <div class="perf-chart-panel">
       <div class="perf-chart-heading">
         <h3>2,000 posts · 20 pages</h3>
-        <strong>4.70× <span>faster</span></strong>
+        <strong>4.70× <span>speedup</span></strong>
       </div>
       <div class="perf-chart-row">
         <span>Ruby Jekyll</span>
@@ -71,7 +71,7 @@ hero:
     <div class="perf-chart-panel">
       <div class="perf-chart-heading">
         <h3>Small Sass site · 14 output files</h3>
-        <strong>35.17× <span>faster</span></strong>
+        <strong>35.17× <span>speedup</span></strong>
       </div>
       <div class="perf-chart-row">
         <span>Ruby Jekyll</span>
