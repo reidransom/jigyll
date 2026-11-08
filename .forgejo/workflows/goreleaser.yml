@@ -1,0 +1,61 @@
+name: goreleaser
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: github-release-mirror
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Node 20 actions work with Forgejo Runner without GitHub runner services.
+    steps:
+
+      - name: Checkout
+        uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Go
+        uses: https://github.com/actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install SASS
+        run: |
+          curl --fail --silent --show-error --location https://github.com/sass/dart-sass/releases/download/1.102.0/dart-sass-1.102.0-linux-x64.tar.gz -o "$RUNNER_TEMP/dart-sass.tar.gz"
+          tar -xzf "$RUNNER_TEMP/dart-sass.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/dart-sass" >> "$GITHUB_PATH"
+
+      - name: Make release
+        uses: https://github.com/goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          # Manual dispatch validates every archive without creating a release.
+          args: ${{ forgejo.event_name == 'workflow_dispatch' && 'release --snapshot --clean' || 'release --clean' }}
+        env:
+          # Forgejo also exports a GitHub-compatible token; it is not a GitHub PAT.
+          GITHUB_TOKEN: ''
+          GITEA_TOKEN: ${{ forgejo.token }}
+
+      - name: Publish Homebrew and Scoop manifests to GitHub
+        if: forgejo.event_name == 'push'
+        run: python3 scripts/publish-package-manifests.py
+        env:
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          SCOOP_BUCKET_GITHUB_TOKEN: ${{ secrets.SCOOP_BUCKET_GITHUB_TOKEN }}
+
+      - name: Mirror release and assets to GitHub
+        if: forgejo.event_name == 'push'
+        run: python3 scripts/mirror-github-releases.py --tag "$RELEASE_TAG"
+        env:
+          RELEASE_TAG: ${{ forgejo.ref_name }}
+          GITEA_TOKEN: ${{ forgejo.token }}
+          MIRROR_GITHUB_TOKEN: ${{ secrets.MIRROR_GITHUB_TOKEN }}

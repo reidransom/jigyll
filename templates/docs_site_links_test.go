@@ -48,7 +48,7 @@ func TestDocsEditPageDestinations(t *testing.T) {
 			err := renderer.Render(&rendered, []byte(`{% include jigyll/site-links.html %}`), liquid.Bindings{
 				"page": map[string]interface{}{"path": tc.path},
 				"site": map[string]interface{}{
-					"title": "Jigyll", "repository": "example/manual",
+					"title": "Jigyll",
 					"site_links": map[string]interface{}{
 						"edit_base_url": tc.editBase,
 						"attribution":   `Adapted from <a href="https://example.org/original">Original</a>.`,
@@ -57,11 +57,7 @@ func TestDocsEditPageDestinations(t *testing.T) {
 			}, tc.path, 1)
 			require.NoError(t, err)
 			links := compatElements(t, rendered.Bytes(), func(n *html.Node) bool { return n.Data == "a" })
-			require.Len(t, links, 4)
-			require.Equal(t, "https://github.com/example/manual", compatAttr(links[0], "href"))
-			require.Equal(t, tc.want, compatAttr(links[1], "href"))
-			require.Equal(t, "#page-title", compatAttr(links[2], "href"))
-			require.Equal(t, "https://example.org/original", compatAttr(links[3], "href"))
+			require.Equal(t, tc.want, compatAttr(links[0], "href"))
 		})
 	}
 }

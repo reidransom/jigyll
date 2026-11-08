@@ -16,10 +16,10 @@ brew upgrade jigyll
 scoop update jigyll
 
 # Docker
-docker pull ghcr.io/reidransom/jigyll
+docker pull docker.io/reidransom/jigyll
 
 # Install script — re-run it
-curl -fsSL https://raw.githubusercontent.com/reidransom/jigyll/main/install.sh | bash
+curl -fsSL https://src.r2ware.dev/reid/jigyll/raw/branch/main/install.sh | bash
 
 # From source
 go install github.com/reidransom/jigyll@latest
@@ -31,8 +31,8 @@ Check what you're running with:
 jigyll version
 ```
 
-Release notes are published on the [GitHub releases
-page](https://github.com/reidransom/jigyll/releases).
+Release notes are published on the [Forgejo releases
+page](https://src.r2ware.dev/reid/jigyll/releases).
 
 ## Upgrading from Jekyll
 

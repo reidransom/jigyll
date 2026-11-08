@@ -10,7 +10,7 @@ to install. Pick whichever method fits your platform.
 ## Install script (macOS / Linux)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/reidransom/jigyll/main/install.sh | bash
+curl -fsSL https://src.r2ware.dev/reid/jigyll/raw/branch/main/install.sh | bash
 ```
 
 ## mise (macOS / Linux / Windows)
@@ -21,6 +21,9 @@ Install the latest release and make `jigyll` available globally with
 ```bash
 mise use --global github:reidransom/jigyll
 ```
+
+The mise GitHub backend reads the release mirror. Primary source and releases
+live on [Forgejo](https://src.r2ware.dev/reid/jigyll).
 
 ## Homebrew (macOS / Linux)
 
@@ -42,7 +45,7 @@ scoop install jigyll
 ## Docker
 
 ```bash
-docker run --rm -v "$PWD:/site" ghcr.io/reidransom/jigyll build
+docker run --rm -v "$PWD:/site" docker.io/reidransom/jigyll build
 ```
 
 ## From source
@@ -50,6 +53,9 @@ docker run --rm -v "$PWD:/site" ghcr.io/reidransom/jigyll build
 ```bash
 go install github.com/reidransom/jigyll@latest
 ```
+
+The Go module path stays `github.com/reidransom/jigyll`; the GitHub mirror
+preserves this install command.
 
 Building from source requires the standalone Dart Sass `sass` executable on
 your `PATH` for SCSS support. Install the pinned version globally with

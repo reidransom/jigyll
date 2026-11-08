@@ -2,6 +2,7 @@ title: Jigyll
 description: A fast, partially-compatible Jekyll clone written in Go.
 url: https://jigyll.r2ware.app
 baseurl: ""
+# GitHub mirror identity for jekyll-github-metadata; primary links are in site_links.
 repository: reidransom/jigyll
 
 theme: docifly
@@ -83,7 +84,8 @@ plugins:
   - jekyll-sitemap
 
 site_links:
-  edit_base_url: https://github.com/reidransom/jigyll/edit/main/docs/
+  repository_url: https://src.r2ware.dev/reid/jigyll
+  edit_base_url: https://src.r2ware.dev/reid/jigyll/_edit/main/docs/
   attribution: ''
 
 collections:

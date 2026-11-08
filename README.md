@@ -11,7 +11,7 @@ live reload.
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/reidransom/jigyll/main/install.sh | bash
+curl -fsSL https://src.r2ware.dev/reid/jigyll/raw/branch/main/install.sh | bash
 ```
 
 The installer also installs Dart Sass if `sass` is not detected on your `PATH`.
@@ -50,7 +50,7 @@ just test       # run tests
 
 Jigyll is a fork of [gojekyll](https://github.com/osteele/gojekyll). We gratefully credit its principal contributors: [Oliver Steele](https://github.com/osteele), [Bjørn Erik Pedersen](https://github.com/bep), [Maurits van der Schee](https://github.com/mevdschee), and [Daniil Gentili](https://github.com/danog).
 
-[go-url]: https://github.com/reidransom/jigyll/actions?query=workflow%3A%22Build+Status%22
-[go-svg]: https://github.com/reidransom/jigyll/actions/workflows/go.yml/badge.svg
-[golangci-lint-url]: https://github.com/reidransom/jigyll/actions?query=workflow%3Agolangci-lint
-[golangci-lint-svg]: https://github.com/reidransom/jigyll/actions/workflows/golangci-lint.yml/badge.svg
+[go-url]: https://src.r2ware.dev/reid/jigyll/actions?workflow=go.yml
+[go-svg]: https://src.r2ware.dev/reid/jigyll/actions/workflows/go.yml/badge.svg
+[golangci-lint-url]: https://src.r2ware.dev/reid/jigyll/actions?workflow=golangci-lint.yml
+[golangci-lint-svg]: https://src.r2ware.dev/reid/jigyll/actions/workflows/golangci-lint.yml/badge.svg

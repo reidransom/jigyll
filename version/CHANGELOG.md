@@ -10,6 +10,10 @@
   destinations/caches, raw samples and reproducibility reports.
 
 ### Improved
+* Make Forgejo at `src.r2ware.dev/reid/jigyll` the canonical repository, issue
+  tracker, CI, and release source. Fetch installer downloads from Forgejo; keep
+  GitHub as a mirror of `main`, tags, and release notes/assets without issues,
+  preserving the Go module path and existing package-manager backends.
 * Rewrite the documentation landing page for developers: describe source formats,
   CLI behavior, dependencies, and compatibility limits instead of promotional
   slogans, with neutral framing for the existing benchmark results.

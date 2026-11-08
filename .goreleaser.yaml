@@ -1,5 +1,13 @@
 version: 2
 project_name: jigyll
+force_token: gitea
+gitea_urls:
+  api: https://src.r2ware.dev/api/v1
+  download: https://src.r2ware.dev
+release:
+  gitea:
+    owner: reid
+    name: jigyll
 before:
   hooks:
     - go mod tidy
@@ -73,9 +81,12 @@ brews:
       owner: reidransom
       name: homebrew-tap
       branch: main
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    # OSS GoReleaser cannot use a GitHub API client alongside a Gitea release.
+    # scripts/publish-package-manifests.py publishes the generated files instead.
+    skip_upload: true
+    url_template: "https://src.r2ware.dev/reid/jigyll/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     directory: Formula
-    homepage: "https://github.com/reidransom/jigyll"
+    homepage: "https://src.r2ware.dev/reid/jigyll"
     description: "Go clone of the Jekyll static site generator"
     license: "MIT"
     commit_author:
@@ -96,9 +107,10 @@ scoops:
       owner: reidransom
       name: scoop-bucket
       branch: main
-      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"
+    skip_upload: true
+    url_template: "https://src.r2ware.dev/reid/jigyll/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     directory: bucket
-    homepage: "https://github.com/reidransom/jigyll"
+    homepage: "https://src.r2ware.dev/reid/jigyll"
     description: "Go clone of the Jekyll static site generator"
     license: MIT
     commit_author:

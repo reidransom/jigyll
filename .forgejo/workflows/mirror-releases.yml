@@ -1,0 +1,39 @@
+name: Mirror GitHub releases
+
+on:
+  release:
+    types: [published, edited, deleted]
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: github-release-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Mirror published release notes and assets
+        env:
+          GITEA_TOKEN: ${{ forgejo.token }}
+          MIRROR_GITHUB_TOKEN: ${{ secrets.MIRROR_GITHUB_TOKEN }}
+          EVENT_NAME: ${{ forgejo.event_name }}
+          RELEASE_ACTION: ${{ forgejo.event.action }}
+          RELEASE_TAG: ${{ forgejo.event.release.tag_name }}
+        run: |
+          if [ "$EVENT_NAME" = release ]; then
+            if [ "$RELEASE_ACTION" = deleted ]; then
+              python3 scripts/mirror-github-releases.py --tag "$RELEASE_TAG" --delete
+            else
+              python3 scripts/mirror-github-releases.py --tag "$RELEASE_TAG"
+            fi
+          else
+            python3 scripts/mirror-github-releases.py
+          fi

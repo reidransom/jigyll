@@ -1,9 +1,9 @@
 #!/bin/sh
 # jigyll installer for macOS and Linux.
 #
-#   curl -fsSL https://raw.githubusercontent.com/reidransom/jigyll/main/install.sh | sh
+#   curl -fsSL https://src.r2ware.dev/reid/jigyll/raw/branch/main/install.sh | sh
 #
-# Installs the jigyll binary from GitHub Releases and, unless `sass` is already
+# Installs the jigyll binary from Forgejo Releases and, unless `sass` is already
 # on PATH, a matching dart-sass (jigyll resolves dart-sass from PATH).
 #
 # Env overrides:
@@ -12,7 +12,7 @@
 #   DART_SASS_VERSION   dart-sass version to fetch (default: pinned below)
 set -eu
 
-REPO="reidransom/jigyll"
+REPO="reid/jigyll"
 BINARY="jigyll"
 DART_SASS_VERSION="${DART_SASS_VERSION:-1.102.0}"
 
@@ -35,7 +35,7 @@ os_uname=$(uname -s)
 case "$os_uname" in
   Linux)  OS=Linux;  DART_OS=linux ;;
   Darwin) OS=Darwin; DART_OS=macos ;;
-  *) die "unsupported OS '$os_uname'. Windows users: see releases, or 'go install github.com/$REPO@latest' with sass on PATH." ;;
+  *) die "unsupported OS '$os_uname'. Windows users: see releases, or 'go install github.com/reidransom/jigyll@latest' with sass on PATH." ;;
 esac
 
 # --- detect arch -------------------------------------------------------------
@@ -64,7 +64,7 @@ fi
 VERSION="${VERSION:-}"
 if [ -z "$VERSION" ]; then
   say "resolving latest release"
-  VERSION=$(dl_stdout "https://api.github.com/repos/$REPO/releases/latest" \
+  VERSION=$(dl_stdout "https://src.r2ware.dev/api/v1/repos/$REPO/releases/latest" \
     | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
   [ -n "$VERSION" ] || die "could not determine latest version (set VERSION=vX.Y.Z)"
 fi
@@ -93,12 +93,12 @@ trap 'rm -rf "$TMP"' EXIT
 
 # --- install jigyll --------------------------------------------------------
 GJ_ASSET="${BINARY}_${OS}_${GJ_ARCH}.tar.gz"
-GJ_URL="https://github.com/$REPO/releases/download/$VERSION/$GJ_ASSET"
+GJ_URL="https://src.r2ware.dev/$REPO/releases/download/$VERSION/$GJ_ASSET"
 say "downloading $GJ_ASSET ($VERSION)"
 dl "$GJ_URL" "$TMP/$GJ_ASSET" || die "download failed: $GJ_URL"
 
 # verify checksum against the release's checksums.txt
-if dl "https://github.com/$REPO/releases/download/$VERSION/checksums.txt" "$TMP/checksums.txt" 2>/dev/null; then
+if dl "https://src.r2ware.dev/$REPO/releases/download/$VERSION/checksums.txt" "$TMP/checksums.txt" 2>/dev/null; then
   expected=$(grep " $GJ_ASSET\$" "$TMP/checksums.txt" | awk '{print $1}')
   if [ -n "$expected" ]; then
     if command -v sha256sum >/dev/null 2>&1; then

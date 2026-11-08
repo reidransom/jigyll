@@ -1,0 +1,78 @@
+name: docker
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install Docker client
+        run: |
+          curl --fail --silent --show-error --location https://download.docker.com/linux/static/stable/x86_64/docker-29.9.3.tgz -o "$RUNNER_TEMP/docker.tgz"
+          tar -xzf "$RUNNER_TEMP/docker.tgz" -C "$RUNNER_TEMP" docker/docker
+          echo "$RUNNER_TEMP/docker" >> "$GITHUB_PATH"
+
+      - name: Set up QEMU
+        uses: https://github.com/docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: https://github.com/docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: forgejo.event_name == 'push'
+        uses: https://github.com/docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # docker/metadata-action queries the GitHub repository API. Generate the
+      # same image tags locally instead of treating Forgejo as GitHub.
+      - name: Docker metadata
+        id: meta
+        shell: bash
+        env:
+          RELEASE_REF: ${{ forgejo.ref_name }}
+          RELEASE_EVENT: ${{ forgejo.event_name }}
+        run: |
+          version=develop
+          tags=reidransom/jigyll:develop
+          if [ "$RELEASE_EVENT" = push ]; then
+            version="${RELEASE_REF#v}"
+            version="${version%%+*}"
+            tags="reidransom/jigyll:$version"
+            if [[ "$version" =~ ^([0-9]+)\.([0-9]+)\.[0-9]+$ ]]; then
+              tags="$tags,reidransom/jigyll:${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+            fi
+            tags="$tags,reidransom/jigyll:latest"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: https://github.com/docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          build-args: VERSION=${{ steps.meta.outputs.version }}
+          platforms: linux/amd64,linux/arm64
+          # Manual dispatch exercises the multi-platform build without publishing.
+          push: ${{ forgejo.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://src.r2ware.dev/reid/jigyll
+            org.opencontainers.image.url=https://src.r2ware.dev/reid/jigyll
+            org.opencontainers.image.title=jigyll
+            org.opencontainers.image.description=Go clone of the Jekyll static site generator
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.revision=${{ forgejo.sha }}
+          github-token: ''

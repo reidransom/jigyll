@@ -8,7 +8,7 @@ description: Reproduce native full-build comparisons and understand historical u
 
 Run `just perf-setup` followed by `just perf` from the checkout root. This prepares
 pinned native tools and measures 10 full builds after two warmups on a deterministic
-2,000-post fixture. See the [contributor workflow](https://github.com/reidransom/jigyll/blob/main/CONTRIBUTING.md#benchmarks)
+2,000-post fixture. See the [contributor workflow](https://src.r2ware.dev/reid/jigyll/src/branch/main/CONTRIBUTING.md#benchmarks)
 for prerequisites, installation paths, all profiles, existing-site bundles,
 fairness controls and artifact interpretation.
 
@@ -31,7 +31,7 @@ layouts; it has no Sass. The small Sass workload is the pinned, prepared
 
 The host was Linux x86-64 with an AMD Ryzen 7 255 and 16 logical processors.
 Jigyll was compiled from clean commit
-[`1c5e8ae`](https://github.com/reidransom/jigyll/commit/1c5e8ae1bd5ca95e249cc75a6de0bb8fd1c64d29)
+[`1c5e8ae`](https://src.r2ware.dev/reid/jigyll/commit/1c5e8ae1bd5ca95e249cc75a6de0bb8fd1c64d29)
 using Go 1.26.1. Tools: Ruby 3.4.7, Bundler 2.6.9, Jekyll 4.4.1,
 Hyperfine 1.19.0 and Dart Sass/sass-embedded 1.102.0.
 

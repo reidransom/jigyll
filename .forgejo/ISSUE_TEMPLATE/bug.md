@@ -1,6 +1,11 @@
+---
+name: Bug report
+about: Report unexpected Jigyll behavior with a reproducible example.
+---
+
 ## Checklist
 
-- [ ] I have search the [issue list](https://github.com/reidransom/jigyll/issues) for my issue.
+- [ ] I have searched the [issue list](https://src.r2ware.dev/reid/jigyll/issues) for my issue.
 - [ ] I have verified the behavior with `jekyll`.
 - [ ] I tried hard to create a reproducible test case.
 

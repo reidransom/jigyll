@@ -1,21 +1,41 @@
 # Contributing
 
+Development, issues, pull requests, CI, and primary releases live at
+[src.r2ware.dev/reid/jigyll](https://src.r2ware.dev/reid/jigyll).
+GitHub is a distribution mirror, not an issue tracker or contribution target.
+
 Here's some ways to help:
 
 * Try using jigyll on your site. Use this as fodder for test cases.
-* Choose an item to work on from the [issues list](https://github.com/reidransom/jigyll/issues).
+* Choose an item to work on from the [issues list](https://src.r2ware.dev/reid/jigyll/issues).
 * Search the sources for FIXME and TODO comments.
 * Improve the [code coverage](https://coveralls.io/github/reidransom/jigyll?branch=main).
 
 If you choose to contribute code, please review the [pull request
-template](https://github.com/reidransom/jigyll/blob/main/.github/PULL_REQUEST_TEMPLATE.md)
+template](https://src.r2ware.dev/reid/jigyll/src/branch/main/.forgejo/PULL_REQUEST_TEMPLATE.md)
 before you get too far along.
 
 ## Developer Cookbook
 
 ### Set up your machine
 
-Fork and clone the repo.
+Clone the primary repository, or fork it on Forgejo and clone your fork:
+
+```bash
+git clone https://src.r2ware.dev/reid/jigyll.git
+cd jigyll
+```
+
+For an existing checkout, point `origin` at the primary repository (or your
+Forgejo fork):
+
+```bash
+git remote set-url origin https://src.r2ware.dev/reid/jigyll.git
+```
+
+The Go module remains `github.com/reidransom/jigyll`; do not rewrite imports.
+The GitHub mirror keeps `go install github.com/reidransom/jigyll@latest` and
+GitHub-backed package managers working.
 
 [Install go](https://golang.org/doc/install#install). On macOS running Homebrew,
 `brew install go` is easier than the linked instructions.
@@ -35,6 +55,17 @@ project's `mise.toml` pin, **1.102.0**:
 ```bash
 mise install github:sass/dart-sass@1.102.0
 ```
+
+### Build and contribute
+
+```bash
+just build
+./jigyll version
+```
+
+Run the checks below, push your work to your Forgejo fork, and open a
+[pull request](https://src.r2ware.dev/reid/jigyll/pulls) against `main`.
+Workflows live in `.forgejo/workflows/`; GitHub Actions are disabled on the mirror.
 
 ### Test and Lint
 
@@ -221,3 +252,54 @@ locked bundle and private-state/reset policy. Do not select only favorable runs.
 jigyll -s path/to/site benchmark
 go tool pprof --web jigyll jigyll.prof
 ```
+
+## Release and mirror operations
+
+`origin` must point to Forgejo. Do not push there before manual review:
+pushes to `main` also deploy the documentation site automatically.
+
+After review, update `version/CHANGELOG.md`, merge the approved changes into
+`main`, and run the checks above. From the current `main`, `just release`
+creates the next patch tag and pushes that tag to `origin` (it also runs lint
+and tests). For a minor or major release, create and push the chosen `vX.Y.Z`
+tag explicitly after the same review and checks.
+
+The tag workflows in `.forgejo/workflows/` publish binaries, checksums, and
+release notes to [Forgejo Releases](https://src.r2ware.dev/reid/jigyll/releases),
+update the GitHub-hosted Homebrew tap and Scoop bucket, and publish Docker images.
+The release workflow uses Forgejo's automatic token as `GITEA_TOKEN`.
+Manual dispatch runs build/lint checks, a GoReleaser snapshot, or a Docker build
+without publishing; `v*` tag pushes publish the release artifacts and images.
+The Docker job installs its client without `sudo` and requires a runner with
+access to a Docker daemon.
+
+Keep these repository secrets configured on Forgejo; GitHub's secrets are not
+inherited and their values cannot be read back through the GitHub API:
+
+| Secret | Purpose |
+| --- | --- |
+| `MIRROR_GITHUB_TOKEN` | GitHub token with contents/release write access to `reidransom/jigyll`. |
+| `HOMEBREW_TAP_GITHUB_TOKEN` | GitHub token with contents write access to `reidransom/homebrew-tap`. |
+| `SCOOP_BUCKET_GITHUB_TOKEN` | GitHub token with contents write access to `reidransom/scoop-bucket`. |
+| `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | Docker Hub login and publishing token; provision both before Docker publishing. |
+
+Forgejo's native push mirror sends `main` and all tags to GitHub using a
+dedicated SSH deploy key. Its branch filter is `main`; do not add development
+branches or push source changes directly to GitHub. Existing historical GitHub
+branches and releases are retained, but GitHub is never the synchronization
+source. Issues and pull requests stay on Forgejo and are not mirrored.
+
+Git mirroring does not copy release notes or assets.
+`.forgejo/workflows/mirror-releases.yml` runs
+`scripts/mirror-github-releases.py` for release events, hourly, and on manual
+workflow dispatch. It synchronizes published Forgejo releases, excluding drafts,
+to GitHub for existing package-manager backends. Dispatch it to repair notes or
+assets; a manual dispatch synchronizes all published releases. To run locally:
+
+```bash
+export GITEA_TOKEN="your-forgejo-token"
+export MIRROR_GITHUB_TOKEN="your-github-token"
+python3 scripts/mirror-github-releases.py --tag v1.15.0
+```
+
+Omit `--tag` to synchronize all published releases. Never commit either token.

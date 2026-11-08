@@ -1,0 +1,45 @@
+name: Build Status
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-ubuntu:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: https://data.forgejo.org/actions/checkout@v4
+      with:
+        persist-credentials: false
+
+    - name: Install Go
+      uses: https://github.com/actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+        cache: false
+
+    - name: Install just
+      env:
+        # The automatic Forgejo token cannot authenticate downloads from GitHub.
+        GITHUB_TOKEN: ''
+      run: |
+        curl --fail --silent --show-error --location https://just.systems/install.sh -o "$RUNNER_TEMP/install-just.sh"
+        bash "$RUNNER_TEMP/install-just.sh" --to "$RUNNER_TEMP/bin"
+        echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+    - name: Install SASS
+      run: |
+        curl --fail --silent --show-error --location https://github.com/sass/dart-sass/releases/download/1.102.0/dart-sass-1.102.0-linux-x64.tar.gz -o "$RUNNER_TEMP/dart-sass.tar.gz"
+        tar -xzf "$RUNNER_TEMP/dart-sass.tar.gz" -C "$RUNNER_TEMP"
+        echo "$RUNNER_TEMP/dart-sass" >> "$GITHUB_PATH"
+
+    - name: Build
+      run: just build
+
+    - name: Test
+      run: go test ./...
