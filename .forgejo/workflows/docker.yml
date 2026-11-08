@@ -5,30 +5,41 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing v* tag to publish; leave empty for a build-only run'
+        required: false
+        type: string
 
 jobs:
   push:
-    runs-on: ubuntu-latest
+    runs-on: docker
+    container:
+      image: ghcr.io/catthehacker/ubuntu:act-22.04
+      options: --user 0
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - name: Checkout
+        id: checkout
         uses: https://data.forgejo.org/actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ inputs.release_tag && format('refs/tags/{0}', inputs.release_tag) || forgejo.ref }}
 
-      - name: Install Docker client
-        run: |
-          curl --fail --silent --show-error --location https://download.docker.com/linux/static/stable/x86_64/docker-29.9.3.tgz -o "$RUNNER_TEMP/docker.tgz"
-          tar -xzf "$RUNNER_TEMP/docker.tgz" -C "$RUNNER_TEMP" docker/docker
-          echo "$RUNNER_TEMP/docker" >> "$GITHUB_PATH"
+      - name: Verify Docker access
+        run: docker version
 
       - name: Set up QEMU
         uses: https://github.com/docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
 
       - name: Set up Docker Buildx
         uses: https://github.com/docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
-        if: forgejo.event_name == 'push'
+        if: forgejo.event_name == 'push' || (inputs.release_tag || '') != ''
         uses: https://github.com/docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -40,12 +51,12 @@ jobs:
         id: meta
         shell: bash
         env:
-          RELEASE_REF: ${{ forgejo.ref_name }}
-          RELEASE_EVENT: ${{ forgejo.event_name }}
+          RELEASE_REF: ${{ inputs.release_tag || forgejo.ref_name }}
+          PUBLISH_RELEASE: ${{ forgejo.event_name == 'push' || (inputs.release_tag || '') != '' }}
         run: |
           version=develop
           tags=reidransom/jigyll:develop
-          if [ "$RELEASE_EVENT" = push ]; then
+          if [ "$PUBLISH_RELEASE" = true ]; then
             version="${RELEASE_REF#v}"
             version="${version%%+*}"
             tags="reidransom/jigyll:$version"
@@ -64,8 +75,8 @@ jobs:
           file: Dockerfile
           build-args: VERSION=${{ steps.meta.outputs.version }}
           platforms: linux/amd64,linux/arm64
-          # Manual dispatch exercises the multi-platform build without publishing.
-          push: ${{ forgejo.event_name == 'push' }}
+          # Dispatch publishes only when an existing release tag is selected.
+          push: ${{ forgejo.event_name == 'push' || (inputs.release_tag || '') != '' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             org.opencontainers.image.source=https://src.r2ware.dev/reid/jigyll
@@ -74,5 +85,5 @@ jobs:
             org.opencontainers.image.description=Go clone of the Jekyll static site generator
             org.opencontainers.image.licenses=MIT
             org.opencontainers.image.version=${{ steps.meta.outputs.version }}
-            org.opencontainers.image.revision=${{ forgejo.sha }}
+            org.opencontainers.image.revision=${{ steps.checkout.outputs.commit }}
           github-token: ''
