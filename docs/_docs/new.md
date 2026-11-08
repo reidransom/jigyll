@@ -41,21 +41,22 @@ blank_site_tree:
     type: file
 ---
 
-Install a theme from a repository reference without Git:
+Install a theme from a tagged release without Git:
 
 ```sh
-jigyll new my-docs --theme owner/docifly@latest
+jigyll new my-docs --theme owner/docifly@v1.2.3
 cd my-docs
 jigyll build
 ```
 
 `owner/docifly` is a syntax placeholder, not a claim that a release exists.
-Shorthand references use GitHub. `latest` selects the provider's latest
-published release, not its default branch. Use an exact tag or a full
-40-character commit SHA to select another revision:
+Shorthand references use GitHub. Use an exact release tag such as `v1.2.3`
+to select a release, or `latest` to select the provider's latest published
+release rather than its default branch.
+
+You can also select a specific commit with its full 40-character hexadecimal SHA:
 
 ```sh
-jigyll new my-docs --theme owner/docifly@v1.2.3
 jigyll new my-docs --theme owner/docifly@FULL_COMMIT_SHA
 ```
 

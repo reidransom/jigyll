@@ -54,17 +54,25 @@ Then set `theme: minima` in your site's `_config.yml`.
 
 ### Scaffolding from a repository reference
 
-Install and select an archive theme without Git:
+Install and select a theme from a tagged release without Git:
 
 ```sh
-jigyll new my-docs --theme owner/docifly@latest
+jigyll new my-docs --theme owner/docifly@v1.2.3
 jigyll new my-docs --theme https://src.r2ware.dev/owner/project@v1.2.3
 ```
 
 These owner/repository/tag values illustrate syntax, not available releases.
 `owner/repository@version` defaults to GitHub; Forgejo requires an explicit
-instance URL. `latest` means the provider's latest published release. Exact
-tags and full 40-character commit SHAs are also accepted.
+instance URL. Use an exact release tag such as `v1.2.3`, or `latest` for the
+provider's latest published release.
+
+You can also use a full 40-character hexadecimal commit SHA:
+
+```sh
+jigyll new my-docs --theme owner/docifly@FULL_COMMIT_SHA
+```
+
+Replace `FULL_COMMIT_SHA` with the full hexadecimal commit.
 
 Jigyll resolves a commit, downloads its `.tar.gz` source archive internally,
 and installs `_theme/<repository-name>/`, without a version/SHA wrapper or
@@ -101,9 +109,23 @@ The URL must resolve to a safe theme directory name and the repository must
 provide `_layouts/default.html`. Git is required for this legacy installer
 only, not for builds consuming an installed local theme.
 
-## Pinned GitHub remote themes
+## GitHub theme releases
 
-Use `remote_theme` only with an immutable GitHub commit:
+Install a tagged release when creating a site:
+
+```sh
+jigyll new my-docs --theme owner/docifly@v1.2.3
+```
+
+Replace `owner/docifly` and `v1.2.3` with the theme repository and release
+tag. Jigyll installs the release in `_theme/docifly/` and sets
+`theme: docifly` in `_config.yml`. Builds then use those local files without
+a network connection. You can also replace the tag with a full
+40-character hexadecimal commit SHA.
+
+### SHA-pinned remote themes
+
+Alternatively, configure `remote_theme` with an immutable GitHub commit:
 
 ```yaml
 remote_theme: just-the-docs/just-the-docs@394d6c0ec33852f8e593145d21344a955e908acb
