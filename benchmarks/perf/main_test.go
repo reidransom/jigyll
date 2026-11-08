@@ -50,11 +50,12 @@ func TestCopyPreservesSourceAndExcludesConfiguredArtifacts(t *testing.T) {
 	for _, p := range before {
 		b, err := os.ReadFile(filepath.Join(source, p))
 		require.NoError(t, err)
-		if p == "_config.yml" {
+		switch p {
+		case "_config.yml":
 			require.Equal(t, config, string(b))
-		} else if p == "index.html" {
+		case "index.html":
 			require.Equal(t, "original", string(b))
-		} else {
+		default:
 			require.Equal(t, "sentinel", string(b))
 		}
 	}

@@ -63,33 +63,9 @@ func summarize(raw []byte, runs int, profile string) ([]sampleStats, error) {
 		if _, exists := byName[r.Command]; exists {
 			return nil, fmt.Errorf("duplicate result %q", r.Command)
 		}
-		if len(r.Times) != runs || len(r.ExitCodes) != runs {
-			return nil, fmt.Errorf("incomplete samples for %s", r.Command)
-		}
-		s := sampleStats{Command: r.Command, Count: runs, Times: make([]float64, runs)}
-		// Welford's recurrence avoids subtracting nearly equal squared sums.
-		var m2 float64
-		for i, t := range r.Times {
-			if t == nil || math.IsNaN(*t) || math.IsInf(*t, 0) || *t <= 0 || r.ExitCodes[i] == nil || *r.ExitCodes[i] != 0 {
-				return nil, fmt.Errorf("invalid or failed sample for %s at %d", r.Command, i+1)
-			}
-			s.Times[i] = *t
-			delta := *t - s.Mean
-			s.Mean += delta / float64(i+1)
-			m2 += delta * (*t - s.Mean)
-		}
-		if runs > 1 {
-			deviation := math.Sqrt(m2 / float64(runs-1))
-			s.Stddev = &deviation
-		}
-		sorted := append([]float64(nil), s.Times...)
-		sort.Float64s(sorted)
-		s.Median = sorted[runs/2]
-		if runs%2 == 0 {
-			s.Median = sorted[runs/2-1]/2 + sorted[runs/2]/2
-		}
-		if math.IsInf(s.Mean, 0) || math.IsNaN(s.Mean) || (s.Stddev != nil && (math.IsInf(*s.Stddev, 0) || math.IsNaN(*s.Stddev))) {
-			return nil, fmt.Errorf("nonfinite statistics for %s", r.Command)
+		s, err := summarizeSamples(r, runs)
+		if err != nil {
+			return nil, err
 		}
 		byName[r.Command] = s
 	}
@@ -109,6 +85,42 @@ func summarize(raw []byte, runs int, profile string) ([]sampleStats, error) {
 		out = append(out, s)
 	}
 	return out, nil
+}
+
+func summarizeSamples(r rawResult, runs int) (sampleStats, error) {
+	if len(r.Times) != runs || len(r.ExitCodes) != runs {
+		return sampleStats{}, fmt.Errorf("incomplete samples for %s", r.Command)
+	}
+	s := sampleStats{Command: r.Command, Count: runs, Times: make([]float64, runs)}
+	// Welford's recurrence avoids subtracting nearly equal squared sums.
+	var m2 float64
+	for i, t := range r.Times {
+		if !validSample(t, r.ExitCodes[i]) {
+			return sampleStats{}, fmt.Errorf("invalid or failed sample for %s at %d", r.Command, i+1)
+		}
+		s.Times[i] = *t
+		delta := *t - s.Mean
+		s.Mean += delta / float64(i+1)
+		m2 += delta * (*t - s.Mean)
+	}
+	if runs > 1 {
+		deviation := math.Sqrt(m2 / float64(runs-1))
+		s.Stddev = &deviation
+	}
+	sorted := append([]float64(nil), s.Times...)
+	sort.Float64s(sorted)
+	s.Median = sorted[runs/2]
+	if runs%2 == 0 {
+		s.Median = sorted[runs/2-1]/2 + sorted[runs/2]/2
+	}
+	if math.IsInf(s.Mean, 0) || math.IsNaN(s.Mean) || (s.Stddev != nil && (math.IsInf(*s.Stddev, 0) || math.IsNaN(*s.Stddev))) {
+		return sampleStats{}, fmt.Errorf("nonfinite statistics for %s", r.Command)
+	}
+	return s, nil
+}
+
+func validSample(t *float64, exitCode *int) bool {
+	return t != nil && !math.IsNaN(*t) && !math.IsInf(*t, 0) && *t > 0 && exitCode != nil && *exitCode == 0
 }
 
 type measuredCommand struct {
@@ -210,31 +222,39 @@ func readCommands(root, profile string) ([]measuredCommand, error) {
 	}
 	out := []measuredCommand{}
 	for i, name := range expected {
-		p := strings.Split(lines[i+1], "\t")
-		if len(p) != 7 || p[0] != name || p[2] != filepath.Join(root, "output", name) || p[3] != filepath.Join(root, "cache", name, "tmp") || p[4] != filepath.Join(root, "cache", name, "xdg") {
-			return nil, fmt.Errorf("invalid command locations for %s", name)
-		}
-		maxprocs, disabled := "default", "0"
-		if name == "jigyll-single" || name == "jigyll-single-no-cache" {
-			maxprocs = "1"
-		}
-		if name == "jigyll-no-cache" || name == "jigyll-single-no-cache" {
-			disabled = "1"
-		}
-		if p[5] != maxprocs || p[6] != disabled {
-			return nil, fmt.Errorf("invalid profile settings for %s", name)
-		}
-		wrapper, err := os.ReadFile(filepath.Join(root, "commands", name))
+		command, err := readMeasuredCommand(root, name, lines[i+1])
 		if err != nil {
 			return nil, err
 		}
-		env := map[string]string{"GOMAXPROCS": maxprocs, "JIGYLL_DISABLE_CACHE": disabled, "GOGC": "unset (normal GC)", "GOMEMLIMIT": "unset (runtime default)", "TMPDIR": p[3], "XDG_CACHE_HOME": p[4]}
-		for key, child := range map[string]string{"HOME": "home", "XDG_CONFIG_HOME": "config", "BUNDLE_USER_HOME": "bundle-user"} {
-			env[key] = filepath.Join(root, "cache", name, child)
-		}
-		out = append(out, measuredCommand{name, p[1], string(wrapper), p[2], env})
+		out = append(out, command)
 	}
 	return out, nil
+}
+
+func readMeasuredCommand(root, name, line string) (measuredCommand, error) {
+	p := strings.Split(line, "\t")
+	if len(p) != 7 || p[0] != name || p[2] != filepath.Join(root, "output", name) || p[3] != filepath.Join(root, "cache", name, "tmp") || p[4] != filepath.Join(root, "cache", name, "xdg") {
+		return measuredCommand{}, fmt.Errorf("invalid command locations for %s", name)
+	}
+	maxprocs, disabled := "default", "0"
+	if name == "jigyll-single" || name == "jigyll-single-no-cache" {
+		maxprocs = "1"
+	}
+	if name == "jigyll-no-cache" || name == "jigyll-single-no-cache" {
+		disabled = "1"
+	}
+	if p[5] != maxprocs || p[6] != disabled {
+		return measuredCommand{}, fmt.Errorf("invalid profile settings for %s", name)
+	}
+	wrapper, err := os.ReadFile(filepath.Join(root, "commands", name))
+	if err != nil {
+		return measuredCommand{}, err
+	}
+	env := map[string]string{"GOMAXPROCS": maxprocs, "JIGYLL_DISABLE_CACHE": disabled, "GOGC": "unset (normal GC)", "GOMEMLIMIT": "unset (runtime default)", "TMPDIR": p[3], "XDG_CACHE_HOME": p[4]}
+	for key, child := range map[string]string{"HOME": "home", "XDG_CONFIG_HOME": "config", "BUNDLE_USER_HOME": "bundle-user"} {
+		env[key] = filepath.Join(root, "cache", name, child)
+	}
+	return measuredCommand{name, p[1], string(wrapper), p[2], env}, nil
 }
 
 func loadSnapshot() string {
@@ -287,6 +307,19 @@ func captureMetadata(root, repo string) error {
 	}
 	m := runMetadata{Schema: 1, Outcome: "not completed; no valid comparison", Started: time.Now().UTC().Format(time.RFC3339Nano), Run: r, Commands: commands, Environment: relevantEnvironment(os.Getenv), Tools: map[string]string{}, Checkout: map[string]string{}, SourceHashes: map[string]string{}, InputHashes: map[string]string{}}
 	m.Host = map[string]string{"os": runtime.GOOS, "architecture": runtime.GOARCH, "cpu_model": cpuModel(), "logical_processors": strconv.Itoa(runtime.NumCPU()), "load_before": loadSnapshot(), "destination_root": filepath.Join(root, "output")}
+	if err := captureHostTools(root, repo, &m); err != nil {
+		return err
+	}
+	if err := captureCheckout(repo, &m); err != nil {
+		return err
+	}
+	if err := captureInputs(root, repo, r, commands, &m); err != nil {
+		return err
+	}
+	return saveJSON(filepath.Join(root, "metadata.json"), m)
+}
+
+func captureHostTools(root, repo string, m *runMetadata) error {
 	for key, args := range map[string][]string{"kernel": {"uname", "-a"}, "destination_filesystem": {"df", "-P", filepath.Join(root, "output")}} {
 		value, err := commandOutput(repo, args[0], args[1:]...)
 		if err != nil {
@@ -309,6 +342,10 @@ func captureMetadata(root, repo string) error {
 		}
 		m.Tools[key+"_executable"] = resolved
 	}
+	return nil
+}
+
+func captureCheckout(repo string, m *runMetadata) error {
 	for key, args := range map[string][]string{"commit": {"rev-parse", "HEAD"}, "status": {"status", "--porcelain=v1", "-z", "--untracked-files=all"}, "tracked_diff": {"diff", "HEAD", "--binary"}, "untracked": {"ls-files", "--others", "--exclude-standard", "-z"}} {
 		cmd := exec.Command("git", args...)
 		cmd.Dir = repo
@@ -342,6 +379,10 @@ func captureMetadata(root, repo string) error {
 			m.Checkout["untracked_file_count"] = strconv.Itoa(count)
 		}
 	}
+	return nil
+}
+
+func captureInputs(root, repo string, r map[string]string, commands []measuredCommand, m *runMetadata) error {
 	paths, err := files(r["source"])
 	if err != nil {
 		return err
@@ -381,7 +422,7 @@ func captureMetadata(root, repo string) error {
 	} else if !os.IsNotExist(err) {
 		return err
 	}
-	return saveJSON(filepath.Join(root, "metadata.json"), m)
+	return nil
 }
 
 func cacheLabel(warmup int) string {
@@ -404,6 +445,24 @@ func writeReport(root string) error {
 	if err != nil {
 		return err
 	}
+	if err := validateReportEvidence(root); err != nil {
+		return err
+	}
+	var m runMetadata
+	b, err := os.ReadFile(filepath.Join(root, "metadata.json"))
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	if err := validateReportMetadata(root, r, &m); err != nil {
+		return err
+	}
+	return publishReport(root, r, m)
+}
+
+func validateReportEvidence(root string) error {
 	for _, path := range []string{"preflight-reset", "verification.log", "hyperfine.md", "hyperfine-command"} {
 		b, err := os.ReadFile(filepath.Join(root, path))
 		if err != nil {
@@ -413,14 +472,10 @@ func writeReport(root string) error {
 			return fmt.Errorf("missing/incomplete %s", path)
 		}
 	}
-	b, err := os.ReadFile(filepath.Join(root, "metadata.json"))
-	if err != nil {
-		return err
-	}
-	var m runMetadata
-	if err := json.Unmarshal(b, &m); err != nil {
-		return err
-	}
+	return nil
+}
+
+func validateReportMetadata(root string, r map[string]string, m *runMetadata) error {
 	if m.Schema != 1 || !reflect.DeepEqual(m.Run, r) || (m.Outcome != "not completed; no valid comparison" && m.Outcome != "success") {
 		return fmt.Errorf("metadata does not match measured run")
 	}
@@ -434,6 +489,13 @@ func writeReport(root string) error {
 	if !reflect.DeepEqual(commands, m.Commands) {
 		return fmt.Errorf("metadata command mismatch")
 	}
+	if err := validateReportProvenance(m); err != nil {
+		return err
+	}
+	return validateSourceIdentity(r["source"], m.SourceHashes)
+}
+
+func validateReportProvenance(m *runMetadata) error {
 	for _, group := range []struct {
 		values   map[string]string
 		required []string
@@ -449,14 +511,18 @@ func writeReport(root string) error {
 			}
 		}
 	}
-	if len(m.SourceHashes) == 0 {
+	return nil
+}
+
+func validateSourceIdentity(source string, hashes map[string]string) error {
+	if len(hashes) == 0 {
 		return fmt.Errorf("missing source identity")
 	}
-	for p, sum := range m.SourceHashes {
+	for p, sum := range hashes {
 		if !relativePath(filepath.FromSlash(p)) {
 			return fmt.Errorf("invalid source identity path")
 		}
-		actual, err := hashFile(filepath.Join(r["source"], p))
+		actual, err := hashFile(filepath.Join(source, p))
 		if err != nil {
 			return err
 		}
@@ -464,6 +530,10 @@ func writeReport(root string) error {
 			return fmt.Errorf("source changed during measurement: %s", p)
 		}
 	}
+	return nil
+}
+
+func publishReport(root string, r map[string]string, m runMetadata) error {
 	raw, err := os.ReadFile(filepath.Join(root, "hyperfine.json"))
 	if err != nil {
 		return err

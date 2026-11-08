@@ -138,6 +138,24 @@ func generate(dir string, posts, pages int) error {
 	if err := os.Mkdir(dir, 0o700); err != nil {
 		return fmt.Errorf("allocate new fixture directory (existing paths are never replaced): %w", err)
 	}
+	if err := writeFixtureFiles(dir); err != nil {
+		return err
+	}
+	manifest := newManifest(posts, pages)
+	if err := writeFixtureContent(dir, posts, pages, &manifest); err != nil {
+		return err
+	}
+	if err := collectFixtureInputs(dir, &manifest); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return err
+	}
+	return writeFile(filepath.Join(dir, manifestPath), string(data)+"\n")
+}
+
+func writeFixtureFiles(dir string) error {
 	for _, subdir := range []string{"_layouts", "_includes", "_posts", "_benchmark"} {
 		if err := os.Mkdir(filepath.Join(dir, subdir), 0o700); err != nil {
 			return err
@@ -153,10 +171,10 @@ func generate(dir string, posts, pages int) error {
 			}
 		}
 	}
-	if err := writeFile(filepath.Join(dir, "index.html"), indexHTML); err != nil {
-		return err
-	}
-	manifest := newManifest(posts, pages)
+	return writeFile(filepath.Join(dir, "index.html"), indexHTML)
+}
+
+func writeFixtureContent(dir string, posts, pages int, manifest *Manifest) error {
 	postTmpl := template.Must(template.New("post").Funcs(template.FuncMap{"title": titleCase}).Parse(postTemplate))
 	for i := range posts {
 		post := postAt(i)
@@ -170,7 +188,11 @@ func generate(dir string, posts, pages int) error {
 			return err
 		}
 	}
-	if err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
+	return nil
+}
+
+func collectFixtureInputs(dir string, manifest *Manifest) error {
+	return filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil || entry.IsDir() {
 			return err
 		}
@@ -185,14 +207,7 @@ func generate(dir string, posts, pages int) error {
 		hash := sha256.Sum256(content)
 		manifest.Inputs = append(manifest.Inputs, Input{filepath.ToSlash(rel), hex.EncodeToString(hash[:])})
 		return nil
-	}); err != nil {
-		return err
-	}
-	data, err := json.MarshalIndent(manifest, "", "  ")
-	if err != nil {
-		return err
-	}
-	return writeFile(filepath.Join(dir, manifestPath), string(data)+"\n")
+	})
 }
 
 func newManifest(posts, pages int) Manifest {

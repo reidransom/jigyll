@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+## 1.15.1 (Nov 8, 2026)
+
 ### New
 * Add `just perf-setup` and `just perf` for pinned native Jigyll/Jekyll full-build
   comparisons, with a deterministic generated workload, locked local bundles,
@@ -10,6 +12,9 @@
   destinations/caches, raw samples and reproducibility reports.
 
 ### Improved
+* Split benchmark fixture generation, validation, comparison, and reporting into
+  focused helpers so release lint checks pass without suppressions or changes
+  to benchmark behavior.
 * Make Forgejo at `src.r2ware.dev/reid/jigyll` the canonical repository, issue
   tracker, CI, and release source. Fetch installer downloads from Forgejo; keep
   GitHub as a mirror of `main`, tags, and release notes/assets without issues,
