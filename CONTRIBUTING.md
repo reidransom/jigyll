@@ -269,9 +269,16 @@ release notes to [Forgejo Releases](https://src.r2ware.dev/reid/jigyll/releases)
 update the GitHub-hosted Homebrew tap and Scoop bucket, and publish Docker images.
 The release workflow uses Forgejo's automatic token as `GITEA_TOKEN`.
 Manual dispatch runs build/lint checks, a GoReleaser snapshot, or a Docker build
-without publishing; `v*` tag pushes publish the release artifacts and images.
-The Docker job installs its client without `sudo` and requires a runner with
-access to a Docker daemon.
+without publishing by default; `v*` tag pushes publish artifacts and images.
+To retry Docker publication for an existing release, dispatch `docker.yml` from
+`main` with `release_tag` set to its tag (for example, `v1.15.1`). The job checks
+out that tag and publishes its version, minor-version, and `latest` image tags
+without moving the Git tag.
+
+The Docker job uses the `docker` runner label and a Docker-capable Ubuntu job
+image, running as root with `/var/run/docker.sock` explicitly mounted.
+The runner must allow that volume. Socket access gives the publishing job
+host-level Docker control; keep this workflow and release refs trusted.
 
 Keep these repository secrets configured on Forgejo; GitHub's secrets are not
 inherited and their values cannot be read back through the GitHub API:

@@ -3,6 +3,11 @@
 
 ## Unreleased
 
+### Fixed
+* Run Forgejo Docker publishing in a Docker-capable job container with an
+  explicit host socket mount. Allow publication retries from existing release
+  tags without moving those tags.
+
 ## 1.15.1 (Nov 8, 2026)
 
 ### New
