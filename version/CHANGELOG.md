@@ -4,6 +4,9 @@
 ## Unreleased
 
 ### Fixed
+* Honor `render_with_liquid: false` from scoped defaults and document front
+  matter, preserving literal body syntax while retaining Markdown conversion
+  and Liquid layouts.
 * Run Forgejo Docker publishing in a Docker-capable job container with an
   explicit host socket mount. Allow publication retries from existing release
   tags without moving those tags.

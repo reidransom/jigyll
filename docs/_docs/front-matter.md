@@ -46,6 +46,44 @@ front matter of a page or post.
 | `layout` | If set, this specifies the [layout](/docs/layouts/) file to use. Use the layout file name without the file extension. Layout files must be placed in the `_layouts` directory. |
 | `permalink` | If you need your processed blog post URLs to be something other than the site-wide style (default `/year/month/day/title.html`), then you can set this variable and it will be used as the final URL. |
 | `published` | Set to false if you don't want a specific post to show up when the site is generated. Preview unpublished pages with `jigyll serve --unpublished`. |
+| `render_with_liquid` | Set to the YAML boolean `false` to preserve literal Liquid syntax in the document body. Markdown conversion and Liquid layouts still run. Defaults to enabled. |
+
+## Publishing literal template syntax
+
+Set `render_with_liquid: false` in a document's front matter to skip Liquid
+evaluation of its body:
+
+```yaml
+---
+layout: default
+render_with_liquid: false
+---
+```
+
+To apply the setting to every page under `skills`, use front matter defaults
+in `_config.yml`:
+
+```yaml
+defaults:
+  - scope:
+      path: "skills"
+    values:
+      layout: default
+      render_with_liquid: false
+```
+
+{% raw %}
+The body can then contain literal expressions such as `{{justfile()}}`
+without Liquid parsing them. Markdown still converts to HTML, and the
+layout can still use Liquid variables and `{{ content }}`.
+{% endraw %}
+
+A document's own `render_with_liquid: true` overrides a scoped `false`
+default. With the setting absent or `true`, body Liquid runs normally.
+Use the YAML boolean `false`, not the quoted string `"false"`.
+
+This setting does not change page discovery. Files still need front matter
+unless the optional-front-matter plugin is enabled.
 
 ## Custom Variables
 
