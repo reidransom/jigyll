@@ -3,6 +3,8 @@
 
 ## Unreleased
 
+## 1.15.2 (Nov 9, 2026)
+
 ### Fixed
 * Honor `render_with_liquid: false` from scoped defaults and document front
   matter, preserving literal body syntax while retaining Markdown conversion
