@@ -312,9 +312,12 @@ func (p *page) extractHeadings(content string) ([]renderers.Heading, error) {
 func (p *page) computeContent() (cn string, ex string, err error) {
 	pl := p.site.RendererManager()
 	buf := new(bytes.Buffer)
-	src, err := pl.RenderTemplate(p.raw, p.TemplateContext(), p.filename, p.firstLine)
-	if err != nil {
-		return "", "", err
+	src := p.raw
+	if p.fm.Bool("render_with_liquid", true) {
+		src, err = pl.RenderTemplate(src, p.TemplateContext(), p.filename, p.firstLine)
+		if err != nil {
+			return "", "", err
+		}
 	}
 	err = pl.Convert(buf, src, p.filename, p.firstLine)
 	if err != nil {
