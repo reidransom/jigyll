@@ -55,6 +55,7 @@ func (p *page) ToLiquid() interface{} {
 		"id":            utils.TrimExt(p.URL()),
 		"name":          filepath.Base(siteRelPath),
 		"path":          siteRelPath,
+		"raw_content":   p.raw,
 		"relative_path": siteRelPath,
 		"slug":          fm.String("slug", utils.Slugify(utils.TrimExt(filepath.Base(p.relPath)))),
 		"tags":          p.Tags(),
@@ -83,7 +84,7 @@ func (p *page) ToLiquid() interface{} {
 		switch k {
 		// doc implies these aren't present, but they appear to be present in a collection page:
 		// case "layout", "published":
-		case "permalink", "headings":
+		case "permalink", "headings", "raw_content":
 			// Engine-owned values cannot be overridden by front matter.
 		default:
 			data[k] = v

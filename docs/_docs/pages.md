@@ -52,6 +52,19 @@ Pages have an `excerpt` variable just like posts — by default the first
 paragraph of content. (In Jekyll this requires setting `page_excerpts: true`;
 in Jigyll it is always available.)
 
+## Unconverted source in templates
+
+`page.raw_content` exposes the body after front-matter parsing, before Liquid
+evaluation or Markdown conversion. The same variable is available on page
+objects in `site.pages`, posts, and collections. It remains source text after
+rendering or `SetContent`, follows the source when cloned, and refreshes on reload.
+Front matter cannot override it.
+
+Use `raw_content | jsonify` when embedding Markdown in JSON; use `content` for
+rendered HTML. Raw source preserves literal Liquid syntax regardless of
+`render_with_liquid`. Like other parsed bodies, CRLF is normalized to LF and
+blank lines immediately following front matter are skipped.
+
 ## Article rendering API
 
 Go integrations can call `Page.Article()` to render a page and obtain its body

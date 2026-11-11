@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -42,4 +43,59 @@ func TestSelectedSourceCaptureWithoutDocumentationLayout(t *testing.T) {
 	body, err = selected.Article()
 	require.NoError(t, err)
 	require.Nil(t, body.Source)
+}
+
+func TestRawContentPreservesAuthoredBody(t *testing.T) {
+	for _, enabled := range []bool{true, false} {
+		name := "liquid disabled"
+		if enabled {
+			name = "liquid enabled"
+		}
+		t.Run(name, func(t *testing.T) {
+			cfg := config.Default()
+			cfg.Source = t.TempDir()
+			manager, err := renderers.New(cfg, renderers.Options{})
+			require.NoError(t, err)
+			s := articleSite{siteFake{t, cfg}, manager}
+			filename := filepath.Join(cfg.Source, "article.md")
+			body := "# {{ page.title }}\n\n{% raw %}{{ literal }}{% endraw %}\n\n`</script>` — café\n"
+			require.NoError(t, os.WriteFile(filename, []byte("---\ntitle: Resolved\nraw_content: overridden\n---\n"+body), 0600))
+			document, err := NewFile(s, filename, "article.md", func(bool) FrontMatter {
+				return FrontMatter{"render_with_liquid": enabled}
+			})
+			require.NoError(t, err)
+			p := document.(*page)
+			assertRaw := func(p *page, expected string) {
+				t.Helper()
+				output, err := manager.RenderTemplate([]byte("{{ page.raw_content | jsonify }}"), p.TemplateContext(), filename, 1)
+				require.NoError(t, err)
+				var decoded string
+				require.NoError(t, json.Unmarshal(output, &decoded))
+				require.Equal(t, expected, decoded)
+			}
+			assertRaw(p, body)
+			article, err := p.Article()
+			require.NoError(t, err)
+			if enabled {
+				require.Contains(t, article.HTML, ">Resolved</h1>")
+			} else {
+				require.Contains(t, article.HTML, ">{{ page.title }}</h1>")
+			}
+			assertRaw(p, body)
+			assertRaw(p.Clone("/copy/").(*page), body)
+			p.SetContent("<p>Generated replacement</p>")
+			assertRaw(p, body)
+
+			body = "# Reloaded\n\n{{ page.title }}\n"
+			require.NoError(t, os.WriteFile(filename, []byte("---\n---\n"+body), 0600))
+			require.NoError(t, p.Reload())
+			assertRaw(p, body)
+			require.NoError(t, p.Render())
+			assertRaw(p, body)
+
+			require.NoError(t, os.WriteFile(filename, []byte("---\n---\n"), 0600))
+			require.NoError(t, p.Reload())
+			assertRaw(p, "")
+		})
+	}
 }

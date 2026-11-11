@@ -76,7 +76,7 @@ func (p *PageEmbed) Reload() error { return nil }
 type page struct {
 	file
 	firstLine int
-	raw       []byte
+	raw       string
 
 	// extraContext holds additional template variables (e.g. "paginator")
 	// merged into TemplateContext. It is set before rendering starts and
@@ -106,7 +106,7 @@ func makePage(filename string, f file) (*page, error) {
 	p := page{
 		file:      f,
 		firstLine: lineNo,
-		raw:       raw,
+		raw:       string(raw),
 	}
 	if err := p.setPermalink(); err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (p *page) Reload() error {
 		return err
 	}
 	p.firstLine = lineNo
-	p.raw = raw
+	p.raw = string(raw)
 	p.reset()
 	return nil
 }
@@ -312,7 +312,7 @@ func (p *page) extractHeadings(content string) ([]renderers.Heading, error) {
 func (p *page) computeContent() (cn string, ex string, err error) {
 	pl := p.site.RendererManager()
 	buf := new(bytes.Buffer)
-	src := p.raw
+	src := []byte(p.raw)
 	if p.fm.Bool("render_with_liquid", true) {
 		src, err = pl.RenderTemplate(src, p.TemplateContext(), p.filename, p.firstLine)
 		if err != nil {
@@ -355,9 +355,9 @@ func (p *page) Excerpt() interface{} {
 
 func (p *page) extractExcerpt() []byte {
 	raw := p.raw
-	pos := bytes.Index(raw, []byte(p.site.Config().ExcerptSeparator))
+	pos := strings.Index(raw, p.site.Config().ExcerptSeparator)
 	if pos >= 0 {
-		return raw[:pos]
+		return []byte(raw[:pos])
 	}
-	return raw
+	return []byte(raw)
 }

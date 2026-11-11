@@ -3,6 +3,10 @@
 
 ## Unreleased
 
+### New
+* Expose engine-owned `raw_content` on page template objects, retaining
+  unconverted body text independently of Liquid evaluation and HTML rendering.
+
 ## 1.15.2 (Nov 9, 2026)
 
 ### Fixed
