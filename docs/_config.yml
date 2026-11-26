@@ -5,7 +5,8 @@ baseurl: ""
 # GitHub mirror identity for jekyll-github-metadata; primary links are in site_links.
 repository: reidransom/jigyll
 
-theme: docifly
+# Dash builds from a Git tree without sibling checkouts. Pin an immutable theme archive.
+remote_theme: reidransom/docside@ff0b681889a894cdababfed16df45e6c3c11d4c5
 navigation:
   - label: Getting Started
     items:

@@ -7,9 +7,9 @@
   }
 
   .sl-markdown-content code:not(pre code) {
-    color: var(--docifly-code-keyword);
-    background-color: color-mix(in srgb, var(--docifly-code-keyword) 9%, var(--background));
-    border: 1px solid color-mix(in srgb, var(--docifly-code-keyword) 25%, var(--border));
+    color: var(--docside-code-keyword);
+    background-color: color-mix(in srgb, var(--docside-code-keyword) 9%, var(--background));
+    border: 1px solid color-mix(in srgb, var(--docside-code-keyword) 25%, var(--border));
     border-radius: 0.25rem;
     font-weight: 500;
     padding-top: 3px;
